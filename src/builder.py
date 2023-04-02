@@ -172,6 +172,7 @@ if __name__ == "__main__":
     meta_filepath = "{}.json".format(os.path.join(meta_dir, name))
     if not os.path.exists(meta_filepath):
         logging.error("failed found meta file: {}".format(meta_filepath))
+        sys.exit(1)
     else:
         logging.info("find meta file: {}".format(meta_filepath))
 
