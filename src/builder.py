@@ -62,7 +62,7 @@ def load_metafile(filepath):
         with open(meta_filepath, "r") as f:
             meta_obj = json.load(f)
     except Exception as e:
-        logging.error("faild load meta file, {}", str(e))
+        logging.error("faild load meta file, {}".format(str(e)))
         return None, None
 
     git_repo = meta_obj.get("git_repo", None)
