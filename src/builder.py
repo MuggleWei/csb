@@ -237,7 +237,6 @@ if __name__ == "__main__":
         "{}:/opt/{}/{}-{}.tar.gz".format(container_name, name, name, tag),
         os.path.join(artifacts_dir, "{}-{}-{}.tar.gz".format(name, tag, os_ver))
     ]
-    logging.info("exec \"{}\"".format(" ".join(args)))
     if not exec_command(args=args):
         logging.error("failed exec \"{}\"".format(" ".join(args)))
         sys.exit(1)
@@ -246,7 +245,6 @@ if __name__ == "__main__":
         "docker", "container", "rm",
         container_name
     ]
-    logging.info("exec \"{}\"".format(" ".join(args)))
     ret = exec_command(args=args)
     if ret is False:
         logging.error("failed exec \"{}\"".format(" ".join(args)))
