@@ -199,7 +199,7 @@ if __name__ == "__main__":
         name, tag, dockerfile))
 
     # exec docker build
-    registry = "csb"
+    registry = "lpb"
     output_tag = "{}/{}:{}-{}{}".format(registry, name, tag, use_os, use_os_ver)
     args = [
         "docker", "build",

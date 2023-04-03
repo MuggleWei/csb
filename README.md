@@ -1,5 +1,5 @@
-# CSB
-CSB(c/c++ source builder) use to easily build c/c++ source code for different platform through container.
+# LPB
+LPB(local package builder) use to easily build source code for different platform through container.
 
 ## prerequires
 * ensure docker installed

@@ -26,7 +26,7 @@ fi
 origin_dir=$(readlink -f "$(dirname "$0")")
 cd $origin_dir
 
-REGISTRY=csb
+REGISTRY=lpb
 img_name="${REGISTRY}/${OS}:${OS_VER}"
 echo "build image: ${img_name}"
 
