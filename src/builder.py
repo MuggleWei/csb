@@ -7,6 +7,7 @@ import subprocess
 import sys
 
 from log_handle import LogHandle
+from meta_handle import MetaHandle
 import __version__
 
 
@@ -49,58 +50,6 @@ def parse_args():
         sys.exit(1)
 
     return name, tag, os_ver, res_dir
-
-
-def load_metafile(filepath):
-    """
-    load meta file
-    :param filepath: meta file path
-    :return: git repository and meta dict
-    """
-    try:
-        logging.info("load meta file: {}".format(filepath))
-        with open(meta_filepath, "r") as f:
-            meta_obj = json.load(f)
-    except Exception as e:
-        logging.error("faild load meta file, {}".format(str(e)))
-        return None, None
-
-    git_repo = meta_obj.get("git_repo", None)
-    if git_repo is None:
-        logging.error("failed found 'git_repo' field in meta object")
-        return None, None
-
-    metas = meta_obj.get("metas", [])
-    if len(metas) == 0:
-        logging.error("failed found 'metas' field in meta object")
-        return None, None
-
-    meta_dict = {}
-    for meta in metas:
-        repo_tag = meta.get("tag", None)
-        if repo_tag is None:
-            logging.warning("skip invalid meta that without 'tag' field")
-            continue
-
-        repo_deps = meta.get("deps", None)
-        if repo_deps is None:
-            repo_deps = []
-
-        repo_dockerfile = meta.get("dockerfile", None)
-        if repo_dockerfile is None:
-            logging.warning(
-                "skip invalid meta(tag={}) "
-                "that without 'dockerfile' field".format(repo_tag))
-            continue
-
-        if repo_tag in meta_dict:
-            logging.warning("repeated tag: {}, ignore".format(repo_tag))
-            continue
-
-        logging.debug("load meta: tag={}, dockerfile={}, deps={}".format(
-            repo_tag, repo_dockerfile, repo_deps))
-        meta_dict[repo_tag] = meta
-    return git_repo, meta_dict
 
 
 def exec_subporcess(p):
@@ -176,77 +125,65 @@ if __name__ == "__main__":
     else:
         logging.info("find meta file: {}".format(meta_filepath))
 
-    # load meta file
-    git_repo, meta_dict = load_metafile(filepath=meta_filepath)
-    if git_repo is None or meta_dict is None:
+    # load meta file and get yml file path
+    meta_handle = MetaHandle()
+    if meta_handle.load(filepath=meta_filepath) is False:
         logging.error("failed load meta file, exit")
         sys.exit(1)
 
-    # get dockerfile
-    if tag in meta_dict:
-        meta = meta_dict[tag]
-    elif "default" in meta_dict:
-        meta = meta_dict["default"]
-    else:
-        logging.error("failed found corresponding tag: {}".format(tag))
-        sys.exit(1)
+    yml_filepath = meta_handle.get_yml(tag=tag)
+    logging.info("{}-{} use yml: {}".format(
+        name, tag, yml_filepath))
 
-    dockerfile = meta["dockerfile"]
-    if not os.path.isabs(dockerfile):
-        dockerfile = os.path.join(meta_dir, dockerfile)
-    dockerfile = os.path.abspath(dockerfile)
-    logging.info("{}-{} use dockerfile: {}".format(
-        name, tag, dockerfile))
+    # # exec docker build
+    # registry = "lpb"
+    # output_tag = "{}/{}:{}-{}{}".format(registry, name, tag, use_os, use_os_ver)
+    # args = [
+    #     "docker", "build",
+    #     "--network=host",
+    #     "--build-arg", "REGISTRY={}".format(registry),
+    #     "--build-arg", "OS={}".format(os_ver),
+    #     "--build-arg", "GIT_REPO={}".format(git_repo),
+    #     "--build-arg", "GIT_TAG={}".format(tag),
+    #     "-f", dockerfile,
+    #     "-t", output_tag,
+    #     meta_dir
+    # ]
+    # ret = exec_command(args=args)
+    # if ret is False:
+    #     logging.error("failed exec \"{}\"".format(" ".join(args)))
+    #     sys.exit(1)
 
-    # exec docker build
-    registry = "lpb"
-    output_tag = "{}/{}:{}-{}{}".format(registry, name, tag, use_os, use_os_ver)
-    args = [
-        "docker", "build",
-        "--network=host",
-        "--build-arg", "REGISTRY={}".format(registry),
-        "--build-arg", "OS={}".format(os_ver),
-        "--build-arg", "GIT_REPO={}".format(git_repo),
-        "--build-arg", "GIT_TAG={}".format(tag),
-        "-f", dockerfile,
-        "-t", output_tag,
-        meta_dir
-    ]
-    ret = exec_command(args=args)
-    if ret is False:
-        logging.error("failed exec \"{}\"".format(" ".join(args)))
-        sys.exit(1)
+    # # get artifacts
+    # artifacts_dir = "./artifacts"
+    # if not os.path.exists(artifacts_dir):
+    #     os.mkdir(artifacts_dir)
+    # container_name = "{}{}-extract".format(name, tag)
 
-    # get artifacts
-    artifacts_dir = "./artifacts"
-    if not os.path.exists(artifacts_dir):
-        os.mkdir(artifacts_dir)
-    container_name = "{}{}-extract".format(name, tag)
+    # args = [
+    #     "docker", "container", "create",
+    #     "--name", container_name,
+    #     output_tag
+    # ]
+    # ret = exec_command(args=args)
+    # if ret is False:
+    #     logging.error("failed exec \"{}\"".format(" ".join(args)))
+    #     sys.exit(1)
 
-    args = [
-        "docker", "container", "create",
-        "--name", container_name,
-        output_tag
-    ]
-    ret = exec_command(args=args)
-    if ret is False:
-        logging.error("failed exec \"{}\"".format(" ".join(args)))
-        sys.exit(1)
+    # args = [
+    #     "docker", "container", "cp",
+    #     "{}:/opt/{}/{}-{}.tar.gz".format(container_name, name, name, tag),
+    #     os.path.join(artifacts_dir, "{}-{}-{}.tar.gz".format(name, tag, os_ver))
+    # ]
+    # if not exec_command(args=args):
+    #     logging.error("failed exec \"{}\"".format(" ".join(args)))
+    #     sys.exit(1)
 
-    args = [
-        "docker", "container", "cp",
-        "{}:/opt/{}/{}-{}.tar.gz".format(container_name, name, name, tag),
-        os.path.join(artifacts_dir, "{}-{}-{}.tar.gz".format(name, tag, os_ver))
-    ]
-    if not exec_command(args=args):
-        logging.error("failed exec \"{}\"".format(" ".join(args)))
-        sys.exit(1)
-
-    args = [
-        "docker", "container", "rm",
-        container_name
-    ]
-    ret = exec_command(args=args)
-    if ret is False:
-        logging.error("failed exec \"{}\"".format(" ".join(args)))
-        sys.exit(1)
+    # args = [
+    #     "docker", "container", "rm",
+    #     container_name
+    # ]
+    # ret = exec_command(args=args)
+    # if ret is False:
+    #     logging.error("failed exec \"{}\"".format(" ".join(args)))
+    #     sys.exit(1)
