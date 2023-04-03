@@ -40,7 +40,7 @@ class Builder:
             "    , --task-id string    [OPTIONAL] build task id, if empty, set 'yyyymmddHHMMSSxxxx' as task-id\n" \
             "    , --work-dir string   [OPTIONAL] working directory(by default, use current working directory)\n" \
             "    , --art-dir list      [OPTIONAL] search artifacts directory(by default, use working_dir/_artifacts\n" \
-            "  -p, --params list       [OPTIONAL] build parameters, e.g. --params foo=123 bar=456\n" \
+            "  -p, --params list       [OPTIONAL] build parameters, e.g. --params foo=123 -p bar=456\n" \
             "    , --override bool     [OPTIONAL] if build directory already exists, override or exit\n" \
             "  -o, --output-dir string [OPTIONAL] output directory\n" \
             "".format(APP_NAME)
