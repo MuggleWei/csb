@@ -18,6 +18,7 @@ doc/compile_commands.json
 ######### build & artifacts #########
 build/
 artifacts/
+_artifacts/
 
 ######### python #########
 # Byte-compiled / optimized / DLL files

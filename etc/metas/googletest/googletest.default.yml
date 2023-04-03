@@ -3,13 +3,13 @@ task-linux:
   from: ${REGISTRY}/${OS}
   scripts:
     - git clone --depth=1 --branch=${GIT_TAG} https://github.com/google/googletest.git
-    - mkdir -p ${LT_ROOT_DIR}/build
+    - mkdir -p ${BP_ROOT_DIR}/build
     - > cmake
-        -S ${LT_ROOT_DIR}
-        -B ${LT_ROOT_DIR}/build
+        -S ${BP_ROOT_DIR}
+        -B ${BP_ROOT_DIR}/build
         -DCMAKE_BUILD_TYPE=${BUILD_TYPE}
         -DBUILD_SHARED_LIBS=ON
-        -DCMAKE_INSTALL_PREFIX=${LT_ROOT_DIR}/_usr
-    - cmake --build ${LT_ROOT_DIR}/build --target install
-    - cd ${LT_ROOT_DIR}/_usr
+        -DCMAKE_INSTALL_PREFIX=${BP_ROOT_DIR}/_usr
+    - cmake --build ${BP_ROOT_DIR}/build --target install
+    - cd ${BP_ROOT_DIR}/_usr
     - tar -czvf googletest-${GIT_TAG}-${BUILD_TYPE}-${OS}.tar.gz ./*
