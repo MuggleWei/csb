@@ -1,0 +1,26 @@
+name: Test
+jobs:
+  job0:
+    needs: [job1]
+    steps:
+      - name: echo
+        run: echo "0"
+  job1:
+    steps:
+      - name: echo
+        run: echo "1"
+  job2:
+    needs: [job0, job1]
+    steps:
+      - name: echo
+        run: echo "2"
+  job3:
+    needs: [job1, job4]
+    steps:
+      - name: echo
+        run: echo "3"
+  job4:
+    needs: [job2]
+    steps:
+      - name: echo
+        run: echo "4"

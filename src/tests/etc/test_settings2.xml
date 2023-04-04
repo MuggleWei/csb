@@ -1,0 +1,10 @@
+<!--
+ | artifacts search directories
+ |-->
+<artifacts>
+    <!--
+	 | <path>/path/to/artifacts/search/directory</path>
+     |-->
+	<path>/etc/share/lpb/artifacts</path>
+</artifacts>
+

@@ -10,6 +10,7 @@ class YamlHandle:
 
     def __init__(self):
         self._param = {}
+        self._content = ""
 
     def set_param(self, k, v):
         """
@@ -26,16 +27,17 @@ class YamlHandle:
                 content = f.read()
         except Exception as e:
             logging.error("failed read {}, {}".format(filepath, str(e)))
-            return False
+            return None
 
-        content = self._replace_var_params(content)
-        if content is None:
+        self._content = self._replace_var_params(content)
+        if self._content is None:
             logging.error("failed replace param variables")
-            return False
+            return None
 
-        logging.info("{}".format(content))
+        logging.debug("load yaml file: \n{}".format(self._content))
 
-        return True
+        # parse
+        return yaml.safe_load(self._content)
 
     def _replace_var_params(self, content):
         """

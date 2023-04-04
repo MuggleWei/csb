@@ -16,6 +16,7 @@ doc/compile_commands.json
 .clang-format
 
 ######### build & artifacts #########
+_lpb/
 build/
 artifacts/
 _artifacts/
