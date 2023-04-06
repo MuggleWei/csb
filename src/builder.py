@@ -82,6 +82,9 @@ class Builder:
             - every steps include some action
             - action is command
         """
+        # set current working dir
+        os.chdir(self._working_dir)
+
         jobs = workflow.get("jobs", None)
         if jobs is None:
             logging.debug("workflow without jobs")
@@ -149,7 +152,10 @@ class Builder:
         pos = command.find("cd ")
         if pos != -1:
             chpath = command[pos+2:].strip()
+            if not os.path.isabs(chpath):
+                chpath = os.path.join(os.getcwd(), chpath)
             os.chdir(chpath)
+            return True
 
         p = subprocess.Popen(
             command, shell=True,
