@@ -2,6 +2,8 @@ import datetime
 import getopt
 import logging
 import os
+import re
+import selectors
 import subprocess
 import sys
 
@@ -64,7 +66,14 @@ class Builder:
             return False
 
         # run workflow
-        self.run_workflow(workflow=workflow)
+        workflow_log_path = os.path.join(
+            self._working_dir,
+            "_{}".format(APP_NAME),
+            "{}.{}".format(self._task_name, self._task_id),
+            "workflow.log")
+        with open(workflow_log_path, "w") as f:
+            self._workflow_fp = f
+            self.run_workflow(workflow=workflow)
 
         return True
 
@@ -87,7 +96,88 @@ class Builder:
             logging.error("failed order job")
             return False
         logging.debug("workflow job order: {}".format(", ".join(job_order)))
-        # TODO:
+        for job_name in job_order:
+            logging.debug("run job: {}".format(job_name))
+            job = jobs[job_name]
+            self.run_workflow_job(job=job)
+
+        # reset working dir
+        os.chdir(self._working_dir)
+
+    def run_workflow_job(self, job):
+        """
+        run workflow job
+        :param job: single job
+        """
+        steps = job.get("steps", [])
+        for step in steps:
+            step_name = step.get("name", "")
+            logging.debug("run step: {}".format(step_name))
+            self.run_workflow_step(step=step)
+
+    def run_workflow_step(self, step):
+        """
+        run workflow step
+        """
+        command_str = step.get("run", "")
+        if len(command_str) == 0:
+            return True
+        pattern = re.compile(r'''((?:[^;"']|"[^"]*"|'[^']*')+)''')
+        commands = pattern.split(command_str)
+        for command in commands:
+            command = command.strip()
+            if len(command) == 0:
+                continue
+            if command == ";":
+                continue
+            self.exec_command(command=command)
+
+    def exec_command(self, command):
+        """
+        exec command
+        :param command: exec command
+        """
+        logging.debug("run command: {}".format(command))
+        self._workflow_fp.write("COMMAND|{}\n".format(command))
+
+        pos = command.find("cd ")
+        if pos != -1:
+            chpath = command[pos+2:].strip()
+            os.chdir(chpath)
+
+        p = subprocess.Popen(
+            command, shell=True,
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE)
+        try:
+            # p.communicate()
+            self.exec_subporcess(p)
+        except Exception as e:
+            logging.warning("wait subprocess finish except: {}".format(e))
+            p.terminate()
+            return False
+        return True
+
+    def exec_subporcess(self, p):
+        """
+        exec subporcess
+        :param p: subprocess
+        """
+        sel = selectors.DefaultSelector()
+        sel.register(p.stdout, selectors.EVENT_READ)
+        sel.register(p.stderr, selectors.EVENT_READ)
+        while True:
+            for key, _ in sel.select():
+                # data = key.fileobj.read1().decode()
+                data = key.fileobj.read1().decode()
+                if not data:
+                    return
+                data = data.strip()
+                if key.fileobj is p.stdout:
+                    self._workflow_fp.write("INFO|{}\n".format(data))
+                else:
+                    self._workflow_fp.write("ERROR|{}\n".format(data))
 
     def _sort_jobs(self, jobs):
         """
@@ -385,180 +475,3 @@ class Builder:
             "\n-------- builder variables --------\n"
             "{}".format(vars)
         )
-
-# def parse_args():
-#     if len(sys.argv) == 2 and \
-#             (sys.argv[1] == "--version" or sys.argv[1] == "-v"):
-#         print("{}".format(__version__.__version__))
-#         sys.exit(0)
-#
-#     usage_str = "Usage: {0} -n <name> -t <tag> -o <os>\n" \
-#         "    @param name repository name, e.g. googletest, openssl, etc...\n" \
-#         "    @param tag  repostiory version tag\n" \
-#         "    @param os   OS with version, e.g. ubuntu:22.04, alpine:3.17\n" \
-#         "e.g.\n" \
-#         "    {0} -n googletest -t v1.13.0 -o ubuntu:22.04\n" \
-#         "    {0} -n openssl -t openssl-3.1.0 -o alpine:3.17\n".format(
-#             sys.argv[0])
-#
-#     name = None
-#     tag = None
-#     os_ver = None
-#     res_dir = "./res"
-#     opts, _ = getopt.getopt(
-#         sys.argv[1:], "hn:o:t:r:", ["help", "name", "tag", "os", "res_dir"])
-#     for opt, arg in opts:
-#         if opt in ("-h", "--help"):
-#             print(usage_str)
-#             sys.exit(0)
-#         if opt in ("-n", "--name"):
-#             name = arg
-#         elif opt in ("-t", "--tag"):
-#             tag = arg
-#         elif opt in ("-o", "--os"):
-#             os_ver = arg
-#         elif opt in ("-r", "--res_dir"):
-#             res_dir = arg
-#
-#     if name is None or tag is None or os_ver is None:
-#         print("Input Arguments Error!!!\n{}".format(usage_str))
-#         sys.exit(1)
-#
-#     return name, tag, os_ver, res_dir
-#
-#
-# def exec_subporcess(p):
-#     """
-#     exec subporcess
-#     :param p: subprocess
-#     """
-#     sel = selectors.DefaultSelector()
-#     sel.register(p.stdout, selectors.EVENT_READ)
-#     sel.register(p.stderr, selectors.EVENT_READ)
-#     while True:
-#         for key, _ in sel.select():
-#             data = key.fileobj.read1().decode()
-#             if not data:
-#                 return
-#             if key.fileobj is p.stdout:
-#                 print(data, end="")
-#             else:
-#                 print(data, end="", file=sys.stderr)
-#
-#
-# def exec_command(args):
-#     """
-#     exec command
-#     :param args: command
-#     """
-#     logging.info("start exec \"{}\"".format(" ".join(args)))
-#     p = subprocess.Popen(
-#         args=args,
-#         stdin=subprocess.PIPE,
-#         stdout=subprocess.PIPE,
-#         stderr=subprocess.PIPE)
-#     try:
-#         # p.communicate()
-#         exec_subporcess(p)
-#     except Exception as e:
-#         logging.warning("wait subprocess finish except: {}".format(e))
-#         p.terminate()
-#         return False
-#     logging.info("completed exec \"{}\"".format(" ".join(args)))
-#     return True
-#
-#
-# if __name__ == "__main__":
-#     # parse input arguments
-#     name, tag, os_ver, res_dir = parse_args()
-#
-#     v = os_ver.split(":")
-#     if len(v) != 2:
-#         logging.error("invalid os: {}, expect: <os>:<ver> format".format(
-#             os_ver))
-#         sys.exit(1)
-#     use_os = v[0]
-#     use_os_ver = v[1]
-#
-#     # init log
-#     LogHandle.init_log(
-#         "log/builder.log",
-#         console_level=logging.DEBUG,
-#         file_level=logging.DEBUG,
-#         use_rotate=True)
-#
-#     logging.info("-----------------------------")
-#     logging.info("start build {}-{} in {}".format(name, tag, os_ver))
-#     logging.info("try find res in {}".format(res_dir))
-#
-#     # find meta file
-#     meta_dir = os.path.join(res_dir, name)
-#     meta_filepath = "{}.json".format(os.path.join(meta_dir, name))
-#     if not os.path.exists(meta_filepath):
-#         logging.error("failed found meta file: {}".format(meta_filepath))
-#         sys.exit(1)
-#     else:
-#         logging.info("find meta file: {}".format(meta_filepath))
-#
-#     # load meta file and get yml file path
-#     meta_handle = MetaHandle()
-#     if meta_handle.load(filepath=meta_filepath) is False:
-#         logging.error("failed load meta file, exit")
-#         sys.exit(1)
-#
-#     yml_filepath = meta_handle.get_yml(tag=tag)
-#     logging.info("{}-{} use yml: {}".format(
-#         name, tag, yml_filepath))
-#
-#     # # exec docker build
-#     # registry = "lpb"
-#     # output_tag = "{}/{}:{}-{}{}".format(registry, name, tag, use_os, use_os_ver)
-#     # args = [
-#     #     "docker", "build",
-#     #     "--network=host",
-#     #     "--build-arg", "REGISTRY={}".format(registry),
-#     #     "--build-arg", "OS={}".format(os_ver),
-#     #     "--build-arg", "GIT_REPO={}".format(git_repo),
-#     #     "--build-arg", "GIT_TAG={}".format(tag),
-#     #     "-f", dockerfile,
-#     #     "-t", output_tag,
-#     #     meta_dir
-#     # ]
-#     # ret = exec_command(args=args)
-#     # if ret is False:
-#     #     logging.error("failed exec \"{}\"".format(" ".join(args)))
-#     #     sys.exit(1)
-#
-#     # # get artifacts
-#     # artifacts_dir = "./artifacts"
-#     # if not os.path.exists(artifacts_dir):
-#     #     os.mkdir(artifacts_dir)
-#     # container_name = "{}{}-extract".format(name, tag)
-#
-#     # args = [
-#     #     "docker", "container", "create",
-#     #     "--name", container_name,
-#     #     output_tag
-#     # ]
-#     # ret = exec_command(args=args)
-#     # if ret is False:
-#     #     logging.error("failed exec \"{}\"".format(" ".join(args)))
-#     #     sys.exit(1)
-#
-#     # args = [
-#     #     "docker", "container", "cp",
-#     #     "{}:/opt/{}/{}-{}.tar.gz".format(container_name, name, name, tag),
-#     #     os.path.join(artifacts_dir, "{}-{}-{}.tar.gz".format(name, tag, os_ver))
-#     # ]
-#     # if not exec_command(args=args):
-#     #     logging.error("failed exec \"{}\"".format(" ".join(args)))
-#     #     sys.exit(1)
-#
-#     # args = [
-#     #     "docker", "container", "rm",
-#     #     container_name
-#     # ]
-#     # ret = exec_command(args=args)
-#     # if ret is False:
-#     #     logging.error("failed exec \"{}\"".format(" ".join(args)))
-#     #     sys.exit(1)
