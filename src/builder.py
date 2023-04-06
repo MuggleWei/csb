@@ -307,6 +307,7 @@ class Builder:
         cfg.working_dir = self._expand_path(cfg.working_dir)
         for i in range(len(cfg.art_search_dir)):
             cfg.art_search_dir[i] = self._expand_path(cfg.art_search_dir[i])
+        cfg.output_dir = self._expand_path(cfg.output_dir)
 
         return cfg
 
