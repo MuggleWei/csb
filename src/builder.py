@@ -66,16 +66,12 @@ class Builder:
             return False
 
         # run workflow
-        workflow_log_path = os.path.join(
-            self._working_dir,
-            "_{}".format(APP_NAME),
-            "{}.{}".format(self._task_name, self._task_id),
-            "workflow.log")
+        workflow_log_path = os.path.join(self._task_dir, "workflow.log")
         with open(workflow_log_path, "w") as f:
             self._workflow_fp = f
-            self.run_workflow(workflow=workflow)
+            ret = self.run_workflow(workflow=workflow)
 
-        return True
+        return ret
 
     def run_workflow(self, workflow):
         """
@@ -96,13 +92,19 @@ class Builder:
             logging.error("failed order job")
             return False
         logging.debug("workflow job order: {}".format(", ".join(job_order)))
+
+        ret = True
         for job_name in job_order:
             logging.debug("run job: {}".format(job_name))
             job = jobs[job_name]
-            self.run_workflow_job(job=job)
+            if self.run_workflow_job(job=job) is False:
+                ret = False
+                break
 
         # reset working dir
         os.chdir(self._working_dir)
+
+        return ret
 
     def run_workflow_job(self, job):
         """
@@ -113,7 +115,9 @@ class Builder:
         for step in steps:
             step_name = step.get("name", "")
             logging.debug("run step: {}".format(step_name))
-            self.run_workflow_step(step=step)
+            if self.run_workflow_step(step=step) is False:
+                return False
+        return True
 
     def run_workflow_step(self, step):
         """
@@ -130,7 +134,9 @@ class Builder:
                 continue
             if command == ";":
                 continue
-            self.exec_command(command=command)
+            if self.exec_command(command=command) is False:
+                return False
+        return True
 
     def exec_command(self, command):
         """
@@ -151,8 +157,12 @@ class Builder:
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE)
         try:
-            # p.communicate()
             self.exec_subporcess(p)
+            p.communicate()
+            if p.returncode is not None and p.returncode != 0:
+                logging.error("failed exec: {}, ret code: {}".format(
+                    command, p.returncode))
+                return False
         except Exception as e:
             logging.warning("wait subprocess finish except: {}".format(e))
             p.terminate()
@@ -169,14 +179,13 @@ class Builder:
         sel.register(p.stderr, selectors.EVENT_READ)
         while True:
             for key, _ in sel.select():
-                # data = key.fileobj.read1().decode()
                 data = key.fileobj.read1().decode()
                 if not data:
                     return
                 data = data.strip()
                 if key.fileobj is p.stdout:
                     self._workflow_fp.write("INFO|{}\n".format(data))
-                else:
+                elif key.fileobj is p.stderr:
                     self._workflow_fp.write("ERROR|{}\n".format(data))
 
     def _sort_jobs(self, jobs):
@@ -240,12 +249,7 @@ class Builder:
 
         os.makedirs(self._output_dir, exist_ok=True)
         LogHandle.init_log(
-            os.path.join(
-                self._working_dir,
-                "_{}".format(APP_NAME),
-                "{}.{}".format(self._task_name, self._task_id),
-                "log",
-                "build.log"),
+            os.path.join(self._task_dir, "log", "build.log"),
             console_level=logging.DEBUG,
             file_level=logging.DEBUG,
             use_rotate=False)
@@ -358,13 +362,15 @@ class Builder:
                     continue
                 self._params[kv[0]] = kv[1]
 
+        # set task dir
+        self._task_dir = os.path.join(
+            self._working_dir,
+            "_{}".format(APP_NAME),
+            "{}.{}".format(self._task_name, self._task_id))
+
         # set output dir
         if len(cfg.output_dir) == 0:
-            self._output_dir = os.path.join(
-                self._working_dir,
-                "_{}".format(APP_NAME),
-                "{}.{}".format(self._task_name, self._task_id),
-                "output")
+            self._output_dir = os.path.join(self._task_dir, "output")
         else:
             self._output_dir = cfg.output_dir
 
@@ -386,6 +392,7 @@ class Builder:
 
         self._var_dict = {
             "ROOT_DIR": self._working_dir,
+            "TASK_DIR": self._task_dir,
             "OUTPUT_DIR": self._output_dir,
             "FILE_DIR": os.path.dirname(self._cfg_file_path),
             "TASK_NAME": self._task_name,

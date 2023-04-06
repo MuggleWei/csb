@@ -37,6 +37,8 @@ jobs:
           echo "LPB_OUTPUT_DIR: ${LPB_OUTPUT_DIR}";
           cd ${LPB_OUTPUT_DIR};
           echo "current dir: $(pwd)";
+          cd ${LPB_TASK_DIR};
+          echo "current dir: $(pwd)";
   job4:
     needs: [job2]
     steps:
