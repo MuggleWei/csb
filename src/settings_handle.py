@@ -14,8 +14,8 @@ class SettingsHandle:
         initialize settings handle
         """
         self.art_search_path = []
-        self.log_console_level = "info"
-        self.log_file_level = "debug"
+        self.log_console_level = ""
+        self.log_file_level = ""
 
     def load(self, filepath):
         """
@@ -54,7 +54,9 @@ class SettingsHandle:
         """
         load log config
         """
-        if node_log.hasAttribute("console_level"):
+        if len(self.log_console_level) == 0 and \
+                node_log.hasAttribute("console_level"):
             self.log_console_level = node_log.getAttribute("console_level")
-        if node_log.hasAttribute("file_level"):
+        if len(self.log_file_level) == 0 and \
+                node_log.hasAttribute("file_level"):
             self.log_file_level = node_log.getAttribute("file_level")

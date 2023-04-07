@@ -1,0 +1,25 @@
+name: deps
+variables:
+  - foo: hello foo
+jobs:
+  package:
+    needs: [build]
+    steps:
+      - name: package
+        run: >
+          tar -czvf hello.tar.gz hello.sh;
+          mv hello.tar.gz ${LPB_OUTPUT_DIR};
+  build:
+    steps:
+      - name: prepare
+        run: >
+          cd ${LPB_TASK_DIR};
+          echo "Downloading source code";
+      - name: build
+        run: >
+          echo "start compile";
+          echo "compiling ...";
+          echo "#!/bin/bash" >> hello.sh;
+          echo "echo ${foo}" >> hello.sh;
+          chmod u+x hello.sh;
+          echo "mission completed";

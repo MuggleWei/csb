@@ -51,6 +51,9 @@ class Builder:
         if self._init(args=args) is False:
             return False
 
+        logging.info("{} builder run task {}.{}".format(
+            APP_NAME, self._task_name, self._task_id))
+
         # load yaml file and replace param variables
         yaml_handle = YamlHandle()
         workflow = yaml_handle.load(self._cfg_file_path)
@@ -123,7 +126,7 @@ class Builder:
 
         ret = True
         for job_name in job_order:
-            logging.debug("run job: {}".format(job_name))
+            logging.info("run job: {}".format(job_name))
             job = jobs[job_name]
             if self.run_workflow_job(job=job) is False:
                 ret = False
@@ -182,6 +185,7 @@ class Builder:
         pos = command.find("cd ")
         if pos != -1:
             chpath = command[pos+2:].strip()
+            chpath = chpath.strip("\"")
             if not os.path.isabs(chpath):
                 chpath = os.path.join(os.getcwd(), chpath)
             os.chdir(chpath)
@@ -221,8 +225,10 @@ class Builder:
                 data = data.strip()
                 if key.fileobj is p.stdout:
                     self._workflow_fp.write("INFO|{}\n".format(data))
+                    self._command_logger.info("{}".format(data))
                 elif key.fileobj is p.stderr:
                     self._workflow_fp.write("ERROR|{}\n".format(data))
+                    self._command_logger.error("{}".format(data))
 
     def _load_yml_vars(self, variables):
         """
@@ -235,6 +241,10 @@ class Builder:
                 if v is None:
                     logging.error("failed load variable: {}".format(variable))
                     return False
+                if k in self._var_replace_dict:
+                    logging.debug(
+                        "{} already in var replace dict, ignore".format(k))
+                    continue
                 logging.debug("add variable: {}={}".format(k, v))
                 self._yml_var_dict[k] = v
                 self._var_replace_dict[k] = v
@@ -365,6 +375,11 @@ class Builder:
             console_level=console_log_level,
             file_level=file_log_level,
             use_rotate=False)
+
+        self._command_logger = logging.getLogger("command")
+        self._command_logger.propagate = False
+        self._command_logger.setLevel(logging.INFO)
+        self._command_logger.addHandler(logging.StreamHandler())
 
         os.chdir(self._working_dir)
 
