@@ -10,7 +10,7 @@ else
 fi
 
 lpb build \
-	-c etc/metas/googletest/googletest.yml \
-	-p GIT_TAG=v1.13.0 \
+	-c etc/metas/mugglec/mugglec.yml \
+	-p GIT_TAG=v1.0.0 \
 	-p BUILD_TYPE=$BUILD_TYPE \
 	-o ./artifacts

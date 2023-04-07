@@ -39,6 +39,9 @@ jobs:
           echo "current dir: $(pwd)";
           cd ${LPB_TASK_DIR};
           echo "current dir: $(pwd)";
+          echo "a-" \
+            "b-" \
+            "c-";
   job4:
     needs: [job2]
     steps:
