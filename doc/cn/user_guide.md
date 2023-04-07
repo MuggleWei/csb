@@ -197,7 +197,8 @@ hello.sh
 * 每个配置文件包含一个 workflow, 它有下面几个属性
 	* name: workflow 的名称
 	* variables: 用于在配置文件中自定义变量
-	* artifacts: 指定制品的基本信息
+	* source: 指定源码信息
+	* artifacts: 指定制品信息
 	* jobs: workflow 要执行的任务列表, 包含了一系列的 job
 * 每个 job 的名称可以随意取, 但不要重复, job 包含了以下属性
 	* needs: 本任务所依赖的任务列表
