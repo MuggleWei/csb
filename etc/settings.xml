@@ -1,10 +1,21 @@
-<!--
- | artifacts search directories
- |-->
-<artifacts>
+<LBP>
+
     <!--
-	 | <path>/path/to/artifacts/search/directory</path>
-     |-->
-    <path>${HOME}/.lpb/artifacts</path>
-	<path>${HOME}/.local/share/lpb/artifacts</path>
-</artifacts>
+     log config
+     :param console_level: console output log level
+     :param file_level: file output log level
+    -->
+	<log console_level="info" file_level="debug" />
+    
+    <!--
+     artifacts search directories
+    -->
+    <artifacts>
+        <!--
+    	 <path>/path/to/artifacts/search/directory</path>
+         -->
+        <path>${HOME}/.lpb/artifacts</path>
+    	<path>${HOME}/.local/share/lpb/artifacts</path>
+    </artifacts>
+
+</LBP>

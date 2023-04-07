@@ -93,6 +93,9 @@ class Builder:
                 logging.error("failed load yaml variable info")
                 return False
 
+        # output all variables
+        self._output_args()
+
         # load artifacts info
         self._art_owner = None
         self._art_repo = None
@@ -159,12 +162,12 @@ class Builder:
                 continue
             if command == ";":
                 continue
-            logging.debug("run command: {}".format(command))
-            command = self._replace_variable(command)
-            if command is None:
-                logging.error("failed replace variable in {}".format(command))
+            logging.info("run command: {}".format(command))
+            real_command = self._replace_variable(command)
+            if real_command is None:
+                logging.error("failed replace variable in: {}".format(command))
                 return False
-            if self.exec_command(command=command) is False:
+            if self.exec_command(command=real_command) is False:
                 return False
         return True
 
@@ -332,7 +335,7 @@ class Builder:
         ]
         for filepath in settings_path:
             if os.path.exists(filepath):
-                logging.debug("load default settings: {}".format(filepath))
+                print("load default settings: {}".format(filepath))
                 self._settings_handle.load(filepath=filepath)
 
     def _init(self, args):
@@ -347,21 +350,26 @@ class Builder:
             return False
 
         os.makedirs(self._output_dir, exist_ok=True)
-        LogHandle.init_log(
-            os.path.join(self._task_dir, "log", "build.log"),
-            console_level=logging.DEBUG,
-            file_level=logging.DEBUG,
-            use_rotate=False)
 
         self._load_default_settings()
         self._art_search_path.extend(self._settings_handle.art_search_path)
+
+        console_log_level = LogHandle.log_level(
+            self._settings_handle.log_console_level
+        )
+        file_log_level = LogHandle.log_level(
+            self._settings_handle.log_file_level
+        )
+        LogHandle.init_log(
+            os.path.join(self._task_dir, "log", "build.log"),
+            console_level=console_log_level,
+            file_level=file_log_level,
+            use_rotate=False)
 
         os.chdir(self._working_dir)
 
         if self._set_vars() is False:
             return False
-
-        self._output_args()
 
         return True
 
@@ -574,11 +582,26 @@ class Builder:
             )
         )
 
-        vars = ""
+        s = ""
         for k, v in self._var_dict.items():
-            vars = vars + "{}_{}={}\n".format(APP_NAME.upper(), k, v)
-
+            s = s + "{}_{}={}\n".format(APP_NAME.upper(), k, v)
         logging.debug(
-            "\n-------- builder variables --------\n"
-            "{}".format(vars)
+            "\n-------- builder inner variables --------\n"
+            "{}".format(s)
+        )
+
+        s = ""
+        for k, v in self._params.items():
+            s = s + "{}={}\n".format(k, v)
+        logging.debug(
+            "\n-------- builder user input variables --------\n"
+            "{}".format(s)
+        )
+
+        s = ""
+        for k, v in self._yml_var_dict.items():
+            s = s + "{}={}\n".format(k, v)
+        logging.debug(
+            "\n-------- builder user yaml variables --------\n"
+            "{}".format(s)
         )

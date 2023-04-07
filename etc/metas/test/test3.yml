@@ -18,7 +18,7 @@ jobs:
           echo "before build";
           echo "#!/bin/bash" >> hello.sh;
           echo "" >> hello.sh;
-          echo "echo \"hello\"" >> hello.sh;
+          echo "echo \"${ECHO_CONTENT}\"" >> hello.sh;
           chmod u+x hello.sh;
           echo "after build";
   deploy:
