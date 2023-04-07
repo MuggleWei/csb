@@ -1,0 +1,27 @@
+name: Hello
+variables:
+  - repo_name: test_repo
+  - art_ver: v1.0.0
+  - art_name: ${repo_name}-${art_ver}
+artifacts:
+  owner: mugglewei
+  repo: ${repo_name}
+  version: ${art_ver}
+jobs:
+  build:
+    steps:
+      - name: build
+        run: >
+          cd ${LPB_TASK_DIR};
+          echo "before build";
+          echo "#!/bin/bash" >> hello.sh;
+          echo "" >> hello.sh;
+          echo "echo \"hello\"" >> hello.sh;
+          chmod u+x hello.sh;
+          echo "after build";
+  deploy:
+    steps:
+      - name: package
+        run: >
+          tar -czvf ${art_name}.tar.gz ./hello.sh;
+          mv ${art_name}.tar.gz ${LPB_OUTPUT_DIR};

@@ -53,11 +53,14 @@ class Builder:
 
         # load yaml file and replace param variables
         yaml_handle = YamlHandle()
-        for k, v in self._var_dict.items():
-            var_name = "{}_{}".format(APP_NAME.upper(), k)
-            yaml_handle.set_param(var_name, v)
-        for k, v in self._params.items():
-            yaml_handle.set_param(k, v)
+
+        # NOTE: Don't replace variable in YamlHandle, replace in builder
+        # for k, v in self._var_dict.items():
+        #     var_name = "{}_{}".format(APP_NAME.upper(), k)
+        #     yaml_handle.set_param(var_name, v)
+        # for k, v in self._params.items():
+        #     yaml_handle.set_param(k, v)
+
         workflow = yaml_handle.load(self._cfg_file_path)
         if workflow is None:
             logging.error("failed get workflow")
@@ -83,6 +86,21 @@ class Builder:
         # set current working dir
         os.chdir(self._working_dir)
 
+        # prepare variable replace dict
+        self._var_replace_dict = {}
+        for k, v in self._var_dict.items():
+            var_name = "{}_{}".format(APP_NAME.upper(), k)
+            self._var_replace_dict[var_name] = v
+        for k, v in self._params.items():
+            self._var_replace_dict[k] = v
+
+        self._yml_var_dict = {}
+        yaml_vars = workflow.get("variables", None)
+        if yaml_vars is not None:
+            if self._load_yml_vars(variables=yaml_vars) is False:
+                return False
+
+        # get jobs
         jobs = workflow.get("jobs", None)
         if jobs is None:
             logging.debug("workflow without jobs")
@@ -135,6 +153,11 @@ class Builder:
                 continue
             if command == ";":
                 continue
+            logging.debug("run command: {}".format(command))
+            command = self._replace_variable(command)
+            if command is None:
+                logging.error("failed replace variable in {}".format(command))
+                return False
             if self.exec_command(command=command) is False:
                 return False
         return True
@@ -144,7 +167,7 @@ class Builder:
         exec command
         :param command: exec command
         """
-        logging.debug("run command: {}".format(command))
+        logging.debug("exec command: {}".format(command))
         self._workflow_fp.write("COMMAND|{}\n".format(command))
 
         pos = command.find("cd ")
@@ -191,6 +214,41 @@ class Builder:
                     self._workflow_fp.write("INFO|{}\n".format(data))
                 elif key.fileobj is p.stderr:
                     self._workflow_fp.write("ERROR|{}\n".format(data))
+
+    def _load_yml_vars(self, variables):
+        """
+        load arguments in yml args
+        """
+        for variable in variables:
+            logging.debug("load variables in yml: {}".format(variable))
+            for k, v in variable.items():
+                v = self._replace_variable(v)
+                if v is None:
+                    logging.error("failed load variable: {}".format(variable))
+                    return False
+                logging.debug("add variable: {}={}".format(k, v))
+                self._yml_var_dict[k] = v
+                self._var_replace_dict[k] = v
+        return True
+
+    def _replace_variable(self, content):
+        """
+        replace variable in content
+        :param content: content string
+        """
+        finds = re.findall(r'\${\w+}', content)
+        finds_set = set(finds)
+        if len(finds_set) == 0:
+            return content
+        for var in finds_set:
+            var_name = var[2:-1]
+            if var_name not in self._var_replace_dict:
+                logging.error("failed find variable value: {}".format(var_name))
+                return None
+            logging.debug("replace {} -> {}".format(
+                var, self._var_replace_dict[var_name]))
+            content = content.replace(var, self._var_replace_dict[var_name])
+        return content
 
     def _sort_jobs(self, jobs):
         """

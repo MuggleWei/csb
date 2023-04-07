@@ -1,7 +1,7 @@
 name: Hello
 jobs:
   job0:
-    needs: []
+    needs: [job1]
     steps:
       - name: echo
         run: >
