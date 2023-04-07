@@ -3,10 +3,12 @@ variables:
   - repo_name: test_repo
   - art_ver: v1.0.0
   - art_name: ${repo_name}-${art_ver}
+  - art_pkg: ${art_name}.tar.gz
 artifacts:
   owner: mugglewei
   repo: ${repo_name}
   version: ${art_ver}
+  pkg: ${art_pkg}
 jobs:
   build:
     steps:
@@ -23,5 +25,5 @@ jobs:
     steps:
       - name: package
         run: >
-          tar -czvf ${art_name}.tar.gz ./hello.sh;
-          mv ${art_name}.tar.gz ${LPB_OUTPUT_DIR};
+          tar -czvf ${art_pkg} ./hello.sh;
+          mv ${art_pkg} ${LPB_OUTPUT_DIR};

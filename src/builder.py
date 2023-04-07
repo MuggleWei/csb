@@ -53,14 +53,6 @@ class Builder:
 
         # load yaml file and replace param variables
         yaml_handle = YamlHandle()
-
-        # NOTE: Don't replace variable in YamlHandle, replace in builder
-        # for k, v in self._var_dict.items():
-        #     var_name = "{}_{}".format(APP_NAME.upper(), k)
-        #     yaml_handle.set_param(var_name, v)
-        # for k, v in self._params.items():
-        #     yaml_handle.set_param(k, v)
-
         workflow = yaml_handle.load(self._cfg_file_path)
         if workflow is None:
             logging.error("failed get workflow")
@@ -98,7 +90,21 @@ class Builder:
         yaml_vars = workflow.get("variables", None)
         if yaml_vars is not None:
             if self._load_yml_vars(variables=yaml_vars) is False:
+                logging.error("failed load yaml variable info")
                 return False
+
+        # load artifacts info
+        self._art_owner = None
+        self._art_repo = None
+        self._art_ver = None
+        self._art_pkg = None
+        yaml_artifacts = workflow.get("artifacts", None)
+        if yaml_artifacts is not None:
+            if self._load_yml_art_info(artifacts=yaml_artifacts) is False:
+                logging.error("failed load yaml artifacts info")
+                return False
+
+        # TODO: search artifacts to see if we need to continue build
 
         # get jobs
         jobs = workflow.get("jobs", None)
@@ -229,6 +235,37 @@ class Builder:
                 logging.debug("add variable: {}={}".format(k, v))
                 self._yml_var_dict[k] = v
                 self._var_replace_dict[k] = v
+        return True
+
+    def _load_yml_art_info(self, artifacts):
+        """
+        load artifacts information
+        """
+        for k, v in artifacts.items():
+            logging.debug("load artifacts info in yml: {}={}".format(k, v))
+            v = self._replace_variable(v)
+            if v is None:
+                logging.error("failed load artifacts info: {}".format(k))
+                return False
+
+            k_is_valid = False
+            if k == "owner":
+                self._art_owner = v
+                k_is_valid = True
+            elif k == "repo":
+                self._art_repo = v
+                k_is_valid = True
+            elif k == "version":
+                self._art_ver = v
+                k_is_valid = True
+            elif k == "pkg":
+                self._art_pkg = v
+                k_is_valid = True
+
+            if k_is_valid is False:
+                logging.error("unrecognizable artifacts info key: {}".format(k))
+                return False
+            logging.debug("add artifacts info: artifacts.{}={}".format(k, v))
         return True
 
     def _replace_variable(self, content):
