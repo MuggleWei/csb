@@ -1,0 +1,17 @@
+name: Hello
+jobs:
+  job0:
+    needs: []
+    steps:
+      - name: echo
+        run: >
+          echo "before echo";
+          echo "0";
+          echo "after echo";
+  job1:
+    steps:
+      - name: echo
+        run: >
+          echo "before echo";
+          echo "1";
+          echo "after echo";

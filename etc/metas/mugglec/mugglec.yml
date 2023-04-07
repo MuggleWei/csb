@@ -2,9 +2,9 @@ name: Local Build
 jobs:
   build:
     steps:
-      - name: prepare
+      - name: download
         run: >
-          cd ${LPB_OUTPUT_DIR};
+          cd ${LPB_TASK_DIR};
           mkdir -p deps;
           mkdir -p build;
           mkdir -p usr;

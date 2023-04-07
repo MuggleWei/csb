@@ -22,7 +22,6 @@ class BuilderConfig:
         self.config_path = ""
         self.task_id = ""
         self.task_name = ""
-        self.force_override = True
         self.output_dir = ""
 
 
@@ -40,8 +39,7 @@ class Builder:
             "    , --task-id string    [OPTIONAL] build task id, if empty, set 'yyyymmddHHMMSSxxxx' as task-id\n" \
             "    , --work-dir string   [OPTIONAL] working directory(by default, use current working directory)\n" \
             "    , --art-dir list      [OPTIONAL] artifacts search directory, e.g. --art-dir=file://~/.local/\n" \
-            "  -p, --params list       [OPTIONAL] build parameters, e.g. --params foo=123 -p bar=456\n" \
-            "    , --override bool     [OPTIONAL] if build directory already exists, override or exit\n" \
+            "  -p, --param list        [OPTIONAL] build parameters, e.g. --params foo=123 -p bar=456\n" \
             "  -o, --output-dir string [OPTIONAL] output directory\n" \
             "".format(APP_NAME)
 
@@ -263,12 +261,12 @@ class Builder:
         self._load_default_settings()
         self._art_search_path.extend(self._settings_handle.art_search_path)
 
+        os.chdir(self._working_dir)
+
         if self._set_vars() is False:
             return False
 
         self._output_args()
-
-        os.chdir(self._working_dir)
 
         return True
 
@@ -281,7 +279,7 @@ class Builder:
             args, "hc:p:o:",
             [
                 "help", "config=", "task-name=", "task-id=",
-                "work-dir=", "art-dir=", "params=", "output-dir="
+                "work-dir=", "art-dir=", "param=", "output-dir="
             ]
         )
         for opt, arg in opts:
@@ -298,7 +296,7 @@ class Builder:
                 cfg.working_dir = arg
             elif opt in ("--art-dir"):
                 cfg.art_search_dir.append(arg)
-            elif opt in ("-p", "--params"):
+            elif opt in ("-p", "--param"):
                 cfg.params.append(arg)
             elif opt in ("-o", "--output-dir"):
                 cfg.output_dir = arg
