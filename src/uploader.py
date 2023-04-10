@@ -1,4 +1,3 @@
-
 import getopt
 import os
 import shutil
