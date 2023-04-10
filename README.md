@@ -2,7 +2,7 @@
 * [readme 中文](./README_cn.md)
 
 # HPB
-HPB(local package builder) is an auxiliary tools for local pacakge building, which can be used as a local executor for CI, or an auxiliary tool for locally compiling source code.
+HPB(happy package builder) is an auxiliary tools for local pacakge building, which can be used as a local executor for CI, or an auxiliary tool for locally compiling source code.
 
 ## help
 Use `hpb -h` to show help doc, currently `hpb` supports the following subcommands
