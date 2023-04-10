@@ -277,7 +277,7 @@ class Builder:
                 logging.error("failed download source")
                 return False
 
-        # set LPB_SOURCE_PATH
+        # set HPB_SOURCE_PATH
         self._var_dict["SOURCE_PATH"] = self._source_path
         source_replace_k = "{}_SOURCE_PATH".format(APP_NAME.upper())
         self._var_replace_dict[source_replace_k] = self._source_path

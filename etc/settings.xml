@@ -1,4 +1,4 @@
-<LBP>
+<HPB>
 
     <!--
      log config
@@ -14,7 +14,7 @@
         <!--
          <path>/path/to/source/download/directory</path>
         -->
-        <path>${HOME}/.lpb/sources</path>
+        <path>${HOME}/.hpb/sources</path>
     </sources>
     
     <!--
@@ -24,13 +24,13 @@
         <!--
     	 <search>/path/to/artifacts/search/directory</search>
         -->
-        <search>${HOME}/.lpb/artifacts</search>
-    	<search>${HOME}/.local/share/lpb/artifacts</search>
+        <search>${HOME}/.hpb/artifacts</search>
+    	<search>${HOME}/.local/share/hpb/artifacts</search>
 
         <!--
          <upload>/path/to/artifacts/upload/directory</upload>
         -->
-        <upload>${HOME}/.lpb/artifacts</upload>
+        <upload>${HOME}/.hpb/artifacts</upload>
     </artifacts>
 
-</LBP>
+</HPB>

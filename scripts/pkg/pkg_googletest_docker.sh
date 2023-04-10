@@ -10,7 +10,7 @@ else
 fi
 
 GIT_TAG=v1.13.0
-REGISTRY=lpb
+REGISTRY=hpb
 OUTPUT_DIR=artifacts
 SOURCE_DIR=artifacts/src
 
@@ -23,7 +23,7 @@ if [ ! -d ${SOURCE_DIR}/googletest ]; then
 		${SOURCE_DIR}/googletest
 fi
 
-lpb build \
+hpb build \
 	-c etc/metas/googletest/googletest.docker.yml \
 	-p SOURCE_DIR=${SOURCE_DIR} \
 	-p GIT_TAG=${GIT_TAG} \
@@ -33,7 +33,7 @@ lpb build \
 	-p OS_VER=22.04 \
 	-o ${OUTPUT_DIR}
 
-lpb build \
+hpb build \
 	-c etc/metas/googletest/googletest.docker.yml \
 	-p SOURCE_DIR=${SOURCE_DIR} \
 	-p GIT_TAG=${GIT_TAG} \

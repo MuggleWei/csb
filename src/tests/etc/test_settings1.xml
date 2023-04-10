@@ -5,6 +5,6 @@
     <!--
 	 | <path>/path/to/artifacts/search/directory</path>
      |-->
-    <path>${HOME}/.lpb/artifacts</path>
-	<path>${HOME}/.local/share/lpb/artifacts</path>
+    <path>${HOME}/.hpb/artifacts</path>
+	<path>${HOME}/.local/share/hpb/artifacts</path>
 </artifacts>

@@ -8,12 +8,12 @@ jobs:
       - name: package
         run: >
           tar -czvf hello.tar.gz hello.sh;
-          mv hello.tar.gz ${LPB_OUTPUT_DIR};
+          mv hello.tar.gz ${HPB_OUTPUT_DIR};
   build:
     steps:
       - name: prepare
         run: >
-          cd ${LPB_TASK_DIR};
+          cd ${HPB_TASK_DIR};
           echo "Downloading source code";
       - name: build
         run: >

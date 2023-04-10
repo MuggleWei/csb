@@ -5,6 +5,6 @@
     <!--
 	 | <path>/path/to/artifacts/search/directory</path>
      |-->
-	<path>/etc/share/lpb/artifacts</path>
+	<path>/etc/share/hpb/artifacts</path>
 </artifacts>
 

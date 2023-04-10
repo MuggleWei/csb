@@ -9,7 +9,7 @@ else
 	BUILD_TYPE=$(echo $1 | tr '[:upper:]' '[:lower:]')
 fi
 
-lpb build \
+hpb build \
 	-c etc/metas/googletest/googletest.yml \
 	-p GIT_TAG=v1.13.0 \
 	-p BUILD_TYPE=$BUILD_TYPE \

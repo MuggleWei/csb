@@ -33,11 +33,11 @@ jobs:
           echo "after echo";
           echo " try ; and ';' and \"aaa\"";
           echo "current dir: $(pwd)";
-          echo "LPB_ROOT_DIR: ${LPB_ROOT_DIR}";
-          echo "LPB_OUTPUT_DIR: ${LPB_OUTPUT_DIR}";
-          cd ${LPB_OUTPUT_DIR};
+          echo "HPB_ROOT_DIR: ${HPB_ROOT_DIR}";
+          echo "HPB_OUTPUT_DIR: ${HPB_OUTPUT_DIR}";
+          cd ${HPB_OUTPUT_DIR};
           echo "current dir: $(pwd)";
-          cd ${LPB_TASK_DIR};
+          cd ${HPB_TASK_DIR};
           echo "current dir: $(pwd)";
           echo "a-" \
             "b-" \

@@ -21,8 +21,8 @@ fi
 
 pip install -r requirements.dev.txt
 
-pyinstaller -F src/main.py --distpath dist/lpb -n lpb
-cp -r ./etc dist/lpb/
-cp -r ./scripts dist/lpb/
-cp ./README.md dist/lpb/
-cp ./README_cn.md dist/lpb/
+pyinstaller -F src/main.py --distpath dist/hpb -n hpb
+cp -r ./etc dist/hpb/
+cp -r ./scripts dist/hpb/
+cp ./README.md dist/hpb/
+cp ./README_cn.md dist/hpb/

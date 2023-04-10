@@ -113,7 +113,7 @@ class Searcher:
 
     def _is_cfg_file(self, filename: str):
         """
-        check file is lpb config file
+        check file is hpb config file
         :param filename: filename without dir
         """
         return filename.endswith(".yml") or filename.endswith(".yaml")

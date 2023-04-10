@@ -14,7 +14,7 @@ jobs:
     steps:
       - name: build
         run: >
-          cd ${LPB_TASK_DIR};
+          cd ${HPB_TASK_DIR};
           echo "before build";
           echo "#!/bin/bash" >> hello.sh;
           echo "" >> hello.sh;
@@ -26,4 +26,4 @@ jobs:
       - name: package
         run: >
           tar -czvf ${art_pkg} ./hello.sh;
-          mv ${art_pkg} ${LPB_OUTPUT_DIR};
+          mv ${art_pkg} ${HPB_OUTPUT_DIR};

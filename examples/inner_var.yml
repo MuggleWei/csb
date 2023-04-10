@@ -4,8 +4,8 @@ jobs:
     steps:
       - name: step1
         run: >
-          echo "${LPB_ROOT_DIR}";
+          echo "${HPB_ROOT_DIR}";
           echo "$(pwd)";
-          echo "${LPB_TASK_DIR}";
-          cd "${LPB_TASK_DIR}";
+          echo "${HPB_TASK_DIR}";
+          cd "${HPB_TASK_DIR}";
           echo "$(pwd)";

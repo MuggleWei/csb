@@ -22,15 +22,15 @@ jobs:
     steps:
       - name: build
         run: >
-          cd ${LPB_TASK_DIR};
+          cd ${HPB_TASK_DIR};
           mkdir -p build;
           mkdir -p usr;
           cmake \
-            -S ${LPB_SOURCE_PATH} \
+            -S ${HPB_SOURCE_PATH} \
             -B build \
             -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
             -DBUILD_SHARED_LIBS=ON \
-            -DCMAKE_INSTALL_PREFIX=${LPB_TASK_DIR}/usr;
+            -DCMAKE_INSTALL_PREFIX=${HPB_TASK_DIR}/usr;
   package:
     needs: [build]
     steps:
@@ -44,11 +44,11 @@ jobs:
     steps:
       - name: upload
         run: >
-          lpb upload \
+          hpb upload \
             -p ${pkg_name}.tar.gz \
-            -c ${LPB_FILE_PATH} \
+            -c ${HPB_FILE_PATH} \
             --owner ${owner} \
             --repo ${repo_name} \
             --ver ${GIT_TAG} \
             --build-type ${BUILD_TYPE};
-          mv ${pkg_name}.tar.gz ${LPB_OUTPUT_DIR};
+          mv ${pkg_name}.tar.gz ${HPB_OUTPUT_DIR};

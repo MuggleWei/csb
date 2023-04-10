@@ -25,14 +25,14 @@ jobs:
     steps:
       - name: build
         run: >
-          cd ${LPB_TASK_DIR};
+          cd ${HPB_TASK_DIR};
           mkdir -p build;
           mkdir -p usr;
           cmake \
-            -S ${LPB_SOURCE_PATH} -B build \
+            -S ${HPB_SOURCE_PATH} -B build \
             -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
             -DBUILD_SHARED_LIBS=ON \
-            -DCMAKE_PREFIX_PATH=${LPB_TEST_DEPS_DIR};${LPB_DEPS_DIR} \
+            -DCMAKE_PREFIX_PATH=${HPB_TEST_DEPS_DIR};${HPB_DEPS_DIR} \
             -DCMAKE_INSTALL_PREFIX=./usr;
       - name: test
         run: >
@@ -45,11 +45,11 @@ jobs:
     steps:
       - name: package
         run: >
-          cd ${LPB_TASK_DIR}/usr;
+          cd ${HPB_TASK_DIR}/usr;
           tar -czvf ${pkg_name}.tar.gz ./*;
-          lpb push \
-            --owner ${LPB_ART_OWNER} \
-            --name ${LPB_ART_NAME} \
-            --tag ${LPB_ART_TAG} \
+          hpb push \
+            --owner ${HPB_ART_OWNER} \
+            --name ${HPB_ART_NAME} \
+            --tag ${HPB_ART_TAG} \
             --pkg ${pkg_name}.tar.gz;
 ```
