@@ -258,6 +258,15 @@ class Builder:
         prepare source
         :param workflow: workflow
         """
+        if len(self._settings_handle.source_path) == 0:
+            self._settings_handle.source_path = os.path.join(
+                self._working_dir,
+                "_{}".format(APP_NAME),
+                "sources"
+            )
+        if not os.path.exists(self._settings_handle.source_path):
+            os.makedirs(self._settings_handle.source_path, exist_ok=True)
+
         self._src_owner = ""
         self._src_repo = ""
         self._src_tag = ""
