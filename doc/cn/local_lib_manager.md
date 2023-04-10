@@ -16,10 +16,6 @@ source:
   repo_kind: git
   repo_url: ${git_url}
   git_depth: 1
-artifacts:
-  owner: mugglewei
-  name: ${repo_name}
-  tag: ${GIT_TAG}
 test_deps:
   - owner: google
     name: googletest

@@ -6,6 +6,16 @@
      :param file_level: file output log level
     -->
 	<log console_level="info" file_level="debug" />
+
+    <!--
+     source directories
+    -->
+    <sources>
+        <!--
+         <path>/path/to/source/download/directory</path>
+        -->
+        <path>${HOME}/.lpb/sources</path>
+    </sources>
     
     <!--
      artifacts directories
@@ -13,7 +23,7 @@
     <artifacts>
         <!--
     	 <search>/path/to/artifacts/search/directory</search>
-         -->
+        -->
         <search>${HOME}/.lpb/artifacts</search>
     	<search>${HOME}/.local/share/lpb/artifacts</search>
 

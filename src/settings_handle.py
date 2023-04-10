@@ -31,10 +31,11 @@ class SettingsHandle:
         """
         initialize settings handle
         """
-        self.art_search_path = []
-        self.art_upload_path = ""
         self.log_console_level = ""
         self.log_file_level = ""
+        self.source_path = ""
+        self.art_search_path = []
+        self.art_upload_path = ""
 
     def load(self, filepath):
         """
@@ -54,9 +55,36 @@ class SettingsHandle:
         for node in nodes:
             self._load_log(node)
 
+        nodes = root.getElementsByTagName("sources")
+        for node in nodes:
+            self._load_sources(node)
+
         nodes = root.getElementsByTagName("artifacts")
         for node in nodes:
             self._load_artifacts(node)
+
+    def _load_log(self, node_log: Element):
+        """
+        load log config
+        """
+        if len(self.log_console_level) == 0 and \
+                node_log.hasAttribute("console_level"):
+            self.log_console_level = node_log.getAttribute("console_level")
+        if len(self.log_file_level) == 0 and \
+                node_log.hasAttribute("file_level"):
+            self.log_file_level = node_log.getAttribute("file_level")
+
+    def _load_sources(self, node_sources):
+        """
+        load sources path
+        """
+        if len(self.source_path) == 0:
+            node_source_list = node_sources.getElementsByTagName("path")
+            for node_source in node_source_list:
+                val = node_source.firstChild.nodeValue
+                val = Utils.expand_path(val)
+                self.source_path = val
+                break
 
     def _load_artifacts(self, node_artifacts):
         """
@@ -75,14 +103,3 @@ class SettingsHandle:
                 val = Utils.expand_path(val)
                 self.art_upload_path = val
                 break
-
-    def _load_log(self, node_log: Element):
-        """
-        load log config
-        """
-        if len(self.log_console_level) == 0 and \
-                node_log.hasAttribute("console_level"):
-            self.log_console_level = node_log.getAttribute("console_level")
-        if len(self.log_file_level) == 0 and \
-                node_log.hasAttribute("file_level"):
-            self.log_file_level = node_log.getAttribute("file_level")

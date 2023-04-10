@@ -1,34 +1,54 @@
-name: Local Build
+name: mugglec
+variables:
+  - owner: mugglewei
+  - repo_name: mugglec
+  - GIT_TAG: v1.0.0
+  - git_url: https://github.com/MuggleWei/mugglec.git
+  - BUILD_TYPE: release
+  - pkg_name: mugglec-${GIT_TAG}-${BUILD_TYPE}
+source:
+  owner: ${owner}
+  repo: ${repo_name}
+  tag: ${GIT_TAG}
+  repo_kind: git
+  repo_url: ${git_url}
+  git_depth: 1
+test_deps:
+  - owner: google
+    name: googletest
+    tag: v1.13.0
 jobs:
   build:
     steps:
-      - name: download
-        run: >
-          cd ${LPB_TASK_DIR};
-          mkdir -p deps;
-          mkdir -p build;
-          mkdir -p usr;
-          lpb pull googletest-v1.13.0.tar.gz .
-          git clone --depth=1 --branch=${GIT_TAG} https://github.com/MuggleWei/mugglec.git;
       - name: build
         run: >
+          cd ${LPB_TASK_DIR};
           mkdir -p build;
           mkdir -p usr;
-          cmake .. \
-            -S mugglec
-            -B build
-            -DCMAKE_BUILD_TYPE=${BUILD_TYPE}
-            -DBUILD_SHARED_LIBS=ON
-            -DCMAKE_INSTALL_PREFIX=${LPB_OUTPUT_DIR}/usr;
-      - name: test
-        run: echo "test";
-      - name: extract
-        run: >
-          cmake --build ${LPB_ROOT_DIR}/build --target install;
-          cd ${LPB_ROOT_DIR}/usr;
-          tar -czvf mugglec-${GIT_TAG}-${BUILD_TYPE}.tar.gz ./*;
-  extracts:
-    needs: build
+          cmake \
+            -S ${LPB_SOURCE_PATH} \
+            -B build \
+            -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
+            -DBUILD_SHARED_LIBS=ON \
+            -DCMAKE_INSTALL_PREFIX=${LPB_TASK_DIR}/usr;
+  package:
+    needs: [build]
     steps:
-      -name: extracts
-
+      - name: package
+        run: >
+          cmake --build build --target install;
+          cd usr;
+          tar -czvf ${pkg_name}.tar.gz ./*;
+  upload:
+    needs: [package]
+    steps:
+      - name: upload
+        run: >
+          lpb upload \
+            -p ${pkg_name}.tar.gz \
+            -c ${LPB_FILE_PATH} \
+            --owner ${owner} \
+            --repo ${repo_name} \
+            --ver ${GIT_TAG} \
+            --build-type ${BUILD_TYPE};
+          mv ${pkg_name}.tar.gz ${LPB_OUTPUT_DIR};

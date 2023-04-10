@@ -1,35 +1,51 @@
 name: googletest
 variables:
+  - owner: google
+  - repo_name: googletest
   - GIT_TAG: v1.13.0
-  - BUILD_TYPE: release
   - git_url: https://github.com/google/googletest.git
+  - BUILD_TYPE: release
   - pkg_name: googletest-${GIT_TAG}-${BUILD_TYPE}
+source:
+  owner: ${owner}
+  repo: ${repo_name}
+  tag: ${GIT_TAG}
+  repo_kind: git
+  repo_url: ${git_url}
+  git_depth: 1
 jobs:
-  prepare:
-    steps:
-      - name: prepare
-        run: >
-          cd ${LPB_TASK_DIR};
-          git clone --depth=1 --branch=${GIT_TAG} ${git_url};
   build:
-    needs: [prepare]
     steps:
       - name: build
         run: >
-          cd googletest;
+          cd ${LPB_TASK_DIR};
           mkdir -p build;
           mkdir -p usr;
           cmake \
-            -S . -B build \
+            -S ${LPB_SOURCE_PATH} \
+            -B build \
             -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
             -DBUILD_SHARED_LIBS=ON \
-            -DCMAKE_INSTALL_PREFIX=./usr;
+            -DCMAKE_INSTALL_PREFIX=${LPB_TASK_DIR}/usr;
           cmake --build ./build --target install;
   package:
     needs: [build]
     steps:
       - name: package
         run: >
-          cd ${LPB_TASK_DIR}/googletest/usr;
+          cmake --build build --target install;
+          cd usr;
           tar -czvf ${pkg_name}.tar.gz ./*;
+  upload:
+    needs: [package]
+    steps:
+      - name: upload
+        run: >
+          lpb upload \
+            -p ${pkg_name}.tar.gz \
+            -c ${LPB_FILE_PATH} \
+            --owner ${owner} \
+            --repo ${repo_name} \
+            --ver ${GIT_TAG} \
+            --build-type ${BUILD_TYPE};
           mv ${pkg_name}.tar.gz ${LPB_OUTPUT_DIR};

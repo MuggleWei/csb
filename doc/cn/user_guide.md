@@ -128,6 +128,8 @@ jobs:
 | LPB_TASK_DIR | 为本任务分配的目录, 用于日志输出, workflow 命令执行流输出等等 |
 | LPB_OUTPUT_DIR | 建议使用的输出目录, 即 `lpb build -o` 所指定的目录 |
 | LPB_FILE_DIR | 配置文件所在的目录 |
+| LPB_FILE_NAME | 配置文件名称(不包含路径) |
+| LPB_FILE_PATH | 配置文件路径 |
 | LPB_TASK_NAME | 任务名称, 即 `lpb build --task-name` 所指定的名称 |
 | LPB_TASK_ID | 任务 id, 即 `lpb build --task-id` 所指定的 id |
 | LPB_GIT_REF | 若 LPB_ROOT_DIR 是 git 工程中的目录, 那么 LBP_GIT_REF 会按一下优先级被指定: git tag > git commit_id |

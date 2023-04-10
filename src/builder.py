@@ -83,37 +83,17 @@ class Builder:
         os.chdir(self._working_dir)
 
         # prepare variable replace dict
-        self._var_replace_dict = {}
-        for k, v in self._var_dict.items():
-            var_name = "{}_{}".format(APP_NAME.upper(), k)
-            self._var_replace_dict[var_name] = v
-        for k, v in self._params.items():
-            self._var_replace_dict[k] = v
+        if self._prepare_vars(workflow=workflow) is False:
+            return False
 
-        self._yml_var_dict = {}
-        yaml_vars = workflow.get("variables", None)
-        if yaml_vars is not None:
-            if self._load_yml_vars(variables=yaml_vars) is False:
-                logging.error("failed load yaml variable info")
-                return False
+        # prepare source
+        if self._prepare_src(workflow=workflow) is False:
+            return False
 
         # output all variables
         self._output_args()
 
-        # load artifacts info
-        self._art_owner = None
-        self._art_repo = None
-        self._art_ver = None
-        self._art_pkg = None
-        yaml_artifacts = workflow.get("artifacts", None)
-        if yaml_artifacts is not None:
-            if self._load_yml_art_info(artifacts=yaml_artifacts) is False:
-                logging.error("failed load yaml artifacts info")
-                return False
-
-        # TODO: search artifacts to see if we need to continue build
-
-        # get jobs
+        # run jobs
         jobs = workflow.get("jobs", None)
         if jobs is None:
             logging.debug("workflow without jobs")
@@ -230,6 +210,7 @@ class Builder:
                 elif key.fileobj is p.stderr:
                     self._workflow_fp.write("ERROR|{}\n".format(data))
                     self._command_logger.error("{}".format(data))
+                self._workflow_fp.flush()
 
     def _load_yml_vars(self, variables):
         """
@@ -251,42 +232,176 @@ class Builder:
                 self._var_replace_dict[k] = v
         return True
 
-    def _load_yml_art_info(self, artifacts):
+    def _prepare_vars(self, workflow):
         """
-        load artifacts information
+        prepare variables
+        :param workflow: workflow
         """
-        for k, v in artifacts.items():
-            logging.debug("load artifacts info in yml: {}={}".format(k, v))
+        self._var_replace_dict = {}
+        for k, v in self._var_dict.items():
+            var_name = "{}_{}".format(APP_NAME.upper(), k)
+            self._var_replace_dict[var_name] = v
+        for k, v in self._params.items():
+            self._var_replace_dict[k] = v
+
+        self._yml_var_dict = {}
+        yaml_vars = workflow.get("variables", None)
+        if yaml_vars is not None:
+            if self._load_yml_vars(variables=yaml_vars) is False:
+                logging.error("failed load yaml variable info")
+                return False
+
+        return True
+
+    def _prepare_src(self, workflow):
+        """
+        prepare source
+        :param workflow: workflow
+        """
+        self._src_owner = ""
+        self._src_repo = ""
+        self._src_tag = ""
+        self._src_repo_kind = ""
+        self._src_repo_url = ""
+        self._src_git_depth = 0
+        yaml_source = workflow.get("source", None)
+        if yaml_source is not None:
+            if self._load_yml_src_info(yaml_source) is False:
+                logging.error("failed load yaml source info")
+                return False
+            if self._check_yml_src_info() is False:
+                logging.error("yaml source info is invalid")
+                return False
+            if self._download_src() is False:
+                logging.error("failed download source")
+                return False
+
+        # set LPB_SOURCE_PATH
+        self._var_dict["SOURCE_PATH"] = self._source_path
+        source_replace_k = "{}_SOURCE_PATH".format(APP_NAME.upper())
+        self._var_replace_dict[source_replace_k] = self._source_path
+
+        return True
+
+    def _load_yml_src_info(self, yml_src):
+        """
+        load source information
+        """
+        for k, v in yml_src.items():
+            logging.debug("load source info in yml: {}={}".format(k, v))
             v = self._replace_variable(v)
             if v is None:
-                logging.error("failed load artifacts info: {}".format(k))
+                logging.error("failed load source info: {}".format(k))
                 return False
-
-            k_is_valid = False
             if k == "owner":
-                self._art_owner = v
-                k_is_valid = True
+                self._src_owner = v
             elif k == "repo":
-                self._art_repo = v
-                k_is_valid = True
-            elif k == "version":
-                self._art_ver = v
-                k_is_valid = True
-            elif k == "pkg":
-                self._art_pkg = v
-                k_is_valid = True
-
-            if k_is_valid is False:
-                logging.error("unrecognizable artifacts info key: {}".format(k))
-                return False
-            logging.debug("add artifacts info: artifacts.{}={}".format(k, v))
+                self._src_repo = v
+            elif k == "tag":
+                self._src_tag = v
+            elif k == "repo_kind":
+                self._src_repo_kind = v
+            elif k == "repo_url":
+                self._src_repo_url = v
+            elif k == "git_depth":
+                self._src_git_depth = int(v)
+            logging.debug("add source info: source.{}={}".format(k, v))
         return True
+
+    def _check_yml_src_info(self):
+        """
+        check yaml source info valid
+        """
+        if len(self._src_owner) == 0:
+            logging.debug("Error! field 'source.owner' is empty")
+            return False
+        if len(self._src_repo) == 0:
+            logging.debug("Error! field 'source.repo' is empty")
+            return False
+        if len(self._src_tag) == 0:
+            logging.debug("Error! field 'source.tag' is empty")
+            return False
+        if len(self._src_repo_kind) == 0:
+            logging.debug("Error! field 'source.repo_kind' is empty")
+            return False
+        if len(self._src_repo_url) == 0:
+            logging.debug("Error! field 'source.repo_url' is empty")
+            return False
+        if self._src_repo_kind == "git" and \
+                self._src_git_depth != 0 and self._src_git_depth != 1:
+            logging.debug("Error! field 'source.git_depth' invalid")
+            return False
+        return True
+
+    def _download_src(self):
+        """
+        download source
+        """
+        if self._src_repo_kind == "git":
+            return self._download_src_git()
+        else:
+            logging.error(
+                "invalid source.repo_kind: {}".format(self._src_repo_kind))
+            return False
+
+    def _download_src_git(self):
+        """
+        download git source
+        """
+        if len(self._settings_handle.source_path) == 0:
+            logging.error("failed find source path in settings")
+            return False
+
+        if self._src_git_depth == 1:
+            self._source_path = os.path.join(
+                self._settings_handle.source_path,
+                self._src_owner,
+                "{}-{}".format(self._src_repo, self._src_tag)
+            )
+            if os.path.exists(self._source_path):
+                logging.info("{} already exists, skip download")
+                return True
+            command = "git clone --branch={} --depth={} {} {}".format(
+                self._src_tag,
+                self._src_git_depth,
+                self._src_repo_url,
+                self._source_path
+            )
+            return self.exec_command(command=command)
+        else:
+            self._source_path = os.path.join(
+                self._settings_handle.source_path,
+                self._src_owner,
+                self._src_repo
+            )
+            if os.path.exists(self._source_path):
+                return self._checkout_src_tag(self._source_path, self._src_tag)
+            command = "git clone {} {}".format(
+                self._src_repo_url,
+                self._source_path
+            )
+            ret = self.exec_command(command=command)
+            if ret is False:
+                return ret
+            return self._checkout_src_tag(self._source_path, self._src_tag)
+
+    def _checkout_src_tag(self, src_path, tag):
+        """
+        checkout git source tag
+        """
+        origin_dir = os.curdir
+        os.chdir(src_path)
+        command = "git checkout {}".format(tag)
+        ret = self.exec_command(command=command)
+        os.chdir(origin_dir)
+        return ret
 
     def _replace_variable(self, content):
         """
         replace variable in content
         :param content: content string
         """
+        content = str(content)
         finds = re.findall(r'\${\w+}', content)
         finds_set = set(finds)
         if len(finds_set) == 0:
@@ -368,6 +483,7 @@ class Builder:
 
         os.chdir(self._working_dir)
 
+        # set variables
         if self._set_vars() is False:
             return False
 
@@ -494,7 +610,10 @@ class Builder:
             "ROOT_DIR": self._working_dir,
             "TASK_DIR": self._task_dir,
             "OUTPUT_DIR": self._output_dir,
+            "SOURCE_PATH": "",  # NOTE: this value set after load source
             "FILE_DIR": os.path.dirname(self._cfg_file_path),
+            "FILE_NAME": os.path.basename(self._cfg_file_path),
+            "FILE_PATH": self._cfg_file_path,
             "TASK_NAME": self._task_name,
             "TASK_ID": self._task_id,
             "GIT_REF": val_git_ref,

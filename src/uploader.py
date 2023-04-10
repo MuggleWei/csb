@@ -16,6 +16,7 @@ class UploaderConfig:
         self.ver = ""
         self.output_dir = ""
         self.config = ""
+        self.build_type = ""
 
 
 class Uploader:
@@ -36,11 +37,12 @@ class Uploader:
             "  -v, --ver string        [REQUIRED] package version\n" \
             "  -o, --output-dir string [OPTIONAL] output directory, use artifacts/output in settings.xml by default\n" \
             "  -c, --config string     [OPTIONAL] package build config file\n" \
+            "  -t, --build-type string [OPTIONAL] package build type, by default set release\n" \
             "\n" \
             "e.g.\n" \
             "  {0} upload -p googletest-release-v1.13.0.tar.gz " \
             "--owner google --repo googletest --ver v1.13.0\n" \
-            "  {0} upload -p mugglec-debug-v1.0.0.zip " \
+            "  {0} upload -p mugglec-debug-v1.0.0.zip -c muggle.yml " \
             "--owner muggle --repo mugglec -v 1.0.0\n" \
             "".format(APP_NAME)
 
@@ -55,14 +57,15 @@ class Uploader:
             self.cfg.output_dir,
             self.cfg.owner,
             self.cfg.repo,
-            self.cfg.ver
+            self.cfg.ver,
+            self.cfg.build_type
         )
         os.makedirs(art_output_dir, exist_ok=True)
-        print("update {} -> {}".format(self.cfg.pkg, art_output_dir))
+        print("upload {} -> {}".format(self.cfg.pkg, art_output_dir))
         shutil.copy2(self.cfg.pkg, art_output_dir)
 
         if len(self.cfg.config) > 0:
-            print("update {} -> {}".format(self.cfg.config, art_output_dir))
+            print("upload {} -> {}".format(self.cfg.config, art_output_dir))
             shutil.copy2(self.cfg.config, art_output_dir)
 
         return True
@@ -106,10 +109,10 @@ class Uploader:
         """
         cfg = UploaderConfig()
         opts, _ = getopt.getopt(
-            args, "hp:v:o:c:",
+            args, "hp:v:o:c:t:",
             [
                 "help", "pkg=", "owner=", "repo=",
-                "ver=", "output-dir=", "config="
+                "ver=", "output-dir=", "config=", "build-type="
             ]
         )
         for opt, arg in opts:
@@ -128,8 +131,12 @@ class Uploader:
                 cfg.output_dir = arg
             elif opt in ("-c", "--config"):
                 cfg.config = arg
+            elif opt in ("-t", "--build-type"):
+                cfg.build_type = arg
 
         cfg.output_dir = Utils.expand_path(cfg.output_dir)
         cfg.config = Utils.expand_path(cfg.config)
+        if len(cfg.build_type) == 0:
+            cfg.build_type = "release"
 
         return cfg
