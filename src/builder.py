@@ -266,6 +266,7 @@ class Builder:
         self._src_git_depth = 0
         yaml_source = workflow.get("source", None)
         if yaml_source is not None:
+            logging.info("handle source")
             if self._load_yml_src_info(yaml_source) is False:
                 logging.error("failed load yaml source info")
                 return False
@@ -359,7 +360,8 @@ class Builder:
                 "{}-{}".format(self._src_repo, self._src_tag)
             )
             if os.path.exists(self._source_path):
-                logging.info("{} already exists, skip download")
+                logging.info("{} already exists, skip download".format(
+                    self._source_path))
                 return True
             command = "git clone --branch={} --depth={} {} {}".format(
                 self._src_tag,
@@ -367,6 +369,7 @@ class Builder:
                 self._src_repo_url,
                 self._source_path
             )
+            logging.info("run command: {}".format(command))
             return self.exec_command(command=command)
         else:
             self._source_path = os.path.join(
@@ -380,6 +383,7 @@ class Builder:
                 self._src_repo_url,
                 self._source_path
             )
+            logging.info("run command: {}".format(command))
             ret = self.exec_command(command=command)
             if ret is False:
                 return ret
@@ -389,11 +393,14 @@ class Builder:
         """
         checkout git source tag
         """
-        origin_dir = os.curdir
+        origin_dir = os.path.abspath(os.curdir)
         os.chdir(src_path)
+        logging.info("change dir to: {}".format(os.path.abspath(os.curdir)))
         command = "git checkout {}".format(tag)
+        logging.info("run command: {}".format(command))
         ret = self.exec_command(command=command)
         os.chdir(origin_dir)
+        logging.info("restore dir to: {}".format(os.path.abspath(os.curdir)))
         return ret
 
     def _replace_variable(self, content):
