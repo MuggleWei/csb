@@ -1,0 +1,36 @@
+<HPB>
+
+    <!--
+     log config
+     :param console_level: console output log level
+     :param file_level: file output log level
+    -->
+	<log console_level="info" file_level="debug" />
+
+    <!--
+     source directories
+    -->
+    <sources>
+        <!--
+         <path>/path/to/source/download/directory</path>
+        -->
+        <path>${HOME}/.hpb/sources</path>
+    </sources>
+    
+    <!--
+     artifacts directories
+    -->
+    <artifacts>
+        <!--
+    	 <search>/path/to/artifacts/search/directory</search>
+        -->
+        <search>${HOME}/.hpb/artifacts</search>
+    	<search>${HOME}/.local/share/hpb/artifacts</search>
+
+        <!--
+         <upload>/path/to/artifacts/upload/directory</upload>
+        -->
+        <upload>${HOME}/.hpb/artifacts</upload>
+    </artifacts>
+
+</HPB>

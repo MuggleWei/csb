@@ -1,0 +1,52 @@
+name: Hello
+jobs:
+  job0:
+    needs: [job1]
+    steps:
+      - name: echo
+        run: >
+          echo "before echo";
+          echo "0";
+          echo "after echo";
+  job1:
+    steps:
+      - name: echo
+        run: >
+          echo "before echo";
+          echo "1";
+          echo "after echo";
+  job2:
+    needs: [job0, job1]
+    steps:
+      - name: echo
+        run: >
+          echo "before echo";
+          echo "2";
+          echo "after echo";
+  job3:
+    needs: [job1, job4]
+    steps:
+      - name: echo
+        run: >
+          echo "before echo";
+          echo "3";
+          echo "after echo";
+          echo " try ; and ';' and \"aaa\"";
+          echo "current dir: $(pwd)";
+          echo "HPB_ROOT_DIR: ${HPB_ROOT_DIR}";
+          echo "HPB_OUTPUT_DIR: ${HPB_OUTPUT_DIR}";
+          cd ${HPB_OUTPUT_DIR};
+          echo "current dir: $(pwd)";
+          cd ${HPB_TASK_DIR};
+          echo "current dir: $(pwd)";
+          echo "a-" \
+            "b-" \
+            "c-";
+  job4:
+    needs: [job2]
+    steps:
+      - name: echo
+        run: >
+          echo "before echo";
+          echo "4";
+          echo "after echo";

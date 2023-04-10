@@ -16,8 +16,10 @@ doc/compile_commands.json
 .clang-format
 
 ######### build & artifacts #########
+_hpb/
 build/
 artifacts/
+_artifacts/
 
 ######### python #########
 # Byte-compiled / optimized / DLL files

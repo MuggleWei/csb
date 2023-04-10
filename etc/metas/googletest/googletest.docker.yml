@@ -1,0 +1,22 @@
+name: Docker Build
+jobs:
+  build:
+    steps:
+      - name: docker_build
+        run: >
+          docker build \
+            --network host \
+            --build-arg OS=${OS} \
+            --build-arg OS_VER=${OS_VER} \
+            --build-arg REGISTRY=${REGISTRY} \
+            --build-arg SOURCE_DIR=${SOURCE_DIR} \
+            --build-arg GIT_TAG=${GIT_TAG} \
+            --build-arg BUILD_TYPE=${BUILD_TYPE} \
+            -f ${HPB_FILE_DIR}/googletest.Dockerfile \
+            -t ${REGISTRY}/googletest:${GIT_TAG}-${OS}${OS_VER} \
+            .;
+      - name: extract
+        run: >
+          docker container create --name extract ${REGISTRY}/googletest:${GIT_TAG}-${OS}${OS_VER};
+          docker container cp extract:/pkg/googletest-${GIT_TAG}-${BUILD_TYPE}-${OS}${OS_VER}.tar.gz ${HPB_OUTPUT_DIR};
+          docker container rm -f extract;

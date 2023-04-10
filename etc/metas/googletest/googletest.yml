@@ -1,0 +1,51 @@
+name: googletest
+variables:
+  - owner: google
+  - repo_name: googletest
+  - GIT_TAG: v1.13.0
+  - git_url: https://github.com/google/googletest.git
+  - BUILD_TYPE: release
+  - pkg_name: googletest-${GIT_TAG}-${BUILD_TYPE}
+source:
+  owner: ${owner}
+  repo: ${repo_name}
+  tag: ${GIT_TAG}
+  repo_kind: git
+  repo_url: ${git_url}
+  git_depth: 1
+jobs:
+  build:
+    steps:
+      - name: build
+        run: >
+          cd ${HPB_TASK_DIR};
+          mkdir -p build;
+          mkdir -p usr;
+          cmake \
+            -S ${HPB_SOURCE_PATH} \
+            -B build \
+            -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
+            -DBUILD_SHARED_LIBS=ON \
+            -DCMAKE_INSTALL_PREFIX=${HPB_TASK_DIR}/usr;
+          cmake --build ./build --target install;
+  package:
+    needs: [build]
+    steps:
+      - name: package
+        run: >
+          cmake --build build --target install;
+          cd usr;
+          tar -czvf ${pkg_name}.tar.gz ./*;
+  upload:
+    needs: [package]
+    steps:
+      - name: upload
+        run: >
+          hpb upload \
+            -p ${pkg_name}.tar.gz \
+            -c ${HPB_FILE_PATH} \
+            --owner ${owner} \
+            --repo ${repo_name} \
+            --ver ${GIT_TAG} \
+            --build-type ${BUILD_TYPE};
+          mv ${pkg_name}.tar.gz ${HPB_OUTPUT_DIR};
