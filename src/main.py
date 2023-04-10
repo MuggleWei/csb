@@ -2,13 +2,16 @@ import sys
 import __version__
 
 from builder import Builder
+from uploader import Uploader
 
 
 if __name__ == "__main__":
     usage_str = "Usage: {} COMMAND [OPTIONS]\n" \
         "\n" \
         "Commands:\n" \
-        "  build    build package".format(sys.argv[0])
+        "  build    build package\n" \
+        "  upload   upload package\n" \
+        "".format(sys.argv[0])
 
     if len(sys.argv) < 2:
         print(usage_str)
@@ -26,6 +29,10 @@ if __name__ == "__main__":
     if command == "build":
         builder = Builder()
         if builder.run(sys.argv[2:]) is False:
+            sys.exit(1)
+    elif command == "upload":
+        uploader = Uploader()
+        if uploader.run(sys.argv[2:]) is False:
             sys.exit(1)
     else:
         print(usage_str)

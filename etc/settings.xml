@@ -8,14 +8,19 @@
 	<log console_level="info" file_level="debug" />
     
     <!--
-     artifacts search directories
+     artifacts directories
     -->
     <artifacts>
         <!--
-    	 <path>/path/to/artifacts/search/directory</path>
+    	 <search>/path/to/artifacts/search/directory</search>
          -->
-        <path>${HOME}/.lpb/artifacts</path>
-    	<path>${HOME}/.local/share/lpb/artifacts</path>
+        <search>${HOME}/.lpb/artifacts</search>
+    	<search>${HOME}/.local/share/lpb/artifacts</search>
+
+        <!--
+         <upload>/path/to/artifacts/upload/directory</upload>
+        -->
+        <upload>${HOME}/.lpb/artifacts</upload>
     </artifacts>
 
 </LBP>

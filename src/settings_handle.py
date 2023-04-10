@@ -3,17 +3,36 @@ import xml.dom.minidom
 
 from xml.dom.minidom import Element
 
+from constant_var import APP_NAME
+from utils import Utils
+
 
 class SettingsHandle:
     """
     settings file handle
     """
 
+    @classmethod
+    def load_default_settings(cls):
+        settings_handle = SettingsHandle()
+        settings_path = [
+            Utils.expand_path("~/.{}/settings.xml".format(APP_NAME)),
+            Utils.expand_path(
+                "~/.local/share/{}/settings.xml".format(APP_NAME)),
+            "/etc/{}/settings.xml".format(APP_NAME),
+        ]
+        for filepath in settings_path:
+            if os.path.exists(filepath):
+                print("load default settings: {}".format(filepath))
+                settings_handle.load(filepath=filepath)
+        return settings_handle
+
     def __init__(self):
         """
         initialize settings handle
         """
         self.art_search_path = []
+        self.art_upload_path = ""
         self.log_console_level = ""
         self.log_file_level = ""
 
@@ -27,7 +46,7 @@ class SettingsHandle:
         root = xml.dom.minidom.parse(file=filepath)
         self._parse_dom(root=root)
 
-    def _parse_dom(self, root: Element):
+    def _parse_dom(self, root):
         """
         parse xml dom
         """
@@ -43,12 +62,19 @@ class SettingsHandle:
         """
         load artifacts search path
         """
-        node_path_list = node_artifacts.getElementsByTagName("path")
-        for node_path in node_path_list:
+        node_search_list = node_artifacts.getElementsByTagName("search")
+        for node_path in node_search_list:
             val = node_path.firstChild.nodeValue
-            val = os.path.expandvars(val)
-            val = os.path.expanduser(val)
+            val = Utils.expand_path(val)
             self.art_search_path.append(val)
+
+        if len(self.art_upload_path) == 0:
+            node_upload_list = node_artifacts.getElementsByTagName("upload")
+            for node_upload in node_upload_list:
+                val = node_upload.firstChild.nodeValue
+                val = Utils.expand_path(val)
+                self.art_upload_path = val
+                break
 
     def _load_log(self, node_log: Element):
         """

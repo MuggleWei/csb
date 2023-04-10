@@ -11,6 +11,7 @@ from constant_var import APP_NAME
 from kahn_algo import KahnAlgo
 from log_handle import LogHandle
 from settings_handle import SettingsHandle
+from utils import Utils
 from yaml_handle import YamlHandle
 
 
@@ -33,7 +34,7 @@ class Builder:
     def __init__(self):
         self._usage_str = "Usage: {} build [OPTIONS]\n" \
             "\n" \
-            "Commands: \n" \
+            "Options: \n" \
             "  -c, --config string     [REQUIRED] build config file\n" \
             "    , --task-name string  [OPTIONAL] build task name, if empty, use config file without suffix as task-name\n" \
             "    , --task-id string    [OPTIONAL] build task id, if empty, set 'yyyymmddHHMMSSxxxx' as task-id\n" \
@@ -332,22 +333,6 @@ class Builder:
 
         return result
 
-    def _load_default_settings(self):
-        """
-        load settings
-        """
-        self._settings_handle = SettingsHandle()
-        settings_path = [
-            os.path.expanduser("~/.{}/settings.xml".format(APP_NAME)),
-            os.path.expanduser(
-                "~/.local/share/{}/settings.xml".format(APP_NAME)),
-            "/etc/{}/settings.xml".format(APP_NAME),
-        ]
-        for filepath in settings_path:
-            if os.path.exists(filepath):
-                print("load default settings: {}".format(filepath))
-                self._settings_handle.load(filepath=filepath)
-
     def _init(self, args):
         """
         init arguments
@@ -361,7 +346,7 @@ class Builder:
 
         os.makedirs(self._output_dir, exist_ok=True)
 
-        self._load_default_settings()
+        self._settings_handle = SettingsHandle.load_default_settings()
         self._art_search_path.extend(self._settings_handle.art_search_path)
 
         console_log_level = LogHandle.log_level(
@@ -419,21 +404,13 @@ class Builder:
             elif opt in ("-o", "--output-dir"):
                 cfg.output_dir = arg
 
-        cfg.config_path = self._expand_path(cfg.config_path)
-        cfg.working_dir = self._expand_path(cfg.working_dir)
+        cfg.config_path = Utils.expand_path(cfg.config_path)
+        cfg.working_dir = Utils.expand_path(cfg.working_dir)
         for i in range(len(cfg.art_search_dir)):
-            cfg.art_search_dir[i] = self._expand_path(cfg.art_search_dir[i])
-        cfg.output_dir = self._expand_path(cfg.output_dir)
+            cfg.art_search_dir[i] = Utils.expand_path(cfg.art_search_dir[i])
+        cfg.output_dir = Utils.expand_path(cfg.output_dir)
 
         return cfg
-
-    def _expand_path(self, filepath):
-        ret_filepath = filepath
-        if len(filepath) > 0:
-            ret_filepath = os.path.expanduser(ret_filepath)
-            ret_filepath = os.path.expandvars(ret_filepath)
-            ret_filepath = os.path.abspath(ret_filepath)
-        return ret_filepath
 
     def _set_args(self, cfg: BuilderConfig):
         """
