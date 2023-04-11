@@ -11,6 +11,6 @@ fi
 
 hpb build \
 	-c etc/metas/googletest/googletest.yml \
-	-p GIT_TAG=v1.13.0 \
-	-p BUILD_TYPE=$BUILD_TYPE \
+	-p git_tag=v1.13.0 \
+	-p build_type=$BUILD_TYPE \
 	-o ./artifacts

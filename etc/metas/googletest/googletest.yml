@@ -2,14 +2,14 @@ name: googletest
 variables:
   - owner: google
   - repo_name: googletest
-  - GIT_TAG: v1.13.0
+  - git_tag: v1.13.0
   - git_url: https://github.com/google/googletest.git
-  - BUILD_TYPE: release
-  - pkg_name: googletest-${GIT_TAG}-${BUILD_TYPE}
+  - build_type: release
+  - pkg_name: googletest-${git_tag}-${build_type}
 source:
   owner: ${owner}
   repo: ${repo_name}
-  tag: ${GIT_TAG}
+  tag: ${git_tag}
   repo_kind: git
   repo_url: ${git_url}
   git_depth: 1
@@ -24,7 +24,7 @@ jobs:
           cmake \
             -S ${HPB_SOURCE_PATH} \
             -B build \
-            -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
+            -DCMAKE_BUILD_TYPE=${build_type} \
             -DBUILD_SHARED_LIBS=ON \
             -DCMAKE_INSTALL_PREFIX=${HPB_TASK_DIR}/usr;
           cmake --build ./build --target install;
@@ -46,6 +46,6 @@ jobs:
             -c ${HPB_FILE_PATH} \
             --owner ${owner} \
             --repo ${repo_name} \
-            --ver ${GIT_TAG} \
-            --build-type ${BUILD_TYPE};
+            --ver ${git_tag} \
+            --build-type ${build_type};
           mv ${pkg_name}.tar.gz ${HPB_OUTPUT_DIR};

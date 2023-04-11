@@ -44,6 +44,22 @@ class Builder:
             "  -s, --settings string   [OPTIONAL] manual set settings.xml\n" \
             "".format(APP_NAME)
 
+        self._cfg_file_path = ""  # config file path
+        self._task_name = ""  # task name
+        self._task_id = ""  # task id
+        self._working_dir = ""  # working directory
+        self._task_dir = ""  # task directory
+        self._build_dir = ""  # build directory
+        self._pkg_dir = ""  # package directory
+        self._output_dir = ""  # output directory
+        self._input_param_dict = {}  # user input param dict
+
+        self._settings_handle = SettingsHandle()  # settings handle
+
+        self._var_replace_dict = {}  # vriable replace dict
+        self._inner_var_dict = {}  # HPB inner variable dict
+        self._yml_var_dict = {}  # yaml variable dict
+
     def run(self, args):
         """
         run package builder
@@ -62,6 +78,17 @@ class Builder:
             logging.error("failed get workflow")
             return False
 
+        # prepare variable replace dict
+        if self._prepare_vars(workflow=workflow) is False:
+            return False
+
+        # prepare source
+        if self._prepare_src(workflow=workflow) is False:
+            return False
+
+        # output all variables
+        self._output_args()
+
         # run workflow
         workflow_log_path = os.path.join(self._task_dir, "workflow.log")
         with open(workflow_log_path, "w") as f:
@@ -69,6 +96,241 @@ class Builder:
             ret = self.run_workflow(workflow=workflow)
 
         return ret
+
+    def _init(self, args):
+        """
+        init arguments
+        """
+        cfg = self._parse_args(args)
+        if cfg is None:
+            return False
+
+        if self._set_args(cfg) is False:
+            return False
+
+        self._load_settings(cfg.settings_path)
+
+        self._prepare_dirs()
+
+        os.chdir(self._working_dir)
+
+        self._init_log()
+
+        if self._set_vars() is False:
+            return False
+
+        return True
+
+    def _parse_args(self, args):
+        """
+        parse input arguments
+        """
+        cfg = BuilderConfig()
+        opts, _ = getopt.getopt(
+            args, "hc:p:o:s:",
+            [
+                "help", "config=", "task-name=", "task-id=",
+                "work-dir=", "param=", "output-dir=", "settings="
+            ]
+        )
+        for opt, arg in opts:
+            if opt in ("-h", "--help"):
+                print(self._usage_str)
+                sys.exit(0)
+            elif opt in ("-c", "--config"):
+                cfg.config_path = arg
+            elif opt in ("--task-name"):
+                cfg.task_name = arg
+            elif opt in ("--task-id"):
+                cfg.task_id = arg
+            elif opt in ("--work-dir"):
+                cfg.working_dir = arg
+            elif opt in ("-p", "--param"):
+                cfg.params.append(arg)
+            elif opt in ("-o", "--output-dir"):
+                cfg.output_dir = arg
+            elif opt in ("-s", "--settings"):
+                cfg.settings_path = arg
+
+        cfg.config_path = Utils.expand_path(cfg.config_path)
+        cfg.working_dir = Utils.expand_path(cfg.working_dir)
+        cfg.output_dir = Utils.expand_path(cfg.output_dir)
+
+        return cfg
+
+    def _set_args(self, cfg: BuilderConfig):
+        """
+        init config arguments
+        """
+        # set config filepath
+        if len(cfg.config_path) == 0:
+            print("Error! field 'config' missing\n\n{}".format(self._usage_str))
+            return False
+        self._cfg_file_path = cfg.config_path
+
+        # set task name
+        if len(cfg.task_name) == 0:
+            cfg_filename = os.path.basename(self._cfg_file_path).split(".")[0]
+            self._task_name = cfg_filename
+        else:
+            self._task_name = cfg.task_name
+
+        # set task id
+        if len(cfg.task_id) == 0:
+            now = datetime.datetime.now()
+            micro_sec = "{:06}".format(now.strftime("%f"))
+            self._task_id = "{}-{}".format(
+                now.strftime("%Y%m%d-%H%M%S"), micro_sec)
+        else:
+            self._task_id = cfg.task_id
+
+        # set working dir
+        if len(cfg.working_dir) == 0:
+            self._working_dir = os.path.abspath(os.getcwd())
+        else:
+            self._working_dir = cfg.working_dir
+
+        # set task_cfg abs
+        if not os.path.isabs(self._cfg_file_path):
+            self._cfg_file_path = os.path.join(
+                self._working_dir, self._cfg_file_path)
+
+        # set params
+        if len(cfg.params) > 0:
+            for param in cfg.params:
+                kv = param.split("=")
+                if len(kv) != 2:
+                    continue
+                self._input_param_dict[kv[0]] = kv[1]
+
+        # set task dir
+        self._task_dir = os.path.join(
+            self._working_dir,
+            "_{}".format(APP_NAME),
+            "{}.{}".format(self._task_name, self._task_id))
+        self._build_dir = os.path.join(self._task_dir, "build")
+        self._pkg_dir = os.path.join(self._task_dir, "pkg")
+
+        # set output dir
+        if len(cfg.output_dir) == 0:
+            self._output_dir = os.path.join(self._task_dir, "output")
+        else:
+            self._output_dir = cfg.output_dir
+
+        return True
+
+    def _load_settings(self, input_settings_path: str):
+        """
+        load settings
+        :param input_settings_path: user input settings path
+        """
+        user_settings = []
+        if len(input_settings_path) > 0:
+            user_settings.append(input_settings_path)
+        self._settings_handle = SettingsHandle.load_settings(user_settings)
+
+    def _prepare_dirs(self):
+        """
+        prepare directories
+        """
+        os.makedirs(self._task_dir, exist_ok=True)
+        os.makedirs(self._build_dir, exist_ok=True)
+        os.makedirs(self._pkg_dir, exist_ok=True)
+        os.makedirs(self._output_dir, exist_ok=True)
+
+    def _init_log(self):
+        """
+        init log
+        """
+        console_log_level = LogHandle.log_level(
+            self._settings_handle.log_console_level
+        )
+        file_log_level = LogHandle.log_level(
+            self._settings_handle.log_file_level
+        )
+        LogHandle.init_log(
+            os.path.join(self._task_dir, "log", "build.log"),
+            console_level=console_log_level,
+            file_level=file_log_level,
+            use_rotate=False)
+
+        self._command_logger = logging.getLogger("command")
+        self._command_logger.propagate = False
+        self._command_logger.setLevel(logging.INFO)
+        self._command_logger.addHandler(logging.StreamHandler())
+
+    def _set_vars(self):
+        """
+        set varaibles
+        """
+        val_git_tag = self._get_git_tag()
+        val_git_commit_id = self._get_git_commit_id()
+        val_git_branch = self._get_git_branch()
+        if len(val_git_tag) > 0:
+            val_git_ref = val_git_tag
+        elif len(val_git_commit_id) > 0:
+            val_git_ref = val_git_commit_id
+        else:
+            val_git_ref = ""
+
+        self._inner_var_dict = {
+            "ROOT_DIR": self._working_dir,
+            "TASK_DIR": self._task_dir,
+            "BUILD_DIR": self._build_dir,
+            "PKG_DIR": self._pkg_dir,
+            "OUTPUT_DIR": self._output_dir,
+            "SOURCE_PATH": "",  # NOTE: this value set after load source
+            "FILE_DIR": os.path.dirname(self._cfg_file_path),
+            "FILE_NAME": os.path.basename(self._cfg_file_path),
+            "FILE_PATH": self._cfg_file_path,
+            "TASK_NAME": self._task_name,
+            "TASK_ID": self._task_id,
+            "GIT_REF": val_git_ref,
+            "GIT_TAG": val_git_tag,
+            "GIT_COMMIT_ID": val_git_commit_id,
+            "GIT_BRANCH": val_git_branch,
+        }
+
+        return True
+
+    def _prepare_vars(self, workflow):
+        """
+        prepare variables
+        :param workflow: workflow
+        """
+        for k, v in self._inner_var_dict.items():
+            var_name = "{}_{}".format(APP_NAME.upper(), k)
+            self._var_replace_dict[var_name] = v
+        for k, v in self._input_param_dict.items():
+            self._var_replace_dict[k] = v
+
+        yaml_vars = workflow.get("variables", None)
+        if yaml_vars is not None:
+            if self._load_yml_vars(variables=yaml_vars) is False:
+                logging.error("failed load yaml variable info")
+                return False
+
+        return True
+
+    def _load_yml_vars(self, variables):
+        """
+        load arguments in yml args
+        """
+        for variable in variables:
+            logging.debug("load variables in yml: {}".format(variable))
+            for k, v in variable.items():
+                v = self._replace_variable(v)
+                if v is None:
+                    logging.error("failed load variable: {}".format(variable))
+                    return False
+                if k in self._var_replace_dict:
+                    logging.debug(
+                        "{} already in var replace dict, ignore".format(k))
+                    continue
+                logging.debug("add variable: {}={}".format(k, v))
+                self._yml_var_dict[k] = v
+                self._var_replace_dict[k] = v
+        return True
 
     def run_workflow(self, workflow):
         """
@@ -81,17 +343,6 @@ class Builder:
         """
         # set current working dir
         os.chdir(self._working_dir)
-
-        # prepare variable replace dict
-        if self._prepare_vars(workflow=workflow) is False:
-            return False
-
-        # prepare source
-        if self._prepare_src(workflow=workflow) is False:
-            return False
-
-        # output all variables
-        self._output_args()
 
         # run jobs
         jobs = workflow.get("jobs", None)
@@ -212,47 +463,6 @@ class Builder:
                     self._command_logger.error("{}".format(data))
                 self._workflow_fp.flush()
 
-    def _load_yml_vars(self, variables):
-        """
-        load arguments in yml args
-        """
-        for variable in variables:
-            logging.debug("load variables in yml: {}".format(variable))
-            for k, v in variable.items():
-                v = self._replace_variable(v)
-                if v is None:
-                    logging.error("failed load variable: {}".format(variable))
-                    return False
-                if k in self._var_replace_dict:
-                    logging.debug(
-                        "{} already in var replace dict, ignore".format(k))
-                    continue
-                logging.debug("add variable: {}={}".format(k, v))
-                self._yml_var_dict[k] = v
-                self._var_replace_dict[k] = v
-        return True
-
-    def _prepare_vars(self, workflow):
-        """
-        prepare variables
-        :param workflow: workflow
-        """
-        self._var_replace_dict = {}
-        for k, v in self._var_dict.items():
-            var_name = "{}_{}".format(APP_NAME.upper(), k)
-            self._var_replace_dict[var_name] = v
-        for k, v in self._params.items():
-            self._var_replace_dict[k] = v
-
-        self._yml_var_dict = {}
-        yaml_vars = workflow.get("variables", None)
-        if yaml_vars is not None:
-            if self._load_yml_vars(variables=yaml_vars) is False:
-                logging.error("failed load yaml variable info")
-                return False
-
-        return True
-
     def _prepare_src(self, workflow):
         """
         prepare source
@@ -287,7 +497,7 @@ class Builder:
                 return False
 
         # set HPB_SOURCE_PATH
-        self._var_dict["SOURCE_PATH"] = self._source_path
+        self._inner_var_dict["SOURCE_PATH"] = self._source_path
         source_replace_k = "{}_SOURCE_PATH".format(APP_NAME.upper())
         self._var_replace_dict[source_replace_k] = self._source_path
 
@@ -464,181 +674,6 @@ class Builder:
 
         return result
 
-    def _init(self, args):
-        """
-        init arguments
-        """
-        cfg = self._parse_args(args)
-        if cfg is None:
-            return False
-
-        if self._set_args(cfg) is False:
-            return False
-
-        os.makedirs(self._output_dir, exist_ok=True)
-
-        user_settings = []
-        if len(cfg.settings_path) > 0:
-            user_settings.append(cfg.settings_path)
-        self._settings_handle = SettingsHandle.load_settings(user_settings)
-
-        self._art_search_path = []
-        self._art_search_path.extend(self._settings_handle.art_search_path)
-
-        console_log_level = LogHandle.log_level(
-            self._settings_handle.log_console_level
-        )
-        file_log_level = LogHandle.log_level(
-            self._settings_handle.log_file_level
-        )
-        LogHandle.init_log(
-            os.path.join(self._task_dir, "log", "build.log"),
-            console_level=console_log_level,
-            file_level=file_log_level,
-            use_rotate=False)
-
-        self._command_logger = logging.getLogger("command")
-        self._command_logger.propagate = False
-        self._command_logger.setLevel(logging.INFO)
-        self._command_logger.addHandler(logging.StreamHandler())
-
-        os.chdir(self._working_dir)
-
-        # set variables
-        if self._set_vars() is False:
-            return False
-
-        return True
-
-    def _parse_args(self, args):
-        """
-        parse input arguments
-        """
-        cfg = BuilderConfig()
-        opts, _ = getopt.getopt(
-            args, "hc:p:o:s:",
-            [
-                "help", "config=", "task-name=", "task-id=",
-                "work-dir=", "param=", "output-dir=", "settings="
-            ]
-        )
-        for opt, arg in opts:
-            if opt in ("-h", "--help"):
-                print(self._usage_str)
-                sys.exit(0)
-            elif opt in ("-c", "--config"):
-                cfg.config_path = arg
-            elif opt in ("--task-name"):
-                cfg.task_name = arg
-            elif opt in ("--task-id"):
-                cfg.task_id = arg
-            elif opt in ("--work-dir"):
-                cfg.working_dir = arg
-            elif opt in ("-p", "--param"):
-                cfg.params.append(arg)
-            elif opt in ("-o", "--output-dir"):
-                cfg.output_dir = arg
-            elif opt in ("-s", "--settings"):
-                cfg.settings_path = arg
-
-        cfg.config_path = Utils.expand_path(cfg.config_path)
-        cfg.working_dir = Utils.expand_path(cfg.working_dir)
-        cfg.output_dir = Utils.expand_path(cfg.output_dir)
-
-        return cfg
-
-    def _set_args(self, cfg: BuilderConfig):
-        """
-        init config arguments
-        """
-        # set config filepath
-        if len(cfg.config_path) == 0:
-            print("Error! field 'config' missing\n\n{}".format(self._usage_str))
-            return False
-        self._cfg_file_path = cfg.config_path
-
-        # set task name
-        if len(cfg.task_name) == 0:
-            cfg_filename = os.path.basename(self._cfg_file_path).split(".")[0]
-            self._task_name = cfg_filename
-        else:
-            self._task_name = cfg.task_name
-
-        # set task id
-        if len(cfg.task_id) == 0:
-            now = datetime.datetime.now()
-            micro_sec = "{:06}".format(now.strftime("%f"))
-            self._task_id = "{}-{}".format(
-                now.strftime("%Y%m%d-%H%M%S"), micro_sec)
-        else:
-            self._task_id = cfg.task_id
-
-        # set working dir
-        if len(cfg.working_dir) == 0:
-            self._working_dir = os.path.abspath(os.getcwd())
-        else:
-            self._working_dir = cfg.working_dir
-
-        # set task_cfg abs
-        if not os.path.isabs(self._cfg_file_path):
-            self._cfg_file_path = os.path.join(
-                self._working_dir, self._cfg_file_path)
-
-        # set params
-        self._params = {}
-        if len(cfg.params) > 0:
-            for param in cfg.params:
-                kv = param.split("=")
-                if len(kv) != 2:
-                    continue
-                self._params[kv[0]] = kv[1]
-
-        # set task dir
-        self._task_dir = os.path.join(
-            self._working_dir,
-            "_{}".format(APP_NAME),
-            "{}.{}".format(self._task_name, self._task_id))
-
-        # set output dir
-        if len(cfg.output_dir) == 0:
-            self._output_dir = os.path.join(self._task_dir, "output")
-        else:
-            self._output_dir = cfg.output_dir
-
-        return True
-
-    def _set_vars(self):
-        """
-        set varaibles
-        """
-        val_git_tag = self._get_git_tag()
-        val_git_commit_id = self._get_git_commit_id()
-        val_git_branch = self._get_git_branch()
-        if len(val_git_tag) > 0:
-            val_git_ref = val_git_tag
-        elif len(val_git_commit_id) > 0:
-            val_git_ref = val_git_commit_id
-        else:
-            val_git_ref = ""
-
-        self._var_dict = {
-            "ROOT_DIR": self._working_dir,
-            "TASK_DIR": self._task_dir,
-            "OUTPUT_DIR": self._output_dir,
-            "SOURCE_PATH": "",  # NOTE: this value set after load source
-            "FILE_DIR": os.path.dirname(self._cfg_file_path),
-            "FILE_NAME": os.path.basename(self._cfg_file_path),
-            "FILE_PATH": self._cfg_file_path,
-            "TASK_NAME": self._task_name,
-            "TASK_ID": self._task_id,
-            "GIT_REF": val_git_ref,
-            "GIT_TAG": val_git_tag,
-            "GIT_COMMIT_ID": val_git_commit_id,
-            "GIT_BRANCH": val_git_branch,
-        }
-
-        return True
-
     def _get_git_tag(self):
         """
         get git tag
@@ -702,14 +737,14 @@ class Builder:
                 self._task_name,
                 self._task_id,
                 self._working_dir,
-                self._art_search_path,
-                self._params,
+                self._settings_handle.art_search_path,
+                self._input_param_dict,
                 self._output_dir,
             )
         )
 
         s = ""
-        for k, v in self._var_dict.items():
+        for k, v in self._inner_var_dict.items():
             s = s + "{}_{}={}\n".format(APP_NAME.upper(), k, v)
         logging.debug(
             "\n-------- builder inner variables --------\n"
@@ -717,7 +752,7 @@ class Builder:
         )
 
         s = ""
-        for k, v in self._params.items():
+        for k, v in self._input_param_dict.items():
             s = s + "{}={}\n".format(k, v)
         logging.debug(
             "\n-------- builder user input variables --------\n"

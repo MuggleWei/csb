@@ -4,15 +4,16 @@ TODO: 完整的用于本地库管理的 workflow 结构
 ```
 name: mugglec
 variables:
+  - owner: mugglewei
+  - repo: mugglec
+  - git_tag: v1.0.0
   - git_url: https://github.com/MuggleWei/mugglec.git
-  - repo_name: mugglec
-  - GIT_TAG: v1.0.0
-  - BUILD_TYPE: release
-  - pkg_name: mugglec-${GIT_TAG}-${BUILD_TYPE}
+  - build_type: release
+  - pkg_name: mugglec-${git_tag}-${build_type}
 source:
-  owner: mugglewei
-  name: ${repo_name}
-  tag: ${GIT_TAG}
+  owner: ${owner}
+  repo: ${repo}
+  tag: ${git_tag}
   repo_kind: git
   repo_url: ${git_url}
   git_depth: 1
@@ -23,33 +24,30 @@ test_deps:
 jobs:
   build:
     steps:
-      - name: build
+      - name: compile
         run: >
           cd ${HPB_TASK_DIR};
-          mkdir -p build;
-          mkdir -p usr;
           cmake \
-            -S ${HPB_SOURCE_PATH} -B build \
-            -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
+            -S ${HPB_SOURCE_PATH} \
+            -B ${HPB_BUILD_DIR} \
+            -DCMAKE_BUILD_TYPE=${build_type} \
             -DBUILD_SHARED_LIBS=ON \
-            -DCMAKE_PREFIX_PATH=${HPB_TEST_DEPS_DIR};${HPB_DEPS_DIR} \
-            -DCMAKE_INSTALL_PREFIX=./usr;
-      - name: test
-        run: >
-          cmake --build ./build --target test;
-      - name: install
-        run: >
-          cmake --build ./build --target install;
+            -DCMAKE_INSTALL_PREFIX=${HPB_USR_DIR};
+		  cmake --build ${HPB_BUILD_DIR};
+	  - name: test
+	    run: >
+		  cmake --build ${HPB_BUILD_DIR} --target test;
   package:
     needs: [build]
     steps:
       - name: package
         run: >
-          cd ${HPB_TASK_DIR}/usr;
-          tar -czvf ${pkg_name}.tar.gz ./*;
-          hpb push \
-            --owner ${HPB_ART_OWNER} \
-            --name ${HPB_ART_NAME} \
-            --tag ${HPB_ART_TAG} \
-            --pkg ${pkg_name}.tar.gz;
+          cmake --build ${HPB_BUILD_DIR} --target install;
+		  hpb package --task-dir=${HPB_TASK_DIR};
+  upload:
+    needs: [package]
+    steps:
+      - name: upload
+        run: >
+          hpb upload --task-dir=${HPB_TASK_DIR}
 ```
