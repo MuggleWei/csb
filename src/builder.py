@@ -60,6 +60,15 @@ class Builder:
         self._inner_var_dict = {}  # HPB inner variable dict
         self._yml_var_dict = {}  # yaml variable dict
 
+        # source information
+        self._src_owner = ""
+        self._src_repo = ""
+        self._src_tag = ""
+        self._src_repo_kind = ""
+        self._src_repo_url = ""
+        self._src_git_depth = 0
+        self._source_path = ""
+
     def run(self, args):
         """
         run package builder
@@ -93,7 +102,7 @@ class Builder:
         workflow_log_path = os.path.join(self._task_dir, "workflow.log")
         with open(workflow_log_path, "w") as f:
             self._workflow_fp = f
-            ret = self.run_workflow(workflow=workflow)
+            ret = self._run_workflow(workflow=workflow)
 
         return ret
 
@@ -120,6 +129,98 @@ class Builder:
             return False
 
         return True
+
+    def _prepare_vars(self, workflow):
+        """
+        prepare variables
+        :param workflow: workflow
+        """
+        for k, v in self._inner_var_dict.items():
+            var_name = "{}_{}".format(APP_NAME.upper(), k)
+            self._var_replace_dict[var_name] = v
+        for k, v in self._input_param_dict.items():
+            self._var_replace_dict[k] = v
+
+        yaml_vars = workflow.get("variables", None)
+        if yaml_vars is not None:
+            if self._load_yml_vars(variables=yaml_vars) is False:
+                logging.error("failed load yaml variable info")
+                return False
+
+        return True
+
+    def _prepare_src(self, workflow):
+        """
+        prepare source
+        :param workflow: workflow
+        """
+        if len(self._settings_handle.source_path) == 0:
+            self._settings_handle.source_path = os.path.join(
+                self._working_dir,
+                "_{}".format(APP_NAME),
+                "sources"
+            )
+        if not os.path.exists(self._settings_handle.source_path):
+            os.makedirs(self._settings_handle.source_path, exist_ok=True)
+
+        yaml_source = workflow.get("source", None)
+        if yaml_source is not None:
+            logging.info("handle source")
+            if self._load_yml_src_info(yaml_source) is False:
+                logging.error("failed load yaml source info")
+                return False
+            if self._check_yml_src_info() is False:
+                logging.error("yaml source info is invalid")
+                return False
+            if self._download_src() is False:
+                logging.error("failed download source")
+                return False
+
+        # set HPB_SOURCE_PATH
+        if len(self._source_path) == 0:
+            self._source_path = self._working_dir
+        self._inner_var_dict["SOURCE_PATH"] = self._source_path
+        source_replace_k = "{}_SOURCE_PATH".format(APP_NAME.upper())
+        self._var_replace_dict[source_replace_k] = self._source_path
+
+        return True
+
+    def _run_workflow(self, workflow):
+        """
+        run workflow
+        :param workflow: like github actions workflow, the workflow is
+            - workflow include some jobs
+            - every jobs include some steps
+            - every steps include some action
+            - action is command
+        """
+        # set current working dir
+        os.chdir(self._working_dir)
+
+        # run jobs
+        jobs = workflow.get("jobs", None)
+        if jobs is None:
+            logging.debug("workflow without jobs")
+            return True
+
+        job_order = self._sort_jobs(jobs)
+        if job_order is None:
+            logging.error("failed order job")
+            return False
+        logging.debug("workflow job order: {}".format(", ".join(job_order)))
+
+        ret = True
+        for job_name in job_order:
+            logging.info("run job: {}".format(job_name))
+            job = jobs[job_name]
+            if self._run_workflow_job(job=job) is False:
+                ret = False
+                break
+
+        # reset working dir
+        os.chdir(self._working_dir)
+
+        return ret
 
     def _parse_args(self, args):
         """
@@ -157,6 +258,54 @@ class Builder:
         cfg.output_dir = Utils.expand_path(cfg.output_dir)
 
         return cfg
+
+    def _output_args(self):
+        """
+        output arguments
+        """
+        logging.debug(
+            "\n-------- builder args --------\n"
+            "task_cfg={}\n"
+            "task_name={}\n"
+            "task_id={}\n"
+            "working_dir={}\n"
+            "artifacts_search_dir={}\n"
+            "params={}\n"
+            "output_dir={}\n"
+            "".format(
+                self._cfg_file_path,
+                self._task_name,
+                self._task_id,
+                self._working_dir,
+                self._settings_handle.art_search_path,
+                self._input_param_dict,
+                self._output_dir,
+            )
+        )
+
+        s = ""
+        for k, v in self._inner_var_dict.items():
+            s = s + "{}_{}={}\n".format(APP_NAME.upper(), k, v)
+        logging.debug(
+            "\n-------- builder inner variables --------\n"
+            "{}".format(s)
+        )
+
+        s = ""
+        for k, v in self._input_param_dict.items():
+            s = s + "{}={}\n".format(k, v)
+        logging.debug(
+            "\n-------- builder user input variables --------\n"
+            "{}".format(s)
+        )
+
+        s = ""
+        for k, v in self._yml_var_dict.items():
+            s = s + "{}={}\n".format(k, v)
+        logging.debug(
+            "\n-------- builder user yaml variables --------\n"
+            "{}".format(s)
+        )
 
     def _set_args(self, cfg: BuilderConfig):
         """
@@ -293,25 +442,6 @@ class Builder:
 
         return True
 
-    def _prepare_vars(self, workflow):
-        """
-        prepare variables
-        :param workflow: workflow
-        """
-        for k, v in self._inner_var_dict.items():
-            var_name = "{}_{}".format(APP_NAME.upper(), k)
-            self._var_replace_dict[var_name] = v
-        for k, v in self._input_param_dict.items():
-            self._var_replace_dict[k] = v
-
-        yaml_vars = workflow.get("variables", None)
-        if yaml_vars is not None:
-            if self._load_yml_vars(variables=yaml_vars) is False:
-                logging.error("failed load yaml variable info")
-                return False
-
-        return True
-
     def _load_yml_vars(self, variables):
         """
         load arguments in yml args
@@ -330,177 +460,6 @@ class Builder:
                 logging.debug("add variable: {}={}".format(k, v))
                 self._yml_var_dict[k] = v
                 self._var_replace_dict[k] = v
-        return True
-
-    def run_workflow(self, workflow):
-        """
-        run workflow
-        :param workflow: like github actions workflow, the workflow is
-            - workflow include some jobs
-            - every jobs include some steps
-            - every steps include some action
-            - action is command
-        """
-        # set current working dir
-        os.chdir(self._working_dir)
-
-        # run jobs
-        jobs = workflow.get("jobs", None)
-        if jobs is None:
-            logging.debug("workflow without jobs")
-            return True
-
-        job_order = self._sort_jobs(jobs)
-        if job_order is None:
-            logging.error("failed order job")
-            return False
-        logging.debug("workflow job order: {}".format(", ".join(job_order)))
-
-        ret = True
-        for job_name in job_order:
-            logging.info("run job: {}".format(job_name))
-            job = jobs[job_name]
-            if self.run_workflow_job(job=job) is False:
-                ret = False
-                break
-
-        # reset working dir
-        os.chdir(self._working_dir)
-
-        return ret
-
-    def run_workflow_job(self, job):
-        """
-        run workflow job
-        :param job: single job
-        """
-        steps = job.get("steps", [])
-        for step in steps:
-            step_name = step.get("name", "")
-            logging.debug("run step: {}".format(step_name))
-            if self.run_workflow_step(step=step) is False:
-                return False
-        return True
-
-    def run_workflow_step(self, step):
-        """
-        run workflow step
-        """
-        command_str = step.get("run", "")
-        if len(command_str) == 0:
-            return True
-        pattern = re.compile(r'''((?:[^;"']|"[^"]*"|'[^']*')+)''')
-        commands = pattern.split(command_str)
-        for command in commands:
-            command = command.strip()
-            if len(command) == 0:
-                continue
-            if command == ";":
-                continue
-            logging.info("run command: {}".format(command))
-            real_command = self._replace_variable(command)
-            if real_command is None:
-                logging.error("failed replace variable in: {}".format(command))
-                return False
-            if self.exec_command(command=real_command) is False:
-                return False
-        return True
-
-    def exec_command(self, command):
-        """
-        exec command
-        :param command: exec command
-        """
-        logging.debug("exec command: {}".format(command))
-        self._workflow_fp.write("COMMAND|{}\n".format(command))
-
-        pos = command.find("cd ")
-        if pos != -1:
-            chpath = command[pos+2:].strip()
-            chpath = chpath.strip("\"")
-            if not os.path.isabs(chpath):
-                chpath = os.path.join(os.getcwd(), chpath)
-            os.chdir(chpath)
-            return True
-
-        p = subprocess.Popen(
-            command, shell=True,
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE)
-        try:
-            self.exec_subporcess(p)
-            p.communicate()
-            if p.returncode is not None and p.returncode != 0:
-                logging.error("failed exec: {}, ret code: {}".format(
-                    command, p.returncode))
-                return False
-        except Exception as e:
-            logging.warning("wait subprocess finish except: {}".format(e))
-            p.terminate()
-            return False
-        return True
-
-    def exec_subporcess(self, p):
-        """
-        exec subporcess
-        :param p: subprocess
-        """
-        sel = selectors.DefaultSelector()
-        sel.register(p.stdout, selectors.EVENT_READ)
-        sel.register(p.stderr, selectors.EVENT_READ)
-        while True:
-            for key, _ in sel.select():
-                data = key.fileobj.read1().decode()
-                if not data:
-                    return
-                data = data.strip()
-                if key.fileobj is p.stdout:
-                    self._workflow_fp.write("INFO|{}\n".format(data))
-                    self._command_logger.info("{}".format(data))
-                elif key.fileobj is p.stderr:
-                    self._workflow_fp.write("ERROR|{}\n".format(data))
-                    self._command_logger.error("{}".format(data))
-                self._workflow_fp.flush()
-
-    def _prepare_src(self, workflow):
-        """
-        prepare source
-        :param workflow: workflow
-        """
-        if len(self._settings_handle.source_path) == 0:
-            self._settings_handle.source_path = os.path.join(
-                self._working_dir,
-                "_{}".format(APP_NAME),
-                "sources"
-            )
-        if not os.path.exists(self._settings_handle.source_path):
-            os.makedirs(self._settings_handle.source_path, exist_ok=True)
-
-        self._src_owner = ""
-        self._src_repo = ""
-        self._src_tag = ""
-        self._src_repo_kind = ""
-        self._src_repo_url = ""
-        self._src_git_depth = 0
-        yaml_source = workflow.get("source", None)
-        if yaml_source is not None:
-            logging.info("handle source")
-            if self._load_yml_src_info(yaml_source) is False:
-                logging.error("failed load yaml source info")
-                return False
-            if self._check_yml_src_info() is False:
-                logging.error("yaml source info is invalid")
-                return False
-            if self._download_src() is False:
-                logging.error("failed download source")
-                return False
-
-        # set HPB_SOURCE_PATH
-        self._inner_var_dict["SOURCE_PATH"] = self._source_path
-        source_replace_k = "{}_SOURCE_PATH".format(APP_NAME.upper())
-        self._var_replace_dict[source_replace_k] = self._source_path
-
         return True
 
     def _load_yml_src_info(self, yml_src):
@@ -527,6 +486,26 @@ class Builder:
                 self._src_git_depth = int(v)
             logging.debug("add source info: source.{}={}".format(k, v))
         return True
+
+    def _replace_variable(self, content):
+        """
+        replace variable in content
+        :param content: content string
+        """
+        content = str(content)
+        finds = re.findall(r'\${\w+}', content)
+        finds_set = set(finds)
+        if len(finds_set) == 0:
+            return content
+        for var in finds_set:
+            var_name = var[2:-1]
+            if var_name not in self._var_replace_dict:
+                logging.error("failed find variable value: {}".format(var_name))
+                return None
+            logging.debug("replace {} -> {}".format(
+                var, self._var_replace_dict[var_name]))
+            content = content.replace(var, self._var_replace_dict[var_name])
+        return content
 
     def _check_yml_src_info(self):
         """
@@ -564,6 +543,100 @@ class Builder:
                 "invalid source.repo_kind: {}".format(self._src_repo_kind))
             return False
 
+    def _run_workflow_job(self, job):
+        """
+        run workflow job
+        :param job: single job
+        """
+        steps = job.get("steps", [])
+        for step in steps:
+            step_name = step.get("name", "")
+            logging.debug("run step: {}".format(step_name))
+            if self._run_workflow_step(step=step) is False:
+                return False
+        return True
+
+    def _run_workflow_step(self, step):
+        """
+        run workflow step
+        """
+        command_str = step.get("run", "")
+        if len(command_str) == 0:
+            return True
+        pattern = re.compile(r'''((?:[^;"']|"[^"]*"|'[^']*')+)''')
+        commands = pattern.split(command_str)
+        for command in commands:
+            command = command.strip()
+            if len(command) == 0:
+                continue
+            if command == ";":
+                continue
+            logging.info("run command: {}".format(command))
+            real_command = self._replace_variable(command)
+            if real_command is None:
+                logging.error("failed replace variable in: {}".format(command))
+                return False
+            if self._exec_command(command=real_command) is False:
+                return False
+        return True
+
+    def _exec_command(self, command):
+        """
+        exec command
+        :param command: exec command
+        """
+        logging.debug("exec command: {}".format(command))
+        self._workflow_fp.write("COMMAND|{}\n".format(command))
+
+        pos = command.find("cd ")
+        if pos != -1:
+            chpath = command[pos+2:].strip()
+            chpath = chpath.strip("\"")
+            if not os.path.isabs(chpath):
+                chpath = os.path.join(os.getcwd(), chpath)
+            os.chdir(chpath)
+            return True
+
+        p = subprocess.Popen(
+            command, shell=True,
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE)
+        try:
+            self._exec_subporcess(p)
+            p.communicate()
+            if p.returncode is not None and p.returncode != 0:
+                logging.error("failed exec: {}, ret code: {}".format(
+                    command, p.returncode))
+                return False
+        except Exception as e:
+            logging.warning("wait subprocess finish except: {}".format(e))
+            p.terminate()
+            return False
+        return True
+
+    def _exec_subporcess(self, p):
+        """
+        exec subporcess
+        :param p: subprocess
+        """
+        sel = selectors.DefaultSelector()
+        sel.register(p.stdout, selectors.EVENT_READ)
+        sel.register(p.stderr, selectors.EVENT_READ)
+        while True:
+            for key, _ in sel.select():
+                data = key.fileobj.read1().decode()
+                if not data:
+                    return
+                data = data.strip()
+                if key.fileobj is p.stdout:
+                    self._workflow_fp.write("INFO|{}\n".format(data))
+                    self._command_logger.info("{}".format(data))
+                elif key.fileobj is p.stderr:
+                    self._workflow_fp.write("ERROR|{}\n".format(data))
+                    self._command_logger.error("{}".format(data))
+                self._workflow_fp.flush()
+
     def _download_src_git(self):
         """
         download git source
@@ -589,7 +662,7 @@ class Builder:
                 self._source_path
             )
             logging.info("run command: {}".format(command))
-            return self.exec_command(command=command)
+            return self._exec_command(command=command)
         else:
             self._source_path = os.path.join(
                 self._settings_handle.source_path,
@@ -603,7 +676,7 @@ class Builder:
                 self._source_path
             )
             logging.info("run command: {}".format(command))
-            ret = self.exec_command(command=command)
+            ret = self._exec_command(command=command)
             if ret is False:
                 return ret
             return self._checkout_src_tag(self._source_path, self._src_tag)
@@ -617,30 +690,10 @@ class Builder:
         logging.info("change dir to: {}".format(os.path.abspath(os.curdir)))
         command = "git checkout {}".format(tag)
         logging.info("run command: {}".format(command))
-        ret = self.exec_command(command=command)
+        ret = self._exec_command(command=command)
         os.chdir(origin_dir)
         logging.info("restore dir to: {}".format(os.path.abspath(os.curdir)))
         return ret
-
-    def _replace_variable(self, content):
-        """
-        replace variable in content
-        :param content: content string
-        """
-        content = str(content)
-        finds = re.findall(r'\${\w+}', content)
-        finds_set = set(finds)
-        if len(finds_set) == 0:
-            return content
-        for var in finds_set:
-            var_name = var[2:-1]
-            if var_name not in self._var_replace_dict:
-                logging.error("failed find variable value: {}".format(var_name))
-                return None
-            logging.debug("replace {} -> {}".format(
-                var, self._var_replace_dict[var_name]))
-            content = content.replace(var, self._var_replace_dict[var_name])
-        return content
 
     def _sort_jobs(self, jobs):
         """
@@ -718,51 +771,3 @@ class Builder:
         except Exception as e:
             logging.debug("failed get git branch: {}".format(str(e)))
         return v
-
-    def _output_args(self):
-        """
-        output arguments
-        """
-        logging.debug(
-            "\n-------- builder args --------\n"
-            "task_cfg={}\n"
-            "task_name={}\n"
-            "task_id={}\n"
-            "working_dir={}\n"
-            "artifacts_search_dir={}\n"
-            "params={}\n"
-            "output_dir={}\n"
-            "".format(
-                self._cfg_file_path,
-                self._task_name,
-                self._task_id,
-                self._working_dir,
-                self._settings_handle.art_search_path,
-                self._input_param_dict,
-                self._output_dir,
-            )
-        )
-
-        s = ""
-        for k, v in self._inner_var_dict.items():
-            s = s + "{}_{}={}\n".format(APP_NAME.upper(), k, v)
-        logging.debug(
-            "\n-------- builder inner variables --------\n"
-            "{}".format(s)
-        )
-
-        s = ""
-        for k, v in self._input_param_dict.items():
-            s = s + "{}={}\n".format(k, v)
-        logging.debug(
-            "\n-------- builder user input variables --------\n"
-            "{}".format(s)
-        )
-
-        s = ""
-        for k, v in self._yml_var_dict.items():
-            s = s + "{}={}\n".format(k, v)
-        logging.debug(
-            "\n-------- builder user yaml variables --------\n"
-            "{}".format(s)
-        )
