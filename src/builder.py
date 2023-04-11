@@ -104,6 +104,8 @@ class Builder:
             self._workflow_fp = f
             ret = self._run_workflow(workflow=workflow)
 
+        # TODO: generate build.yml and deps.yml
+
         return ret
 
     def _init(self, args):
@@ -549,9 +551,10 @@ class Builder:
         :param job: single job
         """
         steps = job.get("steps", [])
-        for step in steps:
+        for i in range(len(steps)):
+            step = steps[i]
             step_name = step.get("name", "")
-            logging.debug("run step: {}".format(step_name))
+            logging.debug("run step[{}]: {}".format(i, step_name))
             if self._run_workflow_step(step=step) is False:
                 return False
         return True

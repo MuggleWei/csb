@@ -32,18 +32,18 @@ jobs:
             -B ${HPB_BUILD_DIR} \
             -DCMAKE_BUILD_TYPE=${build_type} \
             -DBUILD_SHARED_LIBS=ON \
-            -DCMAKE_INSTALL_PREFIX=${HPB_USR_DIR};
-		  cmake --build ${HPB_BUILD_DIR};
-	  - name: test
-	    run: >
-		  cmake --build ${HPB_BUILD_DIR} --target test;
+            -DCMAKE_INSTALL_PREFIX=${HPB_PKG_DIR};
+          cmake --build ${HPB_BUILD_DIR};
+      - name: test
+        run: >
+          cmake --build ${HPB_BUILD_DIR} --target test;
   package:
     needs: [build]
     steps:
       - name: package
         run: >
           cmake --build ${HPB_BUILD_DIR} --target install;
-		  hpb package --task-dir=${HPB_TASK_DIR};
+          hpb package --task-dir=${HPB_TASK_DIR};
   upload:
     needs: [package]
     steps:

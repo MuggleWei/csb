@@ -19,14 +19,12 @@ jobs:
       - name: build
         run: >
           cd ${HPB_TASK_DIR};
-          mkdir -p build;
-          mkdir -p usr;
           cmake \
             -S ${HPB_SOURCE_PATH} \
-            -B build \
+            -B ${HPB_BUILD_DIR} \
             -DCMAKE_BUILD_TYPE=${build_type} \
             -DBUILD_SHARED_LIBS=ON \
-            -DCMAKE_INSTALL_PREFIX=${HPB_TASK_DIR}/usr;
+            -DCMAKE_INSTALL_PREFIX=${HPB_PKG_DIR};
           cmake --build ./build --target install;
   package:
     needs: [build]
@@ -34,7 +32,7 @@ jobs:
       - name: package
         run: >
           cmake --build build --target install;
-          cd usr;
+          cd ${HPB_PKG_DIR};
           tar -czvf ${pkg_name}.tar.gz ./*;
   upload:
     needs: [package]
