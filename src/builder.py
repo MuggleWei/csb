@@ -277,7 +277,7 @@ class Builder:
                 self._task_name,
                 self._task_id,
                 self._working_dir,
-                self._settings_handle.art_search_path,
+                self._settings_handle.pkg_search_repos,
                 self._input_param_dict,
                 self._output_dir,
             )

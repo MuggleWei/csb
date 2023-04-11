@@ -13,7 +13,6 @@ class UploaderConfig:
         self.owner = ""
         self.repo = ""
         self.ver = ""
-        self.output_dir = ""
         self.config = ""
         self.build_type = ""
         self.settings_path = ""
@@ -35,7 +34,6 @@ class Uploader:
             "    , --owner string      [REQUIRED] repository owner\n" \
             "    , --repo string       [REQUIRED] repository name\n" \
             "  -v, --ver string        [REQUIRED] package version\n" \
-            "  -o, --output-dir string [OPTIONAL] output directory, use artifacts/output in settings.xml by default\n" \
             "  -c, --config string     [OPTIONAL] package build config file\n" \
             "  -t, --build-type string [OPTIONAL] package build type, by default set release\n" \
             "  -s, --settings string   [OPTIONAL] manual set settings.xml\n" \
@@ -54,20 +52,24 @@ class Uploader:
         if self._init(args=args) is False:
             return False
 
-        art_output_dir = os.path.join(
-            self.cfg.output_dir,
-            self.cfg.owner,
-            self.cfg.repo,
-            self.cfg.ver,
-            self.cfg.build_type
-        )
-        os.makedirs(art_output_dir, exist_ok=True)
-        print("upload {} -> {}".format(self.cfg.pkg, art_output_dir))
-        shutil.copy2(self.cfg.pkg, art_output_dir)
+        if self._output_repo.kind == "local":
+            art_output_dir = os.path.join(
+                self._output_repo.path,
+                self.cfg.owner,
+                self.cfg.repo,
+                self.cfg.ver,
+                self.cfg.build_type
+            )
+            os.makedirs(art_output_dir, exist_ok=True)
+            print("upload {} -> {}".format(self.cfg.pkg, art_output_dir))
+            shutil.copy2(self.cfg.pkg, art_output_dir)
 
-        if len(self.cfg.config) > 0:
-            print("upload {} -> {}".format(self.cfg.config, art_output_dir))
-            shutil.copy2(self.cfg.config, art_output_dir)
+            if len(self.cfg.config) > 0:
+                print("upload {} -> {}".format(self.cfg.config, art_output_dir))
+                shutil.copy2(self.cfg.config, art_output_dir)
+        else:
+            print("WARNING! "
+                  "Artifacts upload remote repo currently not support")
 
         return True
 
@@ -97,14 +99,10 @@ class Uploader:
             user_settings.append(self.cfg.settings_path)
         self._settings_handle = SettingsHandle.load_settings(user_settings)
 
-        if len(self._settings_handle.art_upload_path) == 0 and \
-                len(self.cfg.output_dir) == 0:
-            print("Error! field 'output-dir' missing and "
-                  "default 'artifacts/upload' path not be set")
+        if self._settings_handle.pkg_upload_repo is None:
+            print("ERROR! 'artifacts/upload' not be set in settings file")
             return False
-        if len(self.cfg.output_dir) == 0:
-            self.cfg.output_dir = self._settings_handle.art_upload_path
-        os.makedirs(self.cfg.output_dir, exist_ok=True)
+        self._output_repo = self._settings_handle.pkg_upload_repo
 
         return True
 
@@ -117,7 +115,7 @@ class Uploader:
             args, "hp:v:o:c:t:s:",
             [
                 "help", "pkg=", "owner=", "repo=",
-                "ver=", "output-dir=", "config=", "build-type=",
+                "ver=", "config=", "build-type=",
                 "settings="
             ]
         )
@@ -133,8 +131,6 @@ class Uploader:
                 cfg.repo = arg
             elif opt in ("-v", "--ver"):
                 cfg.ver = arg
-            elif opt in ("-o", "--output-dir"):
-                cfg.output_dir = arg
             elif opt in ("-c", "--config"):
                 cfg.config = arg
             elif opt in ("-t", "--build-type"):
@@ -142,7 +138,6 @@ class Uploader:
             elif opt in ("-s", "--settings"):
                 cfg.settings_path = arg
 
-        cfg.output_dir = Utils.expand_path(cfg.output_dir)
         cfg.config = Utils.expand_path(cfg.config)
         if len(cfg.build_type) == 0:
             cfg.build_type = "release"

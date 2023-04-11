@@ -2,7 +2,7 @@ import getopt
 import os
 import sys
 from constant_var import APP_NAME
-from settings_handle import SettingsHandle
+from settings_handle import RepoConfig, SettingsHandle
 
 
 class SearcherConfig:
@@ -62,30 +62,45 @@ class Searcher:
         search candidate target path
         """
         target_paths = []
-        if len(self._settings_handle.art_search_path) == 0:
-            print("WARNING! Artifacts search path list is empty")
+        if len(self._settings_handle.pkg_search_repos) == 0:
+            print("WARNING! Artifacts search repo list is empty")
 
-        for search_root_path in self._settings_handle.art_search_path:
-            search_path = os.path.join(
-                search_root_path,
-                self.cfg.owner,
-                self.cfg.repo
-            )
-            if not os.path.exists(search_path):
+        for search_repo in self._settings_handle.pkg_search_repos:
+            if search_repo.kind == "local":
+                local_target_paths = self._search_candidate_local(search_repo)
+                target_paths.extend(local_target_paths)
+            elif search_repo.kind == "remote":
+                print("WARNING! "
+                      "Artifacts search remote repo currently not support")
+            else:
+                print("invalid search repo kind: {}".format(search_repo.kind))
+        return target_paths
+
+    def _search_candidate_local(self, repo: RepoConfig):
+        """
+        get search candidate in local repo
+        """
+        target_paths = []
+
+        search_path = os.path.join(
+            repo.path,
+            self.cfg.owner,
+            self.cfg.repo
+        )
+        if not os.path.exists(search_path):
+            return []
+        ver_dirs = os.listdir(search_path)
+        for ver_dir in ver_dirs:
+            if len(self.cfg.ver) > 0 and self.cfg.ver != ver_dir:
                 continue
-            ver_dirs = os.listdir(search_path)
-
-            for ver_dir in ver_dirs:
-                if len(self.cfg.ver) > 0 and self.cfg.ver != ver_dir:
+            ver_path = os.path.join(search_path, ver_dir)
+            build_type_dirs = os.listdir(ver_path)
+            for build_type_dir in build_type_dirs:
+                if len(self.cfg.build_type) > 0 and \
+                        self.cfg.build_type != build_type_dir:
                     continue
-                ver_path = os.path.join(search_path, ver_dir)
-                build_type_dirs = os.listdir(ver_path)
-                for build_type_dir in build_type_dirs:
-                    if len(self.cfg.build_type) > 0 and \
-                            self.cfg.build_type != build_type_dir:
-                        continue
-                    build_type_path = os.path.join(ver_path, build_type_dir)
-                    target_paths.append(build_type_path)
+                build_type_path = os.path.join(ver_path, build_type_dir)
+                target_paths.append(build_type_path)
         return target_paths
 
     def _handle_target_paths(self, target_paths):

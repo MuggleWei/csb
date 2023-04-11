@@ -1,36 +1,73 @@
 <HPB>
 
     <!--
-     log config
-     :param console_level: console output log level
-     :param file_level: file output log level
+    log config
+    :param console_level: console output log level
+    :param file_level: file output log level
     -->
 	<log console_level="info" file_level="debug" />
 
     <!--
-     source directories
+    local source directories
     -->
     <sources>
         <!--
-         <path>/path/to/source/download/directory</path>
+        <path>/path/to/source/download/directory</path>
         -->
         <path>${HOME}/.hpb/sources</path>
     </sources>
-    
+
     <!--
-     artifacts directories
+    search/upload artifacts location
     -->
     <artifacts>
         <!--
-    	 <search>/path/to/artifacts/search/directory</search>
+    	search package location
         -->
-        <search>${HOME}/.hpb/artifacts</search>
-    	<search>${HOME}/.local/share/hpb/artifacts</search>
+        <search>
+
+            <!--
+            each repo is a search location
+            :param kind: 
+                - local: local path
+                - remote: package server
+            :param path: if kind is local, path represent a local path
+            :param url: if kind is remote, url represent server url
+            :param name: if kind is remote and server need login, name is request param
+            :param passwd: if kind is remote and server need login, passwd is request param
+            -->
+
+            <repo>
+                <kind>local</kind>
+                <path>${HOME}/.hpb/artifacts</path>
+            </repo>
+
+            <repo>
+                <kind>local</kind>
+                <path>${HOME}/.local/share/hpb/artifacts</path>
+            </repo>
+
+            <!--<repo>-->
+            <!--    <kind>remote</kind>-->
+            <!--    <url>https://repo.mugglewei.org/hpb</url>-->
+            <!--    <name>mugglewei</name>-->
+            <!--    <passwd>******</passwd>-->
+            <!--</repo>-->
+
+        </search>
 
         <!--
-         <upload>/path/to/artifacts/upload/directory</upload>
+        update package location
         -->
-        <upload>${HOME}/.hpb/artifacts</upload>
+        <upload>
+            <!--
+            the same as the repo in search
+            -->
+            <repo>
+                <kind>local</kind>
+                <path>${HOME}/.hpb/artifacts</path>
+            </repo>
+        </upload>
     </artifacts>
 
 </HPB>

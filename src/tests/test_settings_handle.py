@@ -13,14 +13,28 @@ class TestSettingsHandle(unittest.TestCase):
         self._handle.load(filepath="./etc/test_settings2.xml")
 
     def test_artifacts_search_path(self):
-        self.assertEqual(len(self._handle.art_search_path), 3)
+        self.assertEqual(len(self._handle.pkg_search_repos), 4)
         path1 = os.path.expanduser("~/.{}/artifacts".format(APP_NAME))
         path2 = os.path.expanduser(
             "~/.local/share/{}/artifacts".format(APP_NAME))
-        path3 = os.path.expanduser("/etc/share/{}/artifacts".format(APP_NAME))
-        self.assertEqual(path1, self._handle.art_search_path[0])
-        self.assertEqual(path2, self._handle.art_search_path[1])
-        self.assertEqual(path3, self._handle.art_search_path[2])
+        url3 = "https://repo.mugglewei.org/hpb"
+        name3 = "hello"
+        passwd3 = "123456"
+        path4 = os.path.expanduser("/etc/share/{}/artifacts".format(APP_NAME))
+
+        self.assertEqual(self._handle.pkg_search_repos[0].kind, "local")
+        self.assertEqual(path1, self._handle.pkg_search_repos[0].path)
+
+        self.assertEqual(self._handle.pkg_search_repos[1].kind, "local")
+        self.assertEqual(path2, self._handle.pkg_search_repos[1].path)
+
+        self.assertEqual(self._handle.pkg_search_repos[2].kind, "remote")
+        self.assertEqual(url3, self._handle.pkg_search_repos[2].url)
+        self.assertEqual(name3, self._handle.pkg_search_repos[2].name)
+        self.assertEqual(passwd3, self._handle.pkg_search_repos[2].passwd)
+
+        self.assertEqual(self._handle.pkg_search_repos[3].kind, "local")
+        self.assertEqual(path4, self._handle.pkg_search_repos[3].path)
 
 
 if __name__ == "__main__":

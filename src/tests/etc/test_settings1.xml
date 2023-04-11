@@ -1,10 +1,22 @@
-<!--
- | artifacts search directories
- |-->
-<artifacts>
-    <!--
-	 | <path>/path/to/artifacts/search/directory</path>
-     |-->
-    <path>${HOME}/.hpb/artifacts</path>
-	<path>${HOME}/.local/share/hpb/artifacts</path>
-</artifacts>
+<package>
+	<search>
+
+		<repo>
+			<kind>local</kind>
+			<path>${HOME}/.hpb/artifacts</path>
+		</repo>
+
+		<repo>
+			<kind>local</kind>
+			<path>${HOME}/.local/share/hpb/artifacts</path>
+		</repo>
+
+		<repo>
+			<kind>remote</kind>
+			<url>https://repo.mugglewei.org/hpb</url>
+			<name>hello</name>
+			<passwd>123456</passwd>
+		</repo>
+
+	</search>
+</package>
