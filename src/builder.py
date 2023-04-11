@@ -18,12 +18,12 @@ from yaml_handle import YamlHandle
 class BuilderConfig:
     def __init__(self):
         self.working_dir = ""
-        self.art_search_dir = []
         self.params = []
         self.config_path = ""
         self.task_id = ""
         self.task_name = ""
         self.output_dir = ""
+        self.settings_path = ""
 
 
 class Builder:
@@ -39,9 +39,9 @@ class Builder:
             "    , --task-name string  [OPTIONAL] build task name, if empty, use config file without suffix as task-name\n" \
             "    , --task-id string    [OPTIONAL] build task id, if empty, set 'yyyymmddHHMMSSxxxx' as task-id\n" \
             "    , --work-dir string   [OPTIONAL] working directory(by default, use current working directory)\n" \
-            "    , --art-dir list      [OPTIONAL] artifacts search directory, e.g. --art-dir=file://~/.local/\n" \
             "  -p, --param list        [OPTIONAL] build parameters, e.g. --params foo=123 -p bar=456\n" \
             "  -o, --output-dir string [OPTIONAL] output directory\n" \
+            "  -s, --settings string   [OPTIONAL] manual set settings.xml\n" \
             "".format(APP_NAME)
 
     def run(self, args):
@@ -477,7 +477,12 @@ class Builder:
 
         os.makedirs(self._output_dir, exist_ok=True)
 
-        self._settings_handle = SettingsHandle.load_default_settings()
+        user_settings = []
+        if len(cfg.settings_path) > 0:
+            user_settings.append(cfg.settings_path)
+        self._settings_handle = SettingsHandle.load_settings(user_settings)
+
+        self._art_search_path = []
         self._art_search_path.extend(self._settings_handle.art_search_path)
 
         console_log_level = LogHandle.log_level(
@@ -511,10 +516,10 @@ class Builder:
         """
         cfg = BuilderConfig()
         opts, _ = getopt.getopt(
-            args, "hc:p:o:",
+            args, "hc:p:o:s:",
             [
                 "help", "config=", "task-name=", "task-id=",
-                "work-dir=", "art-dir=", "param=", "output-dir="
+                "work-dir=", "param=", "output-dir=", "settings="
             ]
         )
         for opt, arg in opts:
@@ -529,17 +534,15 @@ class Builder:
                 cfg.task_id = arg
             elif opt in ("--work-dir"):
                 cfg.working_dir = arg
-            elif opt in ("--art-dir"):
-                cfg.art_search_dir.append(arg)
             elif opt in ("-p", "--param"):
                 cfg.params.append(arg)
             elif opt in ("-o", "--output-dir"):
                 cfg.output_dir = arg
+            elif opt in ("-s", "--settings"):
+                cfg.settings_path = arg
 
         cfg.config_path = Utils.expand_path(cfg.config_path)
         cfg.working_dir = Utils.expand_path(cfg.working_dir)
-        for i in range(len(cfg.art_search_dir)):
-            cfg.art_search_dir[i] = Utils.expand_path(cfg.art_search_dir[i])
         cfg.output_dir = Utils.expand_path(cfg.output_dir)
 
         return cfg
@@ -580,10 +583,6 @@ class Builder:
         if not os.path.isabs(self._cfg_file_path):
             self._cfg_file_path = os.path.join(
                 self._working_dir, self._cfg_file_path)
-
-        # set search artifacts dir
-        self._art_search_path = []
-        self._art_search_path.extend(cfg.art_search_dir)
 
         # set params
         self._params = {}

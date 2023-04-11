@@ -12,6 +12,7 @@ class SearcherConfig:
         self.ver = ""
         self.build_type = ""
         self.pkg = ""
+        self.settings_path = ""
 
 
 class Searcher:
@@ -31,6 +32,7 @@ class Searcher:
             "  -v, --ver string        [OPTIONAL] package version\n" \
             "  -t, --build-type string [OPTIONAL] package build type, by default set release\n" \
             "  -p, --pkg string        [OPTIONAL] package file\n" \
+            "  -s, --settings string   [OPTIONAL] manual set settings.xml\n" \
             "e.g.\n" \
             "  {0} search --owner google --repo googletest\n" \
             "  {0} search --owner google --repo googletest -v v1.13.0\n" \
@@ -60,6 +62,9 @@ class Searcher:
         search candidate target path
         """
         target_paths = []
+        if len(self._settings_handle.art_search_path) == 0:
+            print("WARNING! Artifacts search path list is empty")
+
         for search_root_path in self._settings_handle.art_search_path:
             search_path = os.path.join(
                 search_root_path,
@@ -140,7 +145,10 @@ class Searcher:
             print("Error! field 'repo' missing\n\n{}".format(self._usage_str))
             return False
 
-        self._settings_handle = SettingsHandle.load_default_settings()
+        user_settings = []
+        if len(self.cfg.settings_path) > 0:
+            user_settings.append(self.cfg.settings_path)
+        self._settings_handle = SettingsHandle.load_settings(user_settings)
 
         return True
 
@@ -150,10 +158,10 @@ class Searcher:
         """
         cfg = SearcherConfig()
         opts, _ = getopt.getopt(
-            args, "hv:t:p:",
+            args, "hv:t:p:s:",
             [
                 "help", "owner=", "repo=", "ver=",
-                "build-type=", "pkg=",
+                "build-type=", "pkg=", "settings="
             ]
         )
 
@@ -171,5 +179,7 @@ class Searcher:
                 cfg.build_type = arg
             elif opt in ("-p", "--pkg"):
                 cfg.pkg = arg
+            elif opt in ("-s", "--settings"):
+                cfg.settings_path = arg
 
         return cfg

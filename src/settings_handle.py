@@ -13,17 +13,25 @@ class SettingsHandle:
     """
 
     @classmethod
-    def load_default_settings(cls):
-        settings_handle = SettingsHandle()
-        settings_path = [
+    def load_settings(cls, user_settings=None):
+        """
+        load settings
+        """
+        settings_path = []
+        if user_settings is None:
+            user_settings = []
+        settings_path.extend(user_settings)
+        settings_path.extend([
             Utils.expand_path("~/.{}/settings.xml".format(APP_NAME)),
             Utils.expand_path(
                 "~/.local/share/{}/settings.xml".format(APP_NAME)),
             "/etc/{}/settings.xml".format(APP_NAME),
-        ]
+        ])
+
+        settings_handle = SettingsHandle()
         for filepath in settings_path:
             if os.path.exists(filepath):
-                print("load default settings: {}".format(filepath))
+                print("load settings: {}".format(filepath))
                 settings_handle.load(filepath=filepath)
         return settings_handle
 

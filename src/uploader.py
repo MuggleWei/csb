@@ -16,6 +16,7 @@ class UploaderConfig:
         self.output_dir = ""
         self.config = ""
         self.build_type = ""
+        self.settings_path = ""
 
 
 class Uploader:
@@ -37,6 +38,7 @@ class Uploader:
             "  -o, --output-dir string [OPTIONAL] output directory, use artifacts/output in settings.xml by default\n" \
             "  -c, --config string     [OPTIONAL] package build config file\n" \
             "  -t, --build-type string [OPTIONAL] package build type, by default set release\n" \
+            "  -s, --settings string   [OPTIONAL] manual set settings.xml\n" \
             "\n" \
             "e.g.\n" \
             "  {0} upload -p googletest-release-v1.13.0.tar.gz " \
@@ -90,7 +92,11 @@ class Uploader:
             print("Error! field 'ver' missing\n\n{}".format(self._usage_str))
             return False
 
-        self._settings_handle = SettingsHandle.load_default_settings()
+        user_settings = []
+        if len(self.cfg.settings_path) > 0:
+            user_settings.append(self.cfg.settings_path)
+        self._settings_handle = SettingsHandle.load_settings(user_settings)
+
         if len(self._settings_handle.art_upload_path) == 0 and \
                 len(self.cfg.output_dir) == 0:
             print("Error! field 'output-dir' missing and "
@@ -108,10 +114,11 @@ class Uploader:
         """
         cfg = UploaderConfig()
         opts, _ = getopt.getopt(
-            args, "hp:v:o:c:t:",
+            args, "hp:v:o:c:t:s:",
             [
                 "help", "pkg=", "owner=", "repo=",
-                "ver=", "output-dir=", "config=", "build-type="
+                "ver=", "output-dir=", "config=", "build-type=",
+                "settings="
             ]
         )
         for opt, arg in opts:
@@ -132,6 +139,8 @@ class Uploader:
                 cfg.config = arg
             elif opt in ("-t", "--build-type"):
                 cfg.build_type = arg
+            elif opt in ("-s", "--settings"):
+                cfg.settings_path = arg
 
         cfg.output_dir = Utils.expand_path(cfg.output_dir)
         cfg.config = Utils.expand_path(cfg.config)
