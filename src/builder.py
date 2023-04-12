@@ -632,10 +632,10 @@ class Builder:
         """
         generate dependencies file
         """
-        self._generate_meta_deps_file()
-        self._generate_meta_pkg_file()
+        self._generate_hpd_meta_file()
+        self._generate_pkg_meta_file()
 
-    def _generate_meta_deps_file(self):
+    def _generate_hpd_meta_file(self):
         """
         generate hpd meta dependencies file
         """
@@ -643,20 +643,6 @@ class Builder:
             "maintainer": self._src_maintainer,
             "repo": self._src_repo,
             "url": self._src_repo_url,
-            "tag": self._get_source_tag(),
-            "deps": self._deps,
-        }
-        filepath = os.path.join(self._task_dir, "deps.yml")
-        yaml_handle = YamlHandle()
-        yaml_handle.write(filepath=filepath, obj=d)
-
-    def _generate_meta_pkg_file(self):
-        """
-        generate hpd meta pkg file
-        """
-        d = {
-            "maintainer": self._src_maintainer,
-            "repo": self._src_repo,
             "tag": self._get_source_tag(),
             "platform": {
                 "system": self._platform_name,
@@ -666,13 +652,44 @@ class Builder:
                 "distr": self._platform_distro,
                 "libc": self._platform_libc,
             },
-            "deps_file": os.path.join(self._task_dir, "deps.yml"),
+            "deps": self._deps,
+            "build_type": self._get_build_type(),
+        }
+        filepath = os.path.join(self._task_dir, "{}.yml".format(APP_NAME))
+        yaml_handle = YamlHandle()
+        yaml_handle.write(filepath=filepath, obj=d)
+
+    def _generate_pkg_meta_file(self):
+        """
+        generate hpd meta pkg file
+        """
+        d = {
+            "meta_file": os.path.join(
+                self._task_dir, "{}.yml".format(APP_NAME)),
             "output_dir": self._inner_var_dict["OUTPUT_DIR"],
             "pkg_dir": self._inner_var_dict["PKG_DIR"],
         }
         filepath = os.path.join(self._task_dir, "pkg.yml")
         yaml_handle = YamlHandle()
         yaml_handle.write(filepath=filepath, obj=d)
+
+    def _get_build_type(self):
+        """
+        get build type
+        """
+        build_type = ""
+        try_words = [
+            "build-type",
+            "build_type",
+            "BUILD_TYPE",
+            "BUILDTYPE",
+        ]
+        for word in try_words:
+            if word not in self._var_replace_dict:
+                continue
+            build_type = self._var_replace_dict[word]
+            break
+        return build_type
 
     def _get_source_tag(self):
         """

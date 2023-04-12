@@ -1,7 +1,10 @@
 import getopt
 import os
+import shutil
 import sys
+import tarfile
 from constant_var import APP_NAME
+from package_meta import PackageMeta
 from utils import Utils
 from yaml_handle import YamlHandle
 
@@ -33,6 +36,14 @@ class Packer:
         if self._load_pkg_info() is False:
             return False
 
+        if self._pack_output() is False:
+            return False
+
+        if self._copy_meta_files() is False:
+            return False
+
+        return True
+
     def _init(self, args):
         """
         init input arguments
@@ -59,9 +70,13 @@ class Packer:
             print("failed load package config file: {}".format(self.cfg.config))
             return False
 
-        self.deps_filepath = pkg_info["deps_file"]
+        self.meta_file = pkg_info["meta_file"]
         self.output_dir = pkg_info["output_dir"]
         self.pkg_dir = pkg_info["pkg_dir"]
+
+        self.pkg_meta = PackageMeta()
+        if self.pkg_meta.load(filepath=self.meta_file) is False:
+            return False
 
         return True
 
@@ -69,10 +84,47 @@ class Packer:
         """
         pack output files
         """
+        filename = self._gen_package_name()
+        filename += ".tar.gz"
+
         origin_dir = os.path.abspath(os.curdir)
         os.chdir(self.output_dir)
-        # TODO:
+        print("change dir to: {}".format(self.output_dir))
+
+        print("tar: {}".format(filename))
+        files = os.listdir(self.output_dir)
+        with tarfile.open(filename, "w:gz") as tar:
+            for f in files:
+                print("add {}".format(f))
+                tar.add(f)
+
         os.chdir(origin_dir)
+        print("restore dir to: {}".format(self.output_dir))
+
+        src_filepath = os.path.join(self.output_dir, filename)
+        dst_filepath = os.path.join(self.pkg_dir, filename)
+        shutil.move(src_filepath, dst_filepath)
+
+    def _copy_meta_files(self):
+        """
+        copy meta files
+        """
+        shutil.copy(self.meta_file, self.pkg_dir)
+
+    def _gen_package_name(self):
+        """
+        generate package name
+        """
+        filename = "{}".format(self.pkg_meta.repo)
+        if self.pkg_meta.tag != "":
+            filename += "-{}".format(self.pkg_meta.tag)
+        if self.pkg_meta.build_type != "":
+            filename += "-{}".format(self.pkg_meta.build_type)
+        if self.pkg_meta.platform_name != "":
+            filename += "-{}".format(self.pkg_meta.platform_name)
+        if self.pkg_meta.platform_machine != "":
+            filename += "-{}".format(self.pkg_meta.platform_machine)
+        return filename
 
     def _parse_args(self, args):
         """

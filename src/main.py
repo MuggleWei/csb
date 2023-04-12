@@ -2,6 +2,7 @@ import sys
 import __version__
 
 from builder import Builder
+from packer import Packer
 from searcher import Searcher
 from uploader import Uploader
 
@@ -37,6 +38,7 @@ def run_pull():
     """
     pull package
     """
+    # TODO:
     print("'pull' command has not be implemented yet")
     sys.exit(1)
 
@@ -45,7 +47,9 @@ def run_pack():
     """
     pack artifacts
     """
-    pass
+    packer = Packer()
+    if packer.run(sys.argv[2:]) is False:
+        sys.exit(1)
 
 
 if __name__ == "__main__":

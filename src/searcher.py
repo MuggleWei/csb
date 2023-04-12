@@ -2,6 +2,7 @@ import getopt
 import os
 import sys
 from constant_var import APP_NAME
+from package_meta import PackageMeta
 from settings_handle import RepoConfig, SettingsHandle
 
 
@@ -27,16 +28,16 @@ class Searcher:
         self._usage_str = "Usage: {0} search [OPTIONS]\n" \
             "\n" \
             "Options: \n" \
-            "    , --maintainer string [REQUIRED] repository maintainer\n" \
-            "    , --repo string       [REQUIRED] repository name\n" \
+            "  -m, --maintainer string [REQUIRED] repository maintainer\n" \
+            "  -r, --repo string       [REQUIRED] repository name\n" \
             "  -v, --ver string        [OPTIONAL] package version\n" \
             "  -t, --build-type string [OPTIONAL] package build type, by default set release\n" \
             "  -p, --pkg string        [OPTIONAL] package file\n" \
             "  -s, --settings string   [OPTIONAL] manual set settings.xml\n" \
             "e.g.\n" \
             "  {0} search --maintainer google --repo googletest\n" \
-            "  {0} search --maintainer google --repo googletest -v v1.13.0\n" \
-            "  {0} search --maintainer google --repo googletest -v v1.13.0 -t release\n" \
+            "  {0} search -m google -r googletest -v v1.13.0\n" \
+            "  {0} search -m google -r googletest -v v1.13.0 -t release\n" \
             "".format(APP_NAME)
 
     def run(self, args):
@@ -55,7 +56,7 @@ class Searcher:
             print("--------")
             print("dir: {}".format(target[0]))
             print("package: {}".format(target[1]))
-            print("cfg: {}".format(target[2]))
+            print("meta file: {}".format(target[2]))
 
     def _search_candidate(self):
         """
@@ -89,18 +90,25 @@ class Searcher:
         )
         if not os.path.exists(search_path):
             return []
-        ver_dirs = os.listdir(search_path)
-        for ver_dir in ver_dirs:
-            if len(self.cfg.ver) > 0 and self.cfg.ver != ver_dir:
+
+        dirs = os.listdir(search_path)
+        for d in dirs:
+            pkg_dir = os.path.join(search_path, d)
+            if not os.path.isdir(pkg_dir):
                 continue
-            ver_path = os.path.join(search_path, ver_dir)
-            build_type_dirs = os.listdir(ver_path)
-            for build_type_dir in build_type_dirs:
-                if len(self.cfg.build_type) > 0 and \
-                        self.cfg.build_type != build_type_dir:
-                    continue
-                build_type_path = os.path.join(ver_path, build_type_dir)
-                target_paths.append(build_type_path)
+            meta_file = os.path.join(pkg_dir, "{}.yml".format(APP_NAME))
+            pkg_meta = PackageMeta()
+            if pkg_meta.load(meta_file) is False:
+                continue
+            if len(self.cfg.ver) > 0 and \
+                    len(pkg_meta.tag) > 0 and \
+                    self.cfg.ver != pkg_meta.tag:
+                continue
+            if len(self.cfg.build_type) > 0 and \
+                    len(pkg_meta.build_type) > 0 and \
+                    self.cfg.build_type != pkg_meta.build_type:
+                continue
+            target_paths.append(os.path.join(search_path, pkg_dir))
         return target_paths
 
     def _handle_target_paths(self, target_paths):
@@ -110,23 +118,23 @@ class Searcher:
         targets = []
         for target_path in target_paths:
             try:
-                cfg_file = ""
+                meta_file = ""
                 pkg_file = ""
                 files = os.listdir(target_path)
                 for filename in files:
                     if self._is_cfg_file(filename=filename):
-                        if len(cfg_file) > 0:
+                        if len(meta_file) > 0:
                             raise Exception(
                                 "multiple {} config file in {}".format(
                                     APP_NAME, target_path))
-                        cfg_file = filename
+                        meta_file = filename
                     if self._is_pkg_file(filename=filename):
                         if len(pkg_file) > 0:
                             raise Exception(
                                 "multiple {} package file in {}".format(
                                     APP_NAME, target_path))
                         pkg_file = filename
-                targets.append([target_path, pkg_file, cfg_file])
+                targets.append([target_path, pkg_file, meta_file])
             except Exception as e:
                 print("{}".format(str(e)))
         return targets
@@ -173,7 +181,7 @@ class Searcher:
         """
         cfg = SearcherConfig()
         opts, _ = getopt.getopt(
-            args, "hv:t:p:s:",
+            args, "hm:r:v:t:p:s:",
             [
                 "help", "maintainer=", "repo=", "ver=",
                 "build-type=", "pkg=", "settings="
@@ -184,9 +192,9 @@ class Searcher:
             if opt in ("-h", "--help"):
                 print(self._usage_str)
                 sys.exit(0)
-            elif opt in ("--maintainer"):
+            elif opt in ("-m", "--maintainer"):
                 cfg.maintainer = arg
-            elif opt in ("--repo"):
+            elif opt in ("-r", "--repo"):
                 cfg.repo = arg
             elif opt in ("-v", "--ver"):
                 cfg.ver = arg
