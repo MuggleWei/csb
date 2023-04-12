@@ -35,19 +35,13 @@ jobs:
   package:
     needs: [build]
     steps:
-      - name: package
+      - name: pack
         run: >
-          cd ${HPB_OUTPUT_DIR};
-          tar -czvf ${pkg_name}.tar.gz ./*;
+          cd ${HPB_TASK_DIR};
+          hpb pack;
   upload:
     needs: [package]
     steps:
       - name: upload
         run: >
-          hpb upload \
-            -p ${pkg_name}.tar.gz \
-            -c ${HPB_FILE_PATH} \
-            --owner ${owner} \
-            --repo ${repo_name} \
-            --ver ${git_tag} \
-            --build-type ${build_type};
+          hpb push;

@@ -1,5 +1,4 @@
 import logging
-import re
 import yaml
 
 
@@ -33,3 +32,12 @@ class YamlHandle:
         logging.debug("load yaml file: \n{}".format(self._content))
 
         return yaml.safe_load(self._content)
+
+    def write(self, filepath, obj):
+        """
+        write obj into yaml file
+        :param filepath: write into filepath
+        :param obj: content object
+        """
+        with open(filepath, "w") as f:
+            yaml.dump(obj, f)

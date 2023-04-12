@@ -6,6 +6,48 @@ from searcher import Searcher
 from uploader import Uploader
 
 
+def run_builde():
+    """
+    run builder
+    """
+    builder = Builder()
+    if builder.run(sys.argv[2:]) is False:
+        sys.exit(1)
+
+
+def run_push():
+    """
+    upload package
+    """
+    uploader = Uploader()
+    if uploader.run(sys.argv[2:]) is False:
+        sys.exit(1)
+
+
+def run_search():
+    """
+    search package
+    """
+    searcher = Searcher()
+    if searcher.run(sys.argv[2:]) is False:
+        sys.exit(1)
+
+
+def run_pull():
+    """
+    pull package
+    """
+    print("'pull' command has not be implemented yet")
+    sys.exit(1)
+
+
+def run_pack():
+    """
+    pack artifacts
+    """
+    pass
+
+
 if __name__ == "__main__":
     usage_str = "Usage: {} COMMAND [OPTIONS]\n" \
         "\n" \
@@ -13,6 +55,8 @@ if __name__ == "__main__":
         "  build    build package\n" \
         "  push     upload package\n" \
         "  search   search package\n" \
+        "  pull     pull package\n" \
+        "  pack     pack artifacts\n" \
         "".format(sys.argv[0])
 
     if len(sys.argv) < 2:
@@ -27,19 +71,18 @@ if __name__ == "__main__":
         print("{}".format(__version__.__version__))
         sys.exit(0)
 
+    command_dict = {
+        "build": run_builde,
+        "push": run_push,
+        "search": run_search,
+        "pull": run_pull,
+        "pack": run_pack,
+    }
+
     command = sys.argv[1]
-    if command == "build":
-        builder = Builder()
-        if builder.run(sys.argv[2:]) is False:
-            sys.exit(1)
-    elif command == "push":
-        uploader = Uploader()
-        if uploader.run(sys.argv[2:]) is False:
-            sys.exit(1)
-    elif command == "search":
-        searcher = Searcher()
-        if searcher.run(sys.argv[2:]) is False:
-            sys.exit(1)
+    func = command_dict.get(command, None)
+    if func is not None:
+        func()
     else:
         print(usage_str)
         sys.exit(1)

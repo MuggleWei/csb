@@ -61,6 +61,7 @@ class Builder:
         self._platform_ver = ""
         self._platform_machine = ""
         self._platform_distro = ""
+        self._platform_libc = ""
 
         self._git_tag = ""  # git tag
         self._git_commit_id = ""  # git commit id
@@ -81,6 +82,10 @@ class Builder:
         self._src_repo_url = ""
         self._src_git_depth = 0
         self._source_path = ""
+
+        # dependencies information
+        self._deps = []
+        self._test_deps = []
 
     def run(self, args):
         """
@@ -471,7 +476,7 @@ class Builder:
             "PLATFORM_RELEASE": self._platform_release,
             "PLATFORM_VERSION": self._platform_ver,
             "PLATFORM_MACHINE": self._platform_machine,
-            "PLATFORM_DISTRO": self._platform_distro,
+            "PLATFORM_DISTR": self._platform_distro,
             "GIT_REF": self._git_ref,
             "GIT_TAG": self._git_tag,
             "GIT_COMMIT_ID": self._git_commit_id,
@@ -503,8 +508,13 @@ class Builder:
             logging.debug("linux distro id: {}".format(distro.id()))
             logging.debug("linux distro version: {}".format(distro.version()))
             self._platform_distro = "{}-{}".format(distro.id(), distro.version())
+
+            libc_ver = platform.libc_ver()
+            logging.debug("libc: {}".format(libc_ver))
+            self._platform_libc = "-".join(libc_ver)
         else:
             self._platform_distro = platform.version()
+            self._platform_libc = ""
 
     def _fillup_git_info(self):
         """
@@ -620,17 +630,63 @@ class Builder:
 
     def _generate_meta_file(self):
         """
-        generate meta file
+        generate dependencies file
         """
-        meta_filepath = os.path.join(self._task_dir, "meta.txt")
-        with open(meta_filepath, "w") as fp:
-            fp.write("owner: {}\n".format(self._src_owner))
-            fp.write("repo: {}\n".format(self._src_repo))
-            fp.write("url: {}\n".format(self._src_repo_url))
-            if self._src_repo_kind == "":
-                fp.write("tag: {}\n".format(self._git_ref))
-            elif self._src_tag != "":
-                fp.write("tag: {}\n".format(self._src_tag))
+        self._generate_meta_deps_file()
+        self._generate_meta_pkg_file()
+
+    def _generate_meta_deps_file(self):
+        """
+        generate hpd meta dependencies file
+        """
+        d = {
+            "owner": self._src_owner,
+            "repo": self._src_repo,
+            "url": self._src_repo_url,
+            "tag": self._get_source_tag(),
+            "deps": self._deps,
+        }
+        filepath = os.path.join(self._task_dir, "deps.yml")
+        yaml_handle = YamlHandle()
+        yaml_handle.write(filepath=filepath, obj=d)
+
+    def _generate_meta_pkg_file(self):
+        """
+        generate hpd meta pkg file
+        """
+        d = {
+            "owner": self._src_owner,
+            "repo": self._src_repo,
+            "tag": self._get_source_tag(),
+            "platform": {
+                "system": self._platform_name,
+                "version": self._platform_ver,
+                "release": self._platform_release,
+                "machine": self._platform_machine,
+                "distr": self._platform_distro,
+                "libc": self._platform_libc,
+            },
+            "deps_file": os.path.join(self._task_dir, "deps.yml"),
+            "output_dir": self._inner_var_dict["OUTPUT_DIR"],
+            "pkg_dir": self._inner_var_dict["PKG_DIR"],
+        }
+        filepath = os.path.join(self._task_dir, "pkg.yml")
+        yaml_handle = YamlHandle()
+        yaml_handle.write(filepath=filepath, obj=d)
+
+    def _get_source_tag(self):
+        """
+        get source tag
+        """
+        src_tag = ""
+        if self._src_repo_kind == "":
+            if self._git_tag != "":
+                src_tag = self._git_tag
+            else:
+                src_tag = self._git_commit_id
+        else:
+            src_tag = self._src_tag
+        return src_tag
 
     def _run_workflow_job(self, job):
         """
