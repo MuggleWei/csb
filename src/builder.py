@@ -60,6 +60,8 @@ class Builder:
         self._platform_release = ""
         self._platform_ver = ""
         self._platform_machine = ""
+        self._platform_distr_id = ""
+        self._platform_distr_ver = ""
         self._platform_distro = ""
         self._platform_libc = ""
 
@@ -227,6 +229,7 @@ class Builder:
         """
         prepare dependencies
         """
+        # TODO:
         pass
 
     def _run_workflow(self, workflow):
@@ -507,12 +510,16 @@ class Builder:
         if platform.system().lower() == "linux":
             logging.debug("linux distro id: {}".format(distro.id()))
             logging.debug("linux distro version: {}".format(distro.version()))
+            self._platform_distr_id = distro.id()
+            self._platform_distr_ver = distro.version()
             self._platform_distro = "{}-{}".format(distro.id(), distro.version())
 
             libc_ver = platform.libc_ver()
             logging.debug("libc: {}".format(libc_ver))
             self._platform_libc = "-".join(libc_ver)
         else:
+            self._platform_distr_id = ""
+            self._platform_distr_ver = ""
             self._platform_distro = platform.version()
             self._platform_libc = ""
 
@@ -649,6 +656,8 @@ class Builder:
                 "version": self._platform_ver,
                 "release": self._platform_release,
                 "machine": self._platform_machine,
+                "distr_id": self._platform_distr_id,
+                "distr_ver": self._platform_distr_ver,
                 "distr": self._platform_distro,
                 "libc": self._platform_libc,
             },

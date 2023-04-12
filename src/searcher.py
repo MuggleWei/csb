@@ -12,7 +12,8 @@ class SearcherConfig:
         self.repo = ""
         self.ver = ""
         self.build_type = ""
-        self.pkg = ""
+        self.distr = ""
+        self.machine = ""
         self.settings_path = ""
 
 
@@ -32,8 +33,9 @@ class Searcher:
             "  -r, --repo string       [REQUIRED] repository name\n" \
             "  -v, --ver string        [OPTIONAL] package version\n" \
             "  -t, --build-type string [OPTIONAL] package build type, by default set release\n" \
-            "  -p, --pkg string        [OPTIONAL] package file\n" \
             "  -s, --settings string   [OPTIONAL] manual set settings.xml\n" \
+            "  -d, --distr string      [OPTIONAL] distrubution string, e.g. ubuntu, arch, alpine, ubuntu-22.04, alpine-3.17\n" \
+            "    , --machine string    [OPTIONAL] platform machine, e.g. x64_64\n" \
             "e.g.\n" \
             "  {0} search --maintainer google --repo googletest\n" \
             "  {0} search -m google -r googletest -v v1.13.0\n" \
@@ -48,15 +50,12 @@ class Searcher:
             return False
 
         target_paths = self._search_candidate()
-        targets = self._handle_target_paths(target_paths=target_paths)
         print("search results: ")
-        for target in targets:
-            if len(target[1]) == 0:
-                continue
-            print("--------")
-            print("dir: {}".format(target[0]))
-            print("package: {}".format(target[1]))
-            print("meta file: {}".format(target[2]))
+        for target in target_paths:
+            if target[0] == "local":
+                print("--------")
+                print("package: {}".format(target[1]))
+                print("meta file: {}".format(target[2]))
 
     def _search_candidate(self):
         """
@@ -96,10 +95,15 @@ class Searcher:
             pkg_dir = os.path.join(search_path, d)
             if not os.path.isdir(pkg_dir):
                 continue
-            meta_file = os.path.join(pkg_dir, "{}.yml".format(APP_NAME))
-            pkg_meta = PackageMeta()
-            if pkg_meta.load(meta_file) is False:
+
+            pkg_meta = self._get_local_meta(pkg_dir)
+            if pkg_meta is None:
                 continue
+
+            pkg_filepath = self._get_local_pkg_filepath(pkg_dir)
+            if pkg_filepath is None:
+                continue
+
             if len(self.cfg.ver) > 0 and \
                     len(pkg_meta.tag) > 0 and \
                     self.cfg.ver != pkg_meta.tag:
@@ -108,50 +112,59 @@ class Searcher:
                     len(pkg_meta.build_type) > 0 and \
                     self.cfg.build_type != pkg_meta.build_type:
                 continue
-            target_paths.append(os.path.join(search_path, pkg_dir))
+            if len(self.cfg.distr) > 0 and \
+                    len(pkg_meta.platform_distro) > 0 and \
+                    pkg_meta.platform_distro.find(self.cfg.distr) == -1:
+                continue
+            if len(self.cfg.machine) > 0 and \
+                    len(pkg_meta.platform_machine) > 0 and \
+                    self.cfg.machine != pkg_meta.platform_machine:
+                continue
+            target_paths.append([
+                "local",
+                pkg_filepath,
+                pkg_meta,
+            ])
         return target_paths
 
-    def _handle_target_paths(self, target_paths):
+    def _get_local_meta(self, pkg_dir: str):
         """
-        handle target paths
+        get meta file in package dir
         """
-        targets = []
-        for target_path in target_paths:
-            try:
-                meta_file = ""
-                pkg_file = ""
-                files = os.listdir(target_path)
-                for filename in files:
-                    if self._is_cfg_file(filename=filename):
-                        if len(meta_file) > 0:
-                            raise Exception(
-                                "multiple {} config file in {}".format(
-                                    APP_NAME, target_path))
-                        meta_file = filename
-                    if self._is_pkg_file(filename=filename):
-                        if len(pkg_file) > 0:
-                            raise Exception(
-                                "multiple {} package file in {}".format(
-                                    APP_NAME, target_path))
-                        pkg_file = filename
-                targets.append([target_path, pkg_file, meta_file])
-            except Exception as e:
-                print("{}".format(str(e)))
-        return targets
+        meta_file = os.path.join(pkg_dir, "{}.yml".format(APP_NAME))
+        if not os.path.exists(meta_file):
+            print("Warning! failed find meta file in {}".format(pkg_dir))
+            return None
+        pkg_meta = PackageMeta()
+        if pkg_meta.load(meta_file) is False:
+            print("Warning! failed load meta file: {}".format(meta_file))
+            return None
+        return pkg_meta
 
-    def _is_cfg_file(self, filename: str):
+    def _get_local_pkg_filepath(self, pkg_dir: str):
         """
-        check file is hpb config file
-        :param filename: filename without dir
+        get pacakge file path
         """
-        return filename.endswith(".yml") or filename.endswith(".yaml")
+        pkg_candidates = []
+        files = os.listdir(pkg_dir)
+        for f in files:
+            if self._is_pkg_file(f):
+                pkg_candidates.append(f)
+        if len(pkg_candidates) == 0:
+            print("Warning! failed find package in {}".format(pkg_dir))
+            return None
+        if len(pkg_candidates) > 1:
+            print("Warning! multiple packages in {}".format(pkg_dir))
+            return None
+        pkg_filepath = os.path.join(pkg_dir, pkg_candidates[0])
+        return pkg_filepath
 
     def _is_pkg_file(self, filename: str):
         """
         check file is package file
         :param filename: filename without dir
         """
-        return filename.endswith(".tar.gz") or filename.endswith(".zip")
+        return filename.endswith(".tar.gz")
 
     def _init(self, args):
         """
@@ -181,10 +194,10 @@ class Searcher:
         """
         cfg = SearcherConfig()
         opts, _ = getopt.getopt(
-            args, "hm:r:v:t:p:s:",
+            args, "hm:r:v:t:d:s:",
             [
                 "help", "maintainer=", "repo=", "ver=",
-                "build-type=", "pkg=", "settings="
+                "build-type=", "distr=", "machine=", "settings="
             ]
         )
 
@@ -200,8 +213,10 @@ class Searcher:
                 cfg.ver = arg
             elif opt in ("-t", "--build-type"):
                 cfg.build_type = arg
-            elif opt in ("-p", "--pkg"):
-                cfg.pkg = arg
+            elif opt in ("-d", "--distr"):
+                cfg.distr = arg
+            elif opt in ("--machine"):
+                cfg.machine = arg
             elif opt in ("-s", "--settings"):
                 cfg.settings_path = arg
 
