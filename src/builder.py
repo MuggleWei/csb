@@ -1,4 +1,5 @@
 import datetime
+import distro
 import getopt
 import logging
 import os
@@ -54,6 +55,17 @@ class Builder:
         self._pkg_dir = ""  # package directory
         self._output_dir = ""  # output directory
         self._input_param_dict = {}  # user input param dict
+
+        self._platform_name = ""
+        self._platform_release = ""
+        self._platform_ver = ""
+        self._platform_machine = ""
+        self._platform_distro = ""
+
+        self._git_tag = ""  # git tag
+        self._git_commit_id = ""  # git commit id
+        self._git_branch = ""  # git branch
+        self._git_ref = ""  # git ref
 
         self._settings_handle = SettingsHandle()  # settings handle
 
@@ -129,7 +141,7 @@ class Builder:
 
         self._init_log()
 
-        if self._set_vars() is False:
+        if self._set_inner_vars() is False:
             return False
 
         return True
@@ -186,6 +198,18 @@ class Builder:
         self._inner_var_dict["SOURCE_PATH"] = self._source_path
         source_replace_k = "{}_SOURCE_PATH".format(APP_NAME.upper())
         self._var_replace_dict[source_replace_k] = self._source_path
+
+        # reset git info
+        if self._source_path != self._working_dir:
+            origin_dir = os.path.abspath(os.curdir)
+            os.chdir(self._source_path)
+            self._fillup_git_info()
+            self._inner_var_dict["GIT_TAG"] = self._git_tag
+            self._inner_var_dict["GIT_REF"] = self._git_ref
+            self._inner_var_dict["GIT_TAG"] = self._git_tag
+            self._inner_var_dict["GIT_COMMIT_ID"] = self._git_commit_id
+            self._inner_var_dict["GIT_BRANCH"] = self._git_branch
+            os.chdir(origin_dir)
 
         return True
 
@@ -412,28 +436,13 @@ class Builder:
         self._command_logger.setLevel(logging.INFO)
         self._command_logger.addHandler(logging.StreamHandler())
 
-    def _set_vars(self):
+    def _set_inner_vars(self):
         """
         set varaibles
         """
-        val_git_tag = self._get_git_tag()
-        val_git_commit_id = self._get_git_commit_id()
-        val_git_branch = self._get_git_branch()
-        if len(val_git_tag) > 0:
-            val_git_ref = val_git_tag
-        elif len(val_git_commit_id) > 0:
-            val_git_ref = val_git_commit_id
-        else:
-            val_git_ref = ""
+        self._fillup_platform_info()
 
-        logging.debug("system: {}".format(platform.system()))
-        logging.debug("system and version: {}".format(platform.platform()))
-        logging.debug("system version: {}".format(platform.version()))
-        logging.debug("system architecture: {}".format(platform.architecture()))
-        logging.debug("machine: {}".format(platform.machine()))
-        logging.debug("node: {}".format(platform.node()))
-        logging.debug("processor: {}".format(platform.processor()))
-        logging.debug("uname: {}".format(platform.uname()))
+        self._fillup_git_info()
 
         self._inner_var_dict = {
             "ROOT_DIR": self._working_dir,
@@ -447,13 +456,58 @@ class Builder:
             "FILE_PATH": self._cfg_file_path,
             "TASK_NAME": self._task_name,
             "TASK_ID": self._task_id,
-            "GIT_REF": val_git_ref,
-            "GIT_TAG": val_git_tag,
-            "GIT_COMMIT_ID": val_git_commit_id,
-            "GIT_BRANCH": val_git_branch,
+            "PLATFORM_NAME": self._platform_name,
+            "PLATFORM_RELEASE": self._platform_release,
+            "PLATFORM_VERSION": self._platform_ver,
+            "PLATFORM_MACHINE": self._platform_machine,
+            "PLATFORM_DISTRO": self._platform_distro,
+            "GIT_REF": self._git_ref,
+            "GIT_TAG": self._git_tag,
+            "GIT_COMMIT_ID": self._git_commit_id,
+            "GIT_BRANCH": self._git_branch,
         }
 
         return True
+
+    def _fillup_platform_info(self):
+        """
+        fillup platform informations
+        """
+        logging.debug("system: {}".format(platform.system()))
+        logging.debug("system release: {}".format(platform.release()))
+        logging.debug("system version: {}".format(platform.version()))
+        logging.debug("system architecture: {}".format(platform.architecture()))
+        logging.debug("system infos: {}".format(platform.platform()))
+        logging.debug("machine: {}".format(platform.machine()))
+        logging.debug("node: {}".format(platform.node()))
+        logging.debug("processor: {}".format(platform.processor()))
+        logging.debug("uname: {}".format(platform.uname()))
+
+        self._platform_name = platform.system()
+        self._platform_release = platform.release()
+        self._platform_ver = platform.version()
+        self._platform_machine = platform.machine()
+
+        if platform.system().lower() == "linux":
+            logging.debug("linux distro id: {}".format(distro.id()))
+            logging.debug("linux distro version: {}".format(distro.version()))
+            self._platform_distro = "{}-{}".format(distro.id(), distro.version())
+        else:
+            self._platform_distro = platform.version()
+
+    def _fillup_git_info(self):
+        """
+        fillup git informations
+        """
+        self._git_tag = self._get_git_tag()
+        self._git_commit_id = self._get_git_commit_id()
+        self._git_branch = self._get_git_branch()
+        if len(self._git_tag) > 0:
+            self._git_ref = self._git_tag
+        elif len(self._git_commit_id) > 0:
+            self._git_ref = self._git_commit_id
+        else:
+            self._git_ref = ""
 
     def _load_yml_vars(self, variables):
         """

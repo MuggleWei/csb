@@ -2,7 +2,7 @@ name: mugglec
 variables:
   - owner: mugglewei
   - repo_name: mugglec
-  - git_tag: v1.0.0
+  - git_tag: v1.0.2
   - git_url: https://github.com/MuggleWei/mugglec.git
   - build_type: release
   - pkg_name: mugglec-${git_tag}-${build_type}
