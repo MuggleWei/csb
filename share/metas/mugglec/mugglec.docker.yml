@@ -1,6 +1,6 @@
 name: mugglec docker build
 variables:
-  - owner: mugglewei
+  - maintainer: mugglewei
   - repo_name: mugglec
   - git_tag: v1.0.2
   - git_url: https://github.com/MuggleWei/mugglec.git
@@ -10,7 +10,7 @@ variables:
   - os_ver: 22.04
   - pkg_name: mugglec-${git_tag}-${build_type}-${os}${os_ver}
 source:
-  owner: ${owner}
+  maintainer: ${maintainer}
   repo: ${repo_name}
   tag: ${git_tag}
   repo_kind: git

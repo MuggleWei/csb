@@ -75,7 +75,7 @@ class Builder:
         self._yml_var_dict = {}  # yaml variable dict
 
         # source information
-        self._src_owner = ""
+        self._src_maintainer = ""
         self._src_repo = ""
         self._src_tag = ""
         self._src_repo_kind = ""
@@ -560,8 +560,8 @@ class Builder:
             if v is None:
                 logging.error("failed load source info: {}".format(k))
                 return False
-            if k == "owner":
-                self._src_owner = v
+            if k == "maintainer":
+                self._src_maintainer = v
             elif k == "repo":
                 self._src_repo = v
             elif k == "tag":
@@ -599,8 +599,8 @@ class Builder:
         """
         check yaml source info valid
         """
-        if len(self._src_owner) == 0:
-            logging.debug("field 'source.owner' is empty")
+        if len(self._src_maintainer) == 0:
+            logging.debug("field 'source.maintainer' is empty")
         if len(self._src_repo) == 0:
             logging.debug("field 'source.repo' is empty")
         if len(self._src_tag) == 0:
@@ -640,7 +640,7 @@ class Builder:
         generate hpd meta dependencies file
         """
         d = {
-            "owner": self._src_owner,
+            "maintainer": self._src_maintainer,
             "repo": self._src_repo,
             "url": self._src_repo_url,
             "tag": self._get_source_tag(),
@@ -655,7 +655,7 @@ class Builder:
         generate hpd meta pkg file
         """
         d = {
-            "owner": self._src_owner,
+            "maintainer": self._src_maintainer,
             "repo": self._src_repo,
             "tag": self._get_source_tag(),
             "platform": {
@@ -791,9 +791,9 @@ class Builder:
             logging.error("failed find source path in settings")
             return False
 
-        if self._src_owner == "":
+        if self._src_maintainer == "":
             logging.error(
-                "failed download source, field 'source.owner' is empty")
+                "failed download source, field 'source.maintainer' is empty")
             return False
 
         if self._src_repo == "":
@@ -814,7 +814,7 @@ class Builder:
                 return False
             self._source_path = os.path.join(
                 self._settings_handle.source_path,
-                self._src_owner,
+                self._src_maintainer,
                 "{}-{}".format(self._src_repo, self._src_tag)
             )
             if os.path.exists(self._source_path):
@@ -832,7 +832,7 @@ class Builder:
         else:
             self._source_path = os.path.join(
                 self._settings_handle.source_path,
-                self._src_owner,
+                self._src_maintainer,
                 self._src_repo
             )
             if os.path.exists(self._source_path):

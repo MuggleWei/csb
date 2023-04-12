@@ -4,21 +4,21 @@ TODO: 完整的用于本地库管理的 workflow 结构
 ```
 name: mugglec
 variables:
-  - owner: mugglewei
+  - maintainer: mugglewei
   - repo: mugglec
   - git_tag: v1.0.0
   - git_url: https://github.com/MuggleWei/mugglec.git
   - build_type: release
   - pkg_name: mugglec-${git_tag}-${build_type}
 source:
-  owner: ${owner}
+  maintainer: ${maintainer}
   repo: ${repo}
   tag: ${git_tag}
   repo_kind: git
   repo_url: ${git_url}
   git_depth: 1
 test_deps:
-  - owner: google
+  - maintainer: google
     name: googletest
     tag: v1.13.0
 jobs:

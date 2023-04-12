@@ -10,7 +10,7 @@ from utils import Utils
 class UploaderConfig:
     def __init__(self):
         self.pkg = ""
-        self.owner = ""
+        self.maintainer = ""
         self.repo = ""
         self.ver = ""
         self.config = ""
@@ -31,7 +31,7 @@ class Uploader:
             "\n" \
             "Options: \n" \
             "  -p, --pkg string        [REQUIRED] package file\n" \
-            "    , --owner string      [REQUIRED] repository owner\n" \
+            "    , --maintainer string [REQUIRED] repository maintainer\n" \
             "    , --repo string       [REQUIRED] repository name\n" \
             "  -v, --ver string        [REQUIRED] package version\n" \
             "  -c, --config string     [OPTIONAL] package build config file\n" \
@@ -40,9 +40,9 @@ class Uploader:
             "\n" \
             "e.g.\n" \
             "  {0} push -p googletest-release-v1.13.0.tar.gz " \
-            "--owner google --repo googletest --ver v1.13.0\n" \
+            "--maintainer google --repo googletest --ver v1.13.0\n" \
             "  {0} push -p mugglec-debug-v1.0.0.zip -c muggle.yml " \
-            "--owner muggle --repo mugglec -v 1.0.0\n" \
+            "--maintainer muggle --repo mugglec -v 1.0.0\n" \
             "".format(APP_NAME)
 
     def run(self, args):
@@ -55,7 +55,7 @@ class Uploader:
         if self._output_repo.kind == "local":
             art_output_dir = os.path.join(
                 self._output_repo.path,
-                self.cfg.owner,
+                self.cfg.maintainer,
                 self.cfg.repo,
                 self.cfg.ver,
                 self.cfg.build_type
@@ -84,8 +84,8 @@ class Uploader:
         if len(self.cfg.pkg) == 0:
             print("Error! field 'pkg' missing\n\n{}".format(self._usage_str))
             return False
-        if len(self.cfg.owner) == 0:
-            print("Error! field 'owner' missing\n\n{}".format(self._usage_str))
+        if len(self.cfg.maintainer) == 0:
+            print("Error! field 'maintainer' missing\n\n{}".format(self._usage_str))
             return False
         if len(self.cfg.repo) == 0:
             print("Error! field 'repo' missing\n\n{}".format(self._usage_str))
@@ -114,7 +114,7 @@ class Uploader:
         opts, _ = getopt.getopt(
             args, "hp:v:o:c:t:s:",
             [
-                "help", "pkg=", "owner=", "repo=",
+                "help", "pkg=", "maintainer=", "repo=",
                 "ver=", "config=", "build-type=",
                 "settings="
             ]
@@ -125,8 +125,8 @@ class Uploader:
                 sys.exit(0)
             elif opt in ("-p", "--pkg"):
                 cfg.pkg = arg
-            elif opt in ("--owner"):
-                cfg.owner = arg
+            elif opt in ("--maintainer"):
+                cfg.maintainer = arg
             elif opt in ("--repo"):
                 cfg.repo = arg
             elif opt in ("-v", "--ver"):

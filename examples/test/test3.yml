@@ -5,7 +5,7 @@ variables:
   - art_name: ${repo_name}-${art_ver}
   - art_pkg: ${art_name}.tar.gz
 artifacts:
-  owner: mugglewei
+  maintainer: mugglewei
   repo: ${repo_name}
   version: ${art_ver}
   pkg: ${art_pkg}

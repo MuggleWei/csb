@@ -7,7 +7,7 @@ from settings_handle import RepoConfig, SettingsHandle
 
 class SearcherConfig:
     def __init__(self):
-        self.owner = ""
+        self.maintainer = ""
         self.repo = ""
         self.ver = ""
         self.build_type = ""
@@ -27,16 +27,16 @@ class Searcher:
         self._usage_str = "Usage: {0} search [OPTIONS]\n" \
             "\n" \
             "Options: \n" \
-            "    , --owner string      [REQUIRED] repository owner\n" \
+            "    , --maintainer string [REQUIRED] repository maintainer\n" \
             "    , --repo string       [REQUIRED] repository name\n" \
             "  -v, --ver string        [OPTIONAL] package version\n" \
             "  -t, --build-type string [OPTIONAL] package build type, by default set release\n" \
             "  -p, --pkg string        [OPTIONAL] package file\n" \
             "  -s, --settings string   [OPTIONAL] manual set settings.xml\n" \
             "e.g.\n" \
-            "  {0} search --owner google --repo googletest\n" \
-            "  {0} search --owner google --repo googletest -v v1.13.0\n" \
-            "  {0} search --owner google --repo googletest -v v1.13.0 -t release\n" \
+            "  {0} search --maintainer google --repo googletest\n" \
+            "  {0} search --maintainer google --repo googletest -v v1.13.0\n" \
+            "  {0} search --maintainer google --repo googletest -v v1.13.0 -t release\n" \
             "".format(APP_NAME)
 
     def run(self, args):
@@ -84,7 +84,7 @@ class Searcher:
 
         search_path = os.path.join(
             repo.path,
-            self.cfg.owner,
+            self.cfg.maintainer,
             self.cfg.repo
         )
         if not os.path.exists(search_path):
@@ -153,8 +153,8 @@ class Searcher:
         if self.cfg is None:
             return False
 
-        if len(self.cfg.owner) == 0:
-            print("Error! field 'owner' missing\n\n{}".format(self._usage_str))
+        if len(self.cfg.maintainer) == 0:
+            print("Error! field 'maintainer' missing\n\n{}".format(self._usage_str))
             return False
         if len(self.cfg.repo) == 0:
             print("Error! field 'repo' missing\n\n{}".format(self._usage_str))
@@ -175,7 +175,7 @@ class Searcher:
         opts, _ = getopt.getopt(
             args, "hv:t:p:s:",
             [
-                "help", "owner=", "repo=", "ver=",
+                "help", "maintainer=", "repo=", "ver=",
                 "build-type=", "pkg=", "settings="
             ]
         )
@@ -184,8 +184,8 @@ class Searcher:
             if opt in ("-h", "--help"):
                 print(self._usage_str)
                 sys.exit(0)
-            elif opt in ("--owner"):
-                cfg.owner = arg
+            elif opt in ("--maintainer"):
+                cfg.maintainer = arg
             elif opt in ("--repo"):
                 cfg.repo = arg
             elif opt in ("-v", "--ver"):
