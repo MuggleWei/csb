@@ -112,6 +112,10 @@ class Builder:
             if self._prepare_src(workflow=workflow) is False:
                 return False
 
+            # prepare deps
+            if self._prepare_deps(workflow=workflow) is False:
+                return False
+
             # output all variables
             self._output_args()
 
@@ -213,6 +217,12 @@ class Builder:
             os.chdir(origin_dir)
 
         return True
+
+    def _prepare_deps(self, workflow):
+        """
+        prepare dependencies
+        """
+        pass
 
     def _run_workflow(self, workflow):
         """

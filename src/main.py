@@ -11,7 +11,7 @@ if __name__ == "__main__":
         "\n" \
         "Commands:\n" \
         "  build    build package\n" \
-        "  upload   upload package\n" \
+        "  push     upload package\n" \
         "  search   search package\n" \
         "".format(sys.argv[0])
 
@@ -32,7 +32,7 @@ if __name__ == "__main__":
         builder = Builder()
         if builder.run(sys.argv[2:]) is False:
             sys.exit(1)
-    elif command == "upload":
+    elif command == "push":
         uploader = Uploader()
         if uploader.run(sys.argv[2:]) is False:
             sys.exit(1)

@@ -27,7 +27,7 @@ class Uploader:
         """
         init package uploader
         """
-        self._usage_str = "Usage: {0} upload [OPTIONS]\n" \
+        self._usage_str = "Usage: {0} push [OPTIONS]\n" \
             "\n" \
             "Options: \n" \
             "  -p, --pkg string        [REQUIRED] package file\n" \
@@ -39,9 +39,9 @@ class Uploader:
             "  -s, --settings string   [OPTIONAL] manual set settings.xml\n" \
             "\n" \
             "e.g.\n" \
-            "  {0} upload -p googletest-release-v1.13.0.tar.gz " \
+            "  {0} push -p googletest-release-v1.13.0.tar.gz " \
             "--owner google --repo googletest --ver v1.13.0\n" \
-            "  {0} upload -p mugglec-debug-v1.0.0.zip -c muggle.yml " \
+            "  {0} push -p mugglec-debug-v1.0.0.zip -c muggle.yml " \
             "--owner muggle --repo mugglec -v 1.0.0\n" \
             "".format(APP_NAME)
 
@@ -61,15 +61,15 @@ class Uploader:
                 self.cfg.build_type
             )
             os.makedirs(art_output_dir, exist_ok=True)
-            print("upload {} -> {}".format(self.cfg.pkg, art_output_dir))
+            print("push {} -> {}".format(self.cfg.pkg, art_output_dir))
             shutil.copy2(self.cfg.pkg, art_output_dir)
 
             if len(self.cfg.config) > 0:
-                print("upload {} -> {}".format(self.cfg.config, art_output_dir))
+                print("push {} -> {}".format(self.cfg.config, art_output_dir))
                 shutil.copy2(self.cfg.config, art_output_dir)
         else:
             print("WARNING! "
-                  "Artifacts upload remote repo currently not support")
+                  "Artifacts push to remote repo currently not support")
 
         return True
 

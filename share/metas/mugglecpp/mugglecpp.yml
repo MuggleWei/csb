@@ -1,9 +1,9 @@
-name: mugglec
+name: mugglecpp
 variables:
   - owner: mugglewei
-  - repo_name: mugglec
-  - git_tag: v1.0.2
-  - git_url: https://github.com/MuggleWei/mugglec.git
+  - repo_name: mugglecpp
+  - git_tag: v1.0.1
+  - git_url: https://github.com/MuggleWei/mugglecpp.git
   - build_type: release
   - pkg_name: mugglec-${git_tag}-${build_type}
 source:
@@ -13,10 +13,10 @@ source:
   repo_kind: git
   repo_url: ${git_url}
   git_depth: 1
-test_deps:
-  - owner: google
-    name: googletest
-    tag: v1.13.0
+deps:
+  - owner: mugglewei
+    name: mugglec
+    tag: v1.0.1
 jobs:
   build:
     steps:
@@ -28,7 +28,8 @@ jobs:
             -B ${HPB_BUILD_DIR} \
             -DCMAKE_BUILD_TYPE=${build_type} \
             -DBUILD_SHARED_LIBS=ON \
-            -DCMAKE_INSTALL_PREFIX=${HPB_OUTPUT_DIR};
+            -DCMAKE_INSTALL_PREFIX=${HPB_OUTPUT_DIR} \
+            -DCMAKE_PREFIX_PATH=${HPB_DEPS_DIR};
       - name: install
         run: >
           cmake --build build --target install;
@@ -39,15 +40,3 @@ jobs:
         run: >
           cd ${HPB_OUTPUT_DIR};
           tar -czvf ${pkg_name}.tar.gz ./*;
-  upload:
-    needs: [package]
-    steps:
-      - name: upload
-        run: >
-          hpb upload \
-            -p ${pkg_name}.tar.gz \
-            -c ${HPB_FILE_PATH} \
-            --owner ${owner} \
-            --repo ${repo_name} \
-            --ver ${git_tag} \
-            --build-type ${build_type};
