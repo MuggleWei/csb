@@ -2,6 +2,7 @@ import datetime
 import getopt
 import logging
 import os
+import platform
 import re
 import selectors
 import subprocess
@@ -87,21 +88,22 @@ class Builder:
             logging.error("failed get workflow")
             return False
 
-        # prepare variable replace dict
-        if self._prepare_vars(workflow=workflow) is False:
-            return False
-
-        # prepare source
-        if self._prepare_src(workflow=workflow) is False:
-            return False
-
-        # output all variables
-        self._output_args()
-
-        # run workflow
         workflow_log_path = os.path.join(self._task_dir, "workflow.log")
         with open(workflow_log_path, "w") as f:
             self._workflow_fp = f
+
+            # prepare variable replace dict
+            if self._prepare_vars(workflow=workflow) is False:
+                return False
+
+            # prepare source
+            if self._prepare_src(workflow=workflow) is False:
+                return False
+
+            # output all variables
+            self._output_args()
+
+            # run workflow
             ret = self._run_workflow(workflow=workflow)
 
         # TODO: generate build.yml and deps.yml
@@ -423,6 +425,15 @@ class Builder:
             val_git_ref = val_git_commit_id
         else:
             val_git_ref = ""
+
+        logging.debug("system: {}".format(platform.system()))
+        logging.debug("system and version: {}".format(platform.platform()))
+        logging.debug("system version: {}".format(platform.version()))
+        logging.debug("system architecture: {}".format(platform.architecture()))
+        logging.debug("machine: {}".format(platform.machine()))
+        logging.debug("node: {}".format(platform.node()))
+        logging.debug("processor: {}".format(platform.processor()))
+        logging.debug("uname: {}".format(platform.uname()))
 
         self._inner_var_dict = {
             "ROOT_DIR": self._working_dir,
