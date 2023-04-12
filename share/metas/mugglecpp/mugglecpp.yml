@@ -2,7 +2,7 @@ name: mugglecpp
 variables:
   - maintainer: mugglewei
   - repo_name: mugglecpp
-  - git_tag: v1.0.1
+  - git_tag: v1.0.3
   - git_url: https://github.com/MuggleWei/mugglecpp.git
   - build_type: release
   - pkg_name: mugglec-${git_tag}-${build_type}
@@ -16,7 +16,7 @@ source:
 deps:
   - maintainer: mugglewei
     name: mugglec
-    tag: v1.0.1
+    tag: v1.0.2
 jobs:
   build:
     steps:
