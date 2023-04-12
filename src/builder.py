@@ -115,10 +115,11 @@ class Builder:
             # output all variables
             self._output_args()
 
+            # generate meta files
+            self._generate_meta_file()
+
             # run workflow
             ret = self._run_workflow(workflow=workflow)
-
-        # TODO: generate build.yml and deps.yml
 
         return ret
 
@@ -579,36 +580,47 @@ class Builder:
         check yaml source info valid
         """
         if len(self._src_owner) == 0:
-            logging.debug("Error! field 'source.owner' is empty")
-            return False
+            logging.debug("field 'source.owner' is empty")
         if len(self._src_repo) == 0:
-            logging.debug("Error! field 'source.repo' is empty")
-            return False
+            logging.debug("field 'source.repo' is empty")
         if len(self._src_tag) == 0:
-            logging.debug("Error! field 'source.tag' is empty")
-            return False
+            logging.debug("field 'source.tag' is empty")
         if len(self._src_repo_kind) == 0:
-            logging.debug("Error! field 'source.repo_kind' is empty")
-            return False
+            logging.debug("field 'source.repo_kind' is empty")
         if len(self._src_repo_url) == 0:
-            logging.debug("Error! field 'source.repo_url' is empty")
-            return False
+            logging.debug("field 'source.repo_url' is empty")
         if self._src_repo_kind == "git" and \
                 self._src_git_depth != 0 and self._src_git_depth != 1:
-            logging.debug("Error! field 'source.git_depth' invalid")
-            return False
+            logging.debug("field 'source.git_depth' invalid")
         return True
 
     def _download_src(self):
         """
         download source
         """
-        if self._src_repo_kind == "git":
+        if self._src_repo_kind == "":
+            logging.info("source.repo_kind is empty, no need download")
+        elif self._src_repo_kind == "git":
             return self._download_src_git()
         else:
             logging.error(
                 "invalid source.repo_kind: {}".format(self._src_repo_kind))
             return False
+        return True
+
+    def _generate_meta_file(self):
+        """
+        generate meta file
+        """
+        meta_filepath = os.path.join(self._task_dir, "meta.txt")
+        with open(meta_filepath, "w") as fp:
+            fp.write("owner: {}\n".format(self._src_owner))
+            fp.write("repo: {}\n".format(self._src_repo))
+            fp.write("url: {}\n".format(self._src_repo_url))
+            if self._src_repo_kind == "":
+                fp.write("tag: {}\n".format(self._git_ref))
+            elif self._src_tag != "":
+                fp.write("tag: {}\n".format(self._src_tag))
 
     def _run_workflow_job(self, job):
         """
@@ -713,7 +725,27 @@ class Builder:
             logging.error("failed find source path in settings")
             return False
 
+        if self._src_owner == "":
+            logging.error(
+                "failed download source, field 'source.owner' is empty")
+            return False
+
+        if self._src_repo == "":
+            logging.error(
+                "failed download source, field 'source.repo' is empty")
+            return False
+
+        if self._src_repo_url == "":
+            logging.error(
+                "failed download source, field 'source.repo_url' is empty")
+            return False
+
         if self._src_git_depth == 1:
+            if self._src_tag == "":
+                logging.error(
+                    "failed download source, "
+                    "use git depth=1 with field 'source.tag' is empty")
+                return False
             self._source_path = os.path.join(
                 self._settings_handle.source_path,
                 self._src_owner,
