@@ -1,5 +1,6 @@
 import json
 import os
+import pkgutil
 import typing
 import xml.dom.minidom
 
@@ -61,12 +62,13 @@ class SettingsHandle:
                 "~/.local/share/{}/settings.xml".format(APP_NAME)),
             "/etc/{}/settings.xml".format(APP_NAME),
         ])
-
         settings_handle = SettingsHandle()
+
         for filepath in settings_path:
             if os.path.exists(filepath):
                 print("load settings: {}".format(filepath))
                 settings_handle.load(filepath=filepath)
+        settings_handle.load_pkg_res()
         return settings_handle
 
     def __init__(self):
@@ -88,6 +90,19 @@ class SettingsHandle:
             return False
         root = xml.dom.minidom.parse(file=filepath)
         self._parse_dom(root=root)
+
+    def load_pkg_res(self):
+        """
+        load package resources
+        """
+        try:
+            content = pkgutil.get_data("hpb", "etc/settings.xml")
+            if content is None:
+                return
+            root = xml.dom.minidom.parseString(content.decode("utf-8"))
+            self._parse_dom(root=root)
+        except Exception:
+            return
 
     def _parse_dom(self, root):
         """

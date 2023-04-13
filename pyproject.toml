@@ -26,6 +26,9 @@ hpb = "hpb.main:main"
 "Homepage" = "https://github.com/MuggleWei/hpb"
 "Bug Tracker" = "https://github.com/MuggleWei/hpb/issues"
 
+[tool.setuptools]
+include-package-data = true
+
 [tool.setuptools.dynamic]
 dependencies = {file = ["requirements.txt"]}
 
