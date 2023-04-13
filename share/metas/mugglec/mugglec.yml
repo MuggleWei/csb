@@ -5,7 +5,6 @@ variables:
   - git_tag: v1.0.2
   - git_url: https://github.com/MuggleWei/mugglec.git
   - build_type: release
-  - pkg_name: mugglec-${git_tag}-${build_type}
 source:
   maintainer: ${maintainer}
   repo: ${repo_name}

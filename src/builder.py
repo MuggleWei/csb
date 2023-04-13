@@ -1,5 +1,4 @@
 import datetime
-import typing
 import distro
 import getopt
 import logging
@@ -13,7 +12,7 @@ import sys
 from constant_var import APP_NAME
 from kahn_algo import KahnAlgo
 from log_handle import LogHandle
-from searcher import Searcher, SearcherConfig, SearcherResult
+from repo_deps_handle import RepoDepsHandle
 from settings_handle import SettingsHandle
 from utils import Utils
 from yaml_handle import YamlHandle
@@ -237,71 +236,26 @@ class Builder:
         if yaml_deps is None:
             return True
 
+        repo_deps_handle = RepoDepsHandle()
+        repo_deps_handle.settings_handle = self._settings_handle
+        repo_deps_handle.platform_name = self._platform_name
+        repo_deps_handle.platform_machine = self._platform_machine
+        repo_deps_handle.platform_distr = self._platform_distr
+        repo_deps_handle.platform_libc = self._platform_libc
+        repo_deps_handle.build_type = self._get_build_type()
         for dep in yaml_deps:
-            result: SearcherResult | None = self._search_dep(dep=dep)
-            if result is None:
+            if repo_deps_handle.add(dep) is False:
                 return False
-            self._deps.append({
-                "maintainer": result.meta.maintainer,
-                "repo": result.meta.repo,
-                "tag": result.meta.tag,
-                "deps": result.meta.deps,
-            })
-            # TODO: download dependencies
 
-    def _search_dep(self, dep) -> SearcherResult | None:
-        """
-        search dependency
-        """
-        search_cfg = SearcherConfig()
-        search_cfg.maintainer = dep.get("maintainer", "")
-        search_cfg.repo = dep.get("repo", "")
-        search_cfg.tag = dep.get("tag", "")
-        search_cfg.system_name = self._platform_name
-        search_cfg.machine = self._platform_machine
-        searcher = Searcher()
-        search_results = searcher.search(search_cfg, self._settings_handle)
-        if len(search_results) == 0:
-            return None
-        elif len(search_results) == 1:
-            return search_results[0]
-        else:
-            result_score_dict = self._rank_search_result(search_results)
-            if len(result_score_dict) == 0:
-                return None
-            else:
-                return max(result_score_dict)
+        if repo_deps_handle.search_all_deps() is False:
+            logging.error("failed search dependencies")
+            return False
 
-    def _rank_search_result(self, search_result: typing.List[SearcherResult]):
-        """
-        rank search result
-        """
-        result_score_dict = {}
-        for result in search_result:
-            score = 0
-            meta = result.meta
-            if len(meta.platform_name) > 0 and \
-                    meta.platform_name != self._platform_name:
-                continue
-            if len(meta.platform_machine) > 0 and \
-                    meta.platform_machine != self._platform_machine:
-                continue
-            if meta.platform_name == self._platform_name:
-                score += 10
-            if meta.platform_machine == self._platform_machine:
-                score += 10
-            if meta.platform_distro == self._platform_distr:
-                score += 2
-            if meta.is_fat_pkg is True:
-                score += 2
-            if meta.platform_libc == self._platform_libc:
-                score += 2
-            if meta.build_type.lower() == self._get_build_type().lower():
-                score += 2
-            elif meta.build_type.lower() == "release":
-                score += 1
-            result_score_dict[result] = score
-        return result_score_dict
+        self._deps = repo_deps_handle.deps
+
+        if repo_deps_handle.download_all_deps(self._deps_dir) is False:
+            logging.error("failed download dependencies")
+            return False
 
     def _run_workflow(self, workflow):
         """

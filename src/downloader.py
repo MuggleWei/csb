@@ -97,6 +97,8 @@ class Downloader:
 
         os.chdir(origin_dir)
 
+        return True
+
     def _parse_args(self, args):
         """
         parse arguments
