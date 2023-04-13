@@ -50,6 +50,7 @@ class PackageMeta:
         self.repo = self.meta_info.get("repo", "")
         self.tag = self.meta_info.get("tag", "")
         self.build_type = self.meta_info.get("build_type", "")
+
         self.platform = self.meta_info.get("platform", {})
         self.platform_name = self.platform.get("system", "")
         self.platform_release = self.platform.get("release", "")
@@ -59,6 +60,9 @@ class PackageMeta:
         self.platform_distro_ver = self.platform.get("distr_ver", "")
         self.platform_distro = self.platform.get("distr", "")
         self.platform_libc = self.platform.get("libc", "")
+
+        self.deps = self.meta_info.get("deps", [])
+        self.is_fat_pkg = self.meta_info.get("fat_pkg", False)
 
         return True
 

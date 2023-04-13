@@ -116,7 +116,7 @@ class Uploader:
 
     def _parse_args(self, args):
         """
-        init arguments
+        parse arguments
         """
         cfg = UploaderConfig()
         opts, _ = getopt.getopt(

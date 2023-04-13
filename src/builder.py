@@ -1,4 +1,5 @@
 import datetime
+import typing
 import distro
 import getopt
 import logging
@@ -12,6 +13,7 @@ import sys
 from constant_var import APP_NAME
 from kahn_algo import KahnAlgo
 from log_handle import LogHandle
+from searcher import Searcher, SearcherConfig, SearcherResult
 from settings_handle import SettingsHandle
 from utils import Utils
 from yaml_handle import YamlHandle
@@ -53,6 +55,8 @@ class Builder:
         self._task_dir = ""  # task directory
         self._build_dir = ""  # build directory
         self._pkg_dir = ""  # package directory
+        self._deps_dir = ""  # dependencies directory
+        self._test_deps_dir = ""  # test dependencies directory
         self._output_dir = ""  # output directory
         self._input_param_dict = {}  # user input param dict
 
@@ -229,8 +233,75 @@ class Builder:
         """
         prepare dependencies
         """
-        # TODO:
-        pass
+        yaml_deps = workflow.get("deps", None)
+        if yaml_deps is None:
+            return True
+
+        for dep in yaml_deps:
+            result: SearcherResult | None = self._search_dep(dep=dep)
+            if result is None:
+                return False
+            self._deps.append({
+                "maintainer": result.meta.maintainer,
+                "repo": result.meta.repo,
+                "tag": result.meta.tag,
+                "deps": result.meta.deps,
+            })
+            # TODO: download dependencies
+
+    def _search_dep(self, dep) -> SearcherResult | None:
+        """
+        search dependency
+        """
+        search_cfg = SearcherConfig()
+        search_cfg.maintainer = dep.get("maintainer", "")
+        search_cfg.repo = dep.get("repo", "")
+        search_cfg.tag = dep.get("tag", "")
+        search_cfg.system_name = self._platform_name
+        search_cfg.machine = self._platform_machine
+        searcher = Searcher()
+        search_results = searcher.search(search_cfg, self._settings_handle)
+        if len(search_results) == 0:
+            return None
+        elif len(search_results) == 1:
+            return search_results[0]
+        else:
+            result_score_dict = self._rank_search_result(search_results)
+            if len(result_score_dict) == 0:
+                return None
+            else:
+                return max(result_score_dict)
+
+    def _rank_search_result(self, search_result: typing.List[SearcherResult]):
+        """
+        rank search result
+        """
+        result_score_dict = {}
+        for result in search_result:
+            score = 0
+            meta = result.meta
+            if len(meta.platform_name) > 0 and \
+                    meta.platform_name != self._platform_name:
+                continue
+            if len(meta.platform_machine) > 0 and \
+                    meta.platform_machine != self._platform_machine:
+                continue
+            if meta.platform_name == self._platform_name:
+                score += 10
+            if meta.platform_machine == self._platform_machine:
+                score += 10
+            if meta.platform_distro == self._platform_distr:
+                score += 2
+            if meta.is_fat_pkg is True:
+                score += 2
+            if meta.platform_libc == self._platform_libc:
+                score += 2
+            if meta.build_type.lower() == self._get_build_type().lower():
+                score += 2
+            elif meta.build_type.lower() == "release":
+                score += 1
+            result_score_dict[result] = score
+        return result_score_dict
 
     def _run_workflow(self, workflow):
         """
@@ -399,13 +470,15 @@ class Builder:
                     continue
                 self._input_param_dict[kv[0]] = kv[1]
 
-        # set task dir
+        # set task dirs
         self._task_dir = os.path.join(
             self._working_dir,
             "_{}".format(APP_NAME),
             "{}.{}".format(self._task_name, self._task_id))
         self._build_dir = os.path.join(self._task_dir, "build")
         self._pkg_dir = os.path.join(self._task_dir, "pkg")
+        self._deps_dir = os.path.join(self._task_dir, "deps")
+        self._test_deps_dir = os.path.join(self._task_dir, "test_deps")
 
         # set output dir
         if len(cfg.output_dir) == 0:
@@ -433,6 +506,8 @@ class Builder:
         os.makedirs(self._build_dir, exist_ok=True)
         os.makedirs(self._pkg_dir, exist_ok=True)
         os.makedirs(self._output_dir, exist_ok=True)
+        os.makedirs(self._deps_dir, exist_ok=True)
+        os.makedirs(self._test_deps_dir, exist_ok=True)
 
     def _init_log(self):
         """
@@ -468,6 +543,8 @@ class Builder:
             "TASK_DIR": self._task_dir,
             "BUILD_DIR": self._build_dir,
             "PKG_DIR": self._pkg_dir,
+            "DEPS_DIR": self._deps_dir,
+            "TEST_DEPS_DIR": self._test_deps_dir,
             "OUTPUT_DIR": self._output_dir,
             "SOURCE_PATH": "",  # NOTE: this value set after load source
             "FILE_DIR": os.path.dirname(self._cfg_file_path),

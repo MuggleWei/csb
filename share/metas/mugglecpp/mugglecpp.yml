@@ -15,7 +15,7 @@ source:
   git_depth: 1
 deps:
   - maintainer: mugglewei
-    name: mugglec
+    repo: mugglec
     tag: v1.0.2
 jobs:
   build:

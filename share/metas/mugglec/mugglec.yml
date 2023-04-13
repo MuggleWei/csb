@@ -15,7 +15,7 @@ source:
   git_depth: 1
 test_deps:
   - maintainer: google
-    name: googletest
+    repo: googletest
     tag: v1.13.0
 jobs:
   build:

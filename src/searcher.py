@@ -1,6 +1,7 @@
 import getopt
 import os
 import sys
+import typing
 
 from constant_var import APP_NAME
 from package_meta import MetaMatch, PackageMeta
@@ -11,12 +12,19 @@ class SearcherConfig:
     def __init__(self):
         self.maintainer = ""
         self.repo = ""
-        self.ver = ""
+        self.tag = ""
         self.build_type = ""
         self.system_name = ""
         self.distr = ""
         self.machine = ""
         self.settings_path = ""
+
+
+class SearcherResult:
+    def __init__(self):
+        self.repo_type = ""  # local or remote
+        self.path = ""  # package path
+        self.meta = PackageMeta()  # meta object
 
 
 class Searcher:
@@ -52,32 +60,49 @@ class Searcher:
         if self._init(args=args) is False:
             return False
 
-        target_paths = self._search_candidate()
+        results: typing.List[SearcherResult] = self._search_candidate()
         print("search results: ")
-        for target in target_paths:
-            if target[0] == "local":
+        for result in results:
+            if result.repo_type == "local":
                 print("--------")
-                print("package: {}".format(target[1]))
-                print("meta file: {}".format(target[2]))
+                print("package: {}".format(result.path))
+                print("meta file: {}".format(result.meta))
+
+    def search(self, cfg: SearcherConfig, settings_handle) \
+            -> typing.List[SearcherResult]:
+        """
+        search packages invoke in codes
+        :param cfg: search config
+        :param settings_handle: settings handle
+        """
+        self.cfg = cfg
+        self._settings_handle = settings_handle
+
+        if len(self.cfg.maintainer) == 0:
+            return []
+        if len(self.cfg.repo) == 0:
+            return []
+
+        return self._search_candidate()
 
     def _search_candidate(self):
         """
         search candidate target path
         """
-        target_paths = []
+        results = []
         if len(self._settings_handle.pkg_search_repos) == 0:
             print("WARNING! Artifacts search repo list is empty")
 
         for search_repo in self._settings_handle.pkg_search_repos:
             if search_repo.kind == "local":
                 local_target_paths = self._search_candidate_local(search_repo)
-                target_paths.extend(local_target_paths)
+                results.extend(local_target_paths)
             elif search_repo.kind == "remote":
                 print("WARNING! "
                       "Artifacts search remote repo currently not support")
             else:
                 print("invalid search repo kind: {}".format(search_repo.kind))
-        return target_paths
+        return results
 
     def _search_candidate_local(self, repo: RepoConfig):
         """
@@ -107,7 +132,7 @@ class Searcher:
             if pkg_filepath is None:
                 continue
 
-            if pkg_meta.is_tag_match(self.cfg.ver) == MetaMatch.mismatch:
+            if pkg_meta.is_tag_match(self.cfg.tag) == MetaMatch.mismatch:
                 continue
             if pkg_meta.is_build_type_match(self.cfg.build_type) == \
                     MetaMatch.mismatch:
@@ -120,11 +145,11 @@ class Searcher:
                 continue
             if pkg_meta.is_distr_match(self.cfg.distr) == MetaMatch.mismatch:
                 continue
-            target_paths.append([
-                "local",
-                pkg_filepath,
-                pkg_meta,
-            ])
+            result = SearcherResult()
+            result.repo_type = "local"
+            result.path = pkg_filepath
+            result.meta = pkg_meta
+            target_paths.append(result)
         return target_paths
 
     def _get_local_meta(self, pkg_dir: str):
@@ -211,7 +236,7 @@ class Searcher:
             elif opt in ("-r", "--repo"):
                 cfg.repo = arg
             elif opt in ("-v", "--ver"):
-                cfg.ver = arg
+                cfg.tag = arg
             elif opt in ("-t", "--build-type"):
                 cfg.build_type = arg
             elif opt in ("--system"):
