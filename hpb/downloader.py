@@ -3,8 +3,9 @@ import os
 import shutil
 import sys
 import tarfile
-from constant_var import APP_NAME
-from utils import Utils
+
+from .constant_var import APP_NAME
+from .utils import Utils
 
 
 class DownloaderConfig:

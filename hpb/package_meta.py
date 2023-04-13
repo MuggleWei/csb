@@ -1,7 +1,7 @@
 from enum import Enum
 import json
 
-from yaml_handle import YamlHandle
+from .yaml_handle import YamlHandle
 
 
 class MetaMatch(Enum):

@@ -3,9 +3,9 @@ import os
 import sys
 import typing
 
-from constant_var import APP_NAME
-from package_meta import MetaMatch, PackageMeta
-from settings_handle import RepoConfig, SettingsHandle
+from .constant_var import APP_NAME
+from .package_meta import MetaMatch, PackageMeta
+from .settings_handle import RepoConfig, SettingsHandle
 
 
 class SearcherConfig:

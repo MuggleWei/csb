@@ -1,6 +1,6 @@
 import unittest
 
-from kahn_algo import KahnAlgo
+from hpb.kahn_algo import KahnAlgo
 
 
 class TestKahnAlgo(unittest.TestCase):

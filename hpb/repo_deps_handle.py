@@ -1,8 +1,9 @@
 import logging
 import typing
-from downloader import Downloader, DownloaderConfig
-from searcher import Searcher, SearcherConfig, SearcherResult
-from settings_handle import SettingsHandle
+
+from .downloader import Downloader, DownloaderConfig
+from .searcher import Searcher, SearcherConfig, SearcherResult
+from .settings_handle import SettingsHandle
 
 
 class RepoDepsHandle:

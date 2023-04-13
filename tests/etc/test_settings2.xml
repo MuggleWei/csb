@@ -1,4 +1,4 @@
-<package>
+<artifacts>
 	<search>
 
 		<repo>
@@ -7,4 +7,4 @@
 		</repo>
 
 	</search>
-</package>
+</artifacts>

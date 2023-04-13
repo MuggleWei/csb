@@ -3,10 +3,11 @@ import os
 import shutil
 import sys
 import tarfile
-from constant_var import APP_NAME
-from package_meta import PackageMeta
-from utils import Utils
-from yaml_handle import YamlHandle
+
+from .constant_var import APP_NAME
+from .package_meta import PackageMeta
+from .utils import Utils
+from .yaml_handle import YamlHandle
 
 
 class PackerConfig:

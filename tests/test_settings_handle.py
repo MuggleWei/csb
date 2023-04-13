@@ -1,8 +1,8 @@
 import os
 import unittest
-from constant_var import APP_NAME
 
-from settings_handle import SettingsHandle
+from hpb.constant_var import APP_NAME
+from hpb.settings_handle import SettingsHandle
 
 
 class TestSettingsHandle(unittest.TestCase):

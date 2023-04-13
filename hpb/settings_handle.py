@@ -5,8 +5,8 @@ import xml.dom.minidom
 
 from xml.dom.minidom import Element
 
-from constant_var import APP_NAME
-from utils import Utils
+from .constant_var import APP_NAME
+from .utils import Utils
 
 
 class RepoConfig:

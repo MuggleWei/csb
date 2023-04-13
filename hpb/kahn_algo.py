@@ -12,7 +12,7 @@ class KahnAlgo:
             self.to_list: typing.List[KahnAlgo.Node] = []
             self.in_degree = 0
 
-    def sort(self, node_cnt, edges):
+    def sort(self, node_cnt, edges) -> typing.List | None:
         """
         Kahn's algorithm sort nodes
         :param node_cnt: total node count

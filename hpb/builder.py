@@ -9,13 +9,13 @@ import selectors
 import subprocess
 import sys
 
-from constant_var import APP_NAME
-from kahn_algo import KahnAlgo
-from log_handle import LogHandle
-from repo_deps_handle import RepoDepsHandle
-from settings_handle import SettingsHandle
-from utils import Utils
-from yaml_handle import YamlHandle
+from .constant_var import APP_NAME
+from .kahn_algo import KahnAlgo
+from .log_handle import LogHandle
+from .repo_deps_handle import RepoDepsHandle
+from .settings_handle import SettingsHandle
+from .utils import Utils
+from .yaml_handle import YamlHandle
 
 
 class BuilderConfig:

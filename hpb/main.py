@@ -1,11 +1,11 @@
 import sys
-import __version__
 
-from builder import Builder
-from downloader import Downloader
-from packer import Packer
-from searcher import Searcher
-from uploader import Uploader
+from .__version__ import __version__
+from .builder import Builder
+from .downloader import Downloader
+from .packer import Packer
+from .searcher import Searcher
+from .uploader import Uploader
 
 
 def run_builde():
@@ -53,7 +53,7 @@ def run_pack():
         sys.exit(1)
 
 
-if __name__ == "__main__":
+def main():
     usage_str = "Usage: {} COMMAND [OPTIONS]\n" \
         "\n" \
         "Commands:\n" \
@@ -73,7 +73,7 @@ if __name__ == "__main__":
         sys.exit(0)
 
     if sys.argv[1] in ("-v", "--version"):
-        print("{}".format(__version__.__version__))
+        print("{}".format(__version__))
         sys.exit(0)
 
     command_dict = {
@@ -91,3 +91,7 @@ if __name__ == "__main__":
     else:
         print(usage_str)
         sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()
