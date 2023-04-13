@@ -62,7 +62,7 @@ class Builder:
         self._platform_machine = ""
         self._platform_distr_id = ""
         self._platform_distr_ver = ""
-        self._platform_distro = ""
+        self._platform_distr = ""
         self._platform_libc = ""
 
         self._git_tag = ""  # git tag
@@ -479,7 +479,9 @@ class Builder:
             "PLATFORM_RELEASE": self._platform_release,
             "PLATFORM_VERSION": self._platform_ver,
             "PLATFORM_MACHINE": self._platform_machine,
-            "PLATFORM_DISTR": self._platform_distro,
+            "PLATFORM_DISTR_ID": self._platform_distr_id,
+            "PLATFORM_DISTR_VER": self._platform_distr_ver,
+            "PLATFORM_DISTR": self._platform_distr,
             "GIT_REF": self._git_ref,
             "GIT_TAG": self._git_tag,
             "GIT_COMMIT_ID": self._git_commit_id,
@@ -502,17 +504,21 @@ class Builder:
         logging.debug("processor: {}".format(platform.processor()))
         logging.debug("uname: {}".format(platform.uname()))
 
-        self._platform_name = platform.system()
+        self._platform_name = platform.system().lower()
         self._platform_release = platform.release()
         self._platform_ver = platform.version()
         self._platform_machine = platform.machine()
 
-        if platform.system().lower() == "linux":
+        if self._platform_name == "linux":
             logging.debug("linux distro id: {}".format(distro.id()))
             logging.debug("linux distro version: {}".format(distro.version()))
             self._platform_distr_id = distro.id()
             self._platform_distr_ver = distro.version()
-            self._platform_distro = "{}-{}".format(distro.id(), distro.version())
+            if len(self._platform_distr_ver) > 0:
+                self._platform_distr = "{}_{}".format(
+                    self._platform_distr_id, self._platform_distr_ver)
+            else:
+                self._platform_distr = self._platform_distr_id
 
             libc_ver = platform.libc_ver()
             logging.debug("libc: {}".format(libc_ver))
@@ -520,7 +526,7 @@ class Builder:
         else:
             self._platform_distr_id = ""
             self._platform_distr_ver = ""
-            self._platform_distro = platform.version()
+            self._platform_distr = platform.version()
             self._platform_libc = ""
 
     def _fillup_git_info(self):
@@ -658,7 +664,7 @@ class Builder:
                 "machine": self._platform_machine,
                 "distr_id": self._platform_distr_id,
                 "distr_ver": self._platform_distr_ver,
-                "distr": self._platform_distro,
+                "distr": self._platform_distr,
                 "libc": self._platform_libc,
             },
             "deps": self._deps,

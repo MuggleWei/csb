@@ -1,8 +1,9 @@
 import getopt
 import os
 import sys
+
 from constant_var import APP_NAME
-from package_meta import PackageMeta
+from package_meta import MetaMatch, PackageMeta
 from settings_handle import RepoConfig, SettingsHandle
 
 
@@ -12,6 +13,7 @@ class SearcherConfig:
         self.repo = ""
         self.ver = ""
         self.build_type = ""
+        self.system_name = ""
         self.distr = ""
         self.machine = ""
         self.settings_path = ""
@@ -34,6 +36,7 @@ class Searcher:
             "  -v, --ver string        [OPTIONAL] package version\n" \
             "  -t, --build-type string [OPTIONAL] package build type, by default set release\n" \
             "  -s, --settings string   [OPTIONAL] manual set settings.xml\n" \
+            "    , --system string     [OPTIONAL] system string, e.g. linux, windows\n" \
             "  -d, --distr string      [OPTIONAL] distrubution string, e.g. ubuntu, arch, alpine, ubuntu-22.04, alpine-3.17\n" \
             "    , --machine string    [OPTIONAL] platform machine, e.g. x64_64\n" \
             "e.g.\n" \
@@ -104,21 +107,18 @@ class Searcher:
             if pkg_filepath is None:
                 continue
 
-            if len(self.cfg.ver) > 0 and \
-                    len(pkg_meta.tag) > 0 and \
-                    self.cfg.ver != pkg_meta.tag:
+            if pkg_meta.is_tag_match(self.cfg.ver) == MetaMatch.mismatch:
                 continue
-            if len(self.cfg.build_type) > 0 and \
-                    len(pkg_meta.build_type) > 0 and \
-                    self.cfg.build_type != pkg_meta.build_type:
+            if pkg_meta.is_build_type_match(self.cfg.build_type) == \
+                    MetaMatch.mismatch:
                 continue
-            if len(self.cfg.distr) > 0 and \
-                    len(pkg_meta.platform_distro) > 0 and \
-                    pkg_meta.platform_distro.find(self.cfg.distr) == -1:
+            if pkg_meta.is_system_match(self.cfg.system_name) == \
+                    MetaMatch.mismatch:
                 continue
-            if len(self.cfg.machine) > 0 and \
-                    len(pkg_meta.platform_machine) > 0 and \
-                    self.cfg.machine != pkg_meta.platform_machine:
+            if pkg_meta.is_machine_match(self.cfg.machine) == \
+                    MetaMatch.mismatch:
+                continue
+            if pkg_meta.is_distr_match(self.cfg.distr) == MetaMatch.mismatch:
                 continue
             target_paths.append([
                 "local",
@@ -197,7 +197,8 @@ class Searcher:
             args, "hm:r:v:t:d:s:",
             [
                 "help", "maintainer=", "repo=", "ver=",
-                "build-type=", "distr=", "machine=", "settings="
+                "build-type=", "system=", "distr=", "machine=",
+                "settings="
             ]
         )
 
@@ -213,6 +214,8 @@ class Searcher:
                 cfg.ver = arg
             elif opt in ("-t", "--build-type"):
                 cfg.build_type = arg
+            elif opt in ("--system"):
+                cfg.system_name = arg
             elif opt in ("-d", "--distr"):
                 cfg.distr = arg
             elif opt in ("--machine"):

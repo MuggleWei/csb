@@ -1,6 +1,13 @@
+from enum import Enum
 import json
 
 from yaml_handle import YamlHandle
+
+
+class MetaMatch(Enum):
+    match = 1
+    ignore = 2
+    mismatch = 3
 
 
 class PackageMeta:
@@ -59,10 +66,111 @@ class PackageMeta:
         """
         generate package dir name
         """
-        return "{}@{}@{}@{}@{}".format(
+        return "{}-{}-{}-{}-{}".format(
             self.tag,
             self.build_type,
             self.platform_name,
             self.platform_distro,
             self.platform_machine,
         )
+
+    def gen_pkg_name(self):
+        """
+        generate package file name without suffix
+        """
+        filename = "{}".format(self.repo)
+        if self.tag != "":
+            filename += "-{}".format(self.tag)
+        if self.build_type != "":
+            filename += "-{}".format(self.build_type)
+        if self.platform_name != "":
+            filename += "-{}".format(self.platform_name)
+        if self.platform_machine != "":
+            filename += "-{}".format(self.platform_machine)
+        return filename
+
+    def is_tag_match(self, tag):
+        """
+        check is tag match
+        :param tag: compare tag
+        """
+        if len(tag) == 0:
+            return MetaMatch.ignore
+        if len(self.tag) == 0:
+            return MetaMatch.ignore
+        if self.tag != tag:
+            return MetaMatch.mismatch
+        return MetaMatch.match
+
+    def is_build_type_match(self, build_type):
+        """
+        check is build type match
+        :param build_type: build type
+        """
+        build_type = build_type.lower()
+        meta_build_type = self.build_type.lower()
+        if len(build_type) == 0:
+            return MetaMatch.ignore
+        if len(meta_build_type) == 0:
+            return MetaMatch.ignore
+        if meta_build_type != build_type:
+            return MetaMatch.mismatch
+        return MetaMatch.match
+
+    def is_system_match(self, system_name):
+        """
+        check is system match
+        """
+        system_name = system_name.lower()
+        meta_system_name = self.platform_name.lower()
+        if len(system_name) == 0:
+            return MetaMatch.ignore
+        if len(meta_system_name) == 0:
+            return MetaMatch.ignore
+        if system_name != meta_system_name:
+            return MetaMatch.mismatch
+        return MetaMatch.match
+
+    def is_distr_match(self, distr_info):
+        """
+        check is distrbution info match
+        """
+        if len(distr_info) == 0:
+            return MetaMatch.ignore
+        if len(self.platform_distro_id) == 0:
+            return MetaMatch.ignore
+
+        distr_id = ""
+        distr_ver = ""
+        v = distr_info.split("-")
+        distr_id = v[0]
+        if len(v) > 1:
+            distr_ver = v[1]
+
+        meta_distr_id = ""
+        meta_distr_ver = ""
+        v = self.platform_distro.split("_")
+        meta_distr_id = v[0]
+        if len(v) > 1:
+            meta_distr_ver = v[1]
+
+        if distr_id != meta_distr_id:
+            return MetaMatch.mismatch
+        if len(distr_ver) > 0 \
+                and len(meta_distr_ver) > 0 \
+                and distr_ver != meta_distr_ver:
+            return MetaMatch.mismatch
+
+        return MetaMatch.match
+
+    def is_machine_match(self, machine):
+        """
+        check is machine match
+        """
+        if len(machine) == 0:
+            return MetaMatch.ignore
+        if len(self.platform_machine) == 0:
+            return MetaMatch.ignore
+        if machine != self.platform_machine:
+            return MetaMatch.mismatch
+        return MetaMatch

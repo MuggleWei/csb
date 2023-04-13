@@ -84,7 +84,7 @@ class Packer:
         """
         pack output files
         """
-        filename = self._gen_package_name()
+        filename = self.pkg_meta.gen_pkg_name()
         filename += ".tar.gz"
 
         origin_dir = os.path.abspath(os.curdir)
@@ -99,7 +99,7 @@ class Packer:
                 tar.add(f)
 
         os.chdir(origin_dir)
-        print("restore dir to: {}".format(self.output_dir))
+        print("restore dir to: {}".format(origin_dir))
 
         src_filepath = os.path.join(self.output_dir, filename)
         dst_filepath = os.path.join(self.pkg_dir, filename)
@@ -110,21 +110,6 @@ class Packer:
         copy meta files
         """
         shutil.copy(self.meta_file, self.pkg_dir)
-
-    def _gen_package_name(self):
-        """
-        generate package name
-        """
-        filename = "{}".format(self.pkg_meta.repo)
-        if self.pkg_meta.tag != "":
-            filename += "-{}".format(self.pkg_meta.tag)
-        if self.pkg_meta.build_type != "":
-            filename += "-{}".format(self.pkg_meta.build_type)
-        if self.pkg_meta.platform_name != "":
-            filename += "-{}".format(self.pkg_meta.platform_name)
-        if self.pkg_meta.platform_machine != "":
-            filename += "-{}".format(self.pkg_meta.platform_machine)
-        return filename
 
     def _parse_args(self, args):
         """
