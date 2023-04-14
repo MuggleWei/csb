@@ -120,12 +120,17 @@ class Uploader:
         parse arguments
         """
         cfg = UploaderConfig()
-        opts, _ = getopt.getopt(
-            args, "hd:p:s:",
-            [
-                "help", "pkg-dir=", "pkg-file=", "settings="
-            ]
-        )
+        try:
+            opts, _ = getopt.getopt(
+                args, "hd:p:s:",
+                [
+                    "help", "pkg-dir=", "pkg-file=", "settings="
+                ]
+            )
+        except Exception as e:
+            print("{}, exit...".format(str(e)))
+            sys.exit(1)
+
         for opt, arg in opts:
             if opt in ("-h", "--help"):
                 print(self._usage_str)

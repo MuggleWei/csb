@@ -105,12 +105,17 @@ class Downloader:
         parse arguments
         """
         cfg = DownloaderConfig()
-        opts, _ = getopt.getopt(
-            args, "ht:p:d:",
-            [
-                "help", "type=", "path=", "dest="
-            ]
-        )
+        try:
+            opts, _ = getopt.getopt(
+                args, "ht:p:d:",
+                [
+                    "help", "type=", "path=", "dest="
+                ]
+            )
+        except Exception as e:
+            print("{}, exit...".format(str(e)))
+            sys.exit(1)
+
         for opt, arg in opts:
             if opt in ("-h", "--help"):
                 print(self._usage_str)

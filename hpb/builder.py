@@ -299,13 +299,18 @@ class Builder:
         parse input arguments
         """
         cfg = BuilderConfig()
-        opts, _ = getopt.getopt(
-            args, "hc:p:o:s:",
-            [
-                "help", "config=", "task-name=", "task-id=",
-                "work-dir=", "param=", "output-dir=", "settings="
-            ]
-        )
+        try:
+            opts, _ = getopt.getopt(
+                args, "hc:p:o:s:",
+                [
+                    "help", "config=", "task-name=", "task-id=",
+                    "work-dir=", "param=", "output-dir=", "settings="
+                ]
+            )
+        except Exception as e:
+            print("{}, exit...".format(str(e)))
+            sys.exit(1)
+
         for opt, arg in opts:
             if opt in ("-h", "--help"):
                 print(self._usage_str)

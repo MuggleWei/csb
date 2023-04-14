@@ -117,9 +117,13 @@ class Packer:
         init arguments
         """
         cfg = PackerConfig()
-        opts, _ = getopt.getopt(
-            args, "hc:", ["help", "config="]
-        )
+        try:
+            opts, _ = getopt.getopt(
+                args, "hc:", ["help", "config="]
+            )
+        except Exception as e:
+            print("{}, exit...".format(str(e)))
+            sys.exit(1)
 
         for opt, arg in opts:
             if opt in ("-h", "--help"):
