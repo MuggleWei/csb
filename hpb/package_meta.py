@@ -1,11 +1,11 @@
 from enum import Enum
 import json
+import os
 from typing import OrderedDict
 
 from hpb.platform_info import PlatformInfo
 from hpb.source_info import SourceInfo
-
-from .yaml_handle import YamlHandle
+from hpb.yaml_handle import YamlHandle
 
 
 class MetaMatch(Enum):
@@ -25,39 +25,62 @@ class PackageMeta:
         """
         self.source_info: SourceInfo = SourceInfo()
         self.build_type = ""
+        self.is_fat_pkg = False
         self.platform: PlatformInfo = PlatformInfo()
         self.deps = []
-        self.is_fat_pkg = False
 
     def __str__(self):
-        return json.dumps(OrderedDict([
-            ("maintainer", self.source_info.maintainer),
-            ("name", self.source_info.name),
-            ("tag", self.source_info.tag),
-            ("build_type", self.build_type),
-            ("platform", self.platform),
-            ("deps", self.deps),
-        ]), indent=2)
+        return json.dumps(self.get_ordered_dict(), indent=2)
 
     def __repr__(self) -> str:
         return self.__str__()
 
-    def load(self, filepath):
+    def get_ordered_dict(self):
+        """
+        get field ordered dict
+        """
+        return OrderedDict([
+            ("name", self.source_info.name),
+            ("maintainer", self.source_info.maintainer),
+            ("tag", self.source_info.tag),
+            ("build_type", self.build_type),
+            ("is_fat_pkg", self.is_fat_pkg),
+            ("platform", self.platform.get_ordered_dict()),
+            ("deps", self.deps),
+        ])
+
+    def load(self, obj):
+        """
+        load from object
+        """
+        self.source_info.load(obj)
+        self.build_type = obj.get("build_type", "")
+        self.is_fat_pkg = obj.get("is_fat_pkg", False)
+        platform_obj = obj.get("platform", {})
+        self.platform.load(platform_obj)
+        self.deps = obj.get("deps", [])
+
+    def load_from_file(self, filepath):
         """
         load package metas
         """
         yaml_handle = YamlHandle()
-        meta_info = yaml_handle.load(filepath)
-        if meta_info is None:
+        obj = yaml_handle.load(filepath)
+        if obj is None:
             return False
-
-        self.source_info.load(meta_info)
-        self.build_type = meta_info.get("build_type", "")
-        self.platform.load(meta_info.get("platform", {}))
-        self.deps = meta_info.get("deps", [])
-        self.is_fat_pkg = meta_info.get("fat_pkg", False)
-
+        self.load(obj=obj)
         return True
+
+    def dump(self, filepath):
+        """
+        dump to file
+        """
+        obj = json.loads(self.__str__())
+        dirname = os.path.dirname(filepath)
+        if not os.path.exists(dirname):
+            os.makedirs(dirname, exist_ok=True)
+        yaml_handle = YamlHandle()
+        yaml_handle.write(filepath, obj)
 
     def gen_pkg_dirname(self):
         """

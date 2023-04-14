@@ -40,4 +40,4 @@ class YamlHandle:
         :param obj: content object
         """
         with open(filepath, "w") as f:
-            yaml.dump(obj, f)
+            yaml.dump(obj, f, sort_keys=False)

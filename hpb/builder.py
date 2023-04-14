@@ -1,4 +1,3 @@
-import datetime
 import distro
 import getopt
 import logging
@@ -9,13 +8,15 @@ import selectors
 import subprocess
 import sys
 
-from .constant_var import APP_NAME
-from .kahn_algo import KahnAlgo
-from .log_handle import LogHandle
-from .repo_deps_handle import RepoDepsHandle
-from .settings_handle import SettingsHandle
-from .utils import Utils
-from .yaml_handle import YamlHandle
+from hpb.constant_var import APP_NAME
+from hpb.kahn_algo import KahnAlgo
+from hpb.platform_info import PlatformInfo
+from hpb.repo_deps_handle import RepoDepsHandle
+from hpb.settings_handle import SettingsHandle
+from hpb.source_info import SourceInfo
+from hpb.utils import Utils
+from hpb.workflow_handle import WorkflowHandle
+from hpb.yaml_handle import YamlHandle
 
 
 class BuilderConfig:
@@ -47,50 +48,40 @@ class Builder:
             "  -s, --settings string   [OPTIONAL] manual set settings.xml\n" \
             "".format(APP_NAME)
 
+        # workflow
+        self._workflow = WorkflowHandle()
+
+        # input arguments
+        self._working_dir = ""  # working directory
         self._cfg_file_path = ""  # config file path
         self._task_name = ""  # task name
         self._task_id = ""  # task id
-        self._working_dir = ""  # working directory
+        self._input_param_dict = {}  # user input param dict
+
+        # directories
         self._task_dir = ""  # task directory
         self._build_dir = ""  # build directory
         self._pkg_dir = ""  # package directory
         self._deps_dir = ""  # dependencies directory
         self._test_deps_dir = ""  # test dependencies directory
         self._output_dir = ""  # output directory
-        self._input_param_dict = {}  # user input param dict
-
-        self._platform_name = ""
-        self._platform_release = ""
-        self._platform_ver = ""
-        self._platform_machine = ""
-        self._platform_distr_id = ""
-        self._platform_distr_ver = ""
-        self._platform_distr = ""
-        self._platform_libc = ""
 
         self._git_tag = ""  # git tag
         self._git_commit_id = ""  # git commit id
         self._git_branch = ""  # git branch
         self._git_ref = ""  # git ref
 
-        self._settings_handle = SettingsHandle()  # settings handle
-
         self._var_replace_dict = {}  # vriable replace dict
         self._inner_var_dict = {}  # HPB inner variable dict
         self._yml_var_dict = {}  # yaml variable dict
 
-        # source information
-        self._src_maintainer = ""
-        self._src_repo = ""
-        self._src_tag = ""
-        self._src_repo_kind = ""
-        self._src_repo_url = ""
-        self._src_git_depth = 0
-        self._source_path = ""
-
         # dependencies information
         self._deps = []
         self._test_deps = []
+
+        self._src_info = SourceInfo()
+        self._platform = PlatformInfo()
+        self._settings_handle = SettingsHandle()  # settings handle
 
     def run(self, args):
         """
@@ -100,14 +91,18 @@ class Builder:
         if self._init(args=args) is False:
             return False
 
+        # init log
+        self._workflow.init_log()
+
         logging.info("{} builder run task {}.{}".format(
             APP_NAME, self._task_name, self._task_id))
 
-        # load yaml file and replace param variables
-        yaml_handle = YamlHandle()
-        workflow = yaml_handle.load(self._cfg_file_path)
-        if workflow is None:
-            logging.error("failed get workflow")
+        if self._workflow.load_yaml_file() is False:
+            return False
+
+        return self._workflow.run()
+
+        if self._set_inner_vars() is False:
             return False
 
         workflow_log_path = os.path.join(self._task_dir, "workflow.log")
@@ -145,19 +140,10 @@ class Builder:
         if cfg is None:
             return False
 
-        if self._set_args(cfg) is False:
+        if self._workflow.set_input_args(cfg) is False:
             return False
 
-        self._load_settings(cfg.settings_path)
-
-        self._prepare_dirs()
-
-        os.chdir(self._working_dir)
-
-        self._init_log()
-
-        if self._set_inner_vars() is False:
-            return False
+        self._workflow.load_settings(cfg.settings_path)
 
         return True
 
@@ -384,111 +370,6 @@ class Builder:
             "{}".format(s)
         )
 
-    def _set_args(self, cfg: BuilderConfig):
-        """
-        init config arguments
-        """
-        # set config filepath
-        if len(cfg.config_path) == 0:
-            print("Error! field 'config' missing\n\n{}".format(self._usage_str))
-            return False
-        self._cfg_file_path = cfg.config_path
-
-        # set task name
-        if len(cfg.task_name) == 0:
-            cfg_filename = os.path.basename(self._cfg_file_path).split(".")[0]
-            self._task_name = cfg_filename
-        else:
-            self._task_name = cfg.task_name
-
-        # set task id
-        if len(cfg.task_id) == 0:
-            now = datetime.datetime.now()
-            micro_sec = "{:06}".format(now.strftime("%f"))
-            self._task_id = "{}-{}".format(
-                now.strftime("%Y%m%d-%H%M%S"), micro_sec)
-        else:
-            self._task_id = cfg.task_id
-
-        # set working dir
-        if len(cfg.working_dir) == 0:
-            self._working_dir = os.path.abspath(os.getcwd())
-        else:
-            self._working_dir = cfg.working_dir
-
-        # set task_cfg abs
-        if not os.path.isabs(self._cfg_file_path):
-            self._cfg_file_path = os.path.join(
-                self._working_dir, self._cfg_file_path)
-
-        # set params
-        if len(cfg.params) > 0:
-            for param in cfg.params:
-                kv = param.split("=")
-                if len(kv) != 2:
-                    continue
-                self._input_param_dict[kv[0]] = kv[1]
-
-        # set task dirs
-        self._task_dir = os.path.join(
-            self._working_dir,
-            "_{}".format(APP_NAME),
-            "{}.{}".format(self._task_name, self._task_id))
-        self._build_dir = os.path.join(self._task_dir, "build")
-        self._pkg_dir = os.path.join(self._task_dir, "pkg")
-        self._deps_dir = os.path.join(self._task_dir, "deps")
-        self._test_deps_dir = os.path.join(self._task_dir, "test_deps")
-
-        # set output dir
-        if len(cfg.output_dir) == 0:
-            self._output_dir = os.path.join(self._task_dir, "output")
-        else:
-            self._output_dir = cfg.output_dir
-
-        return True
-
-    def _load_settings(self, input_settings_path: str):
-        """
-        load settings
-        :param input_settings_path: user input settings path
-        """
-        user_settings = []
-        if len(input_settings_path) > 0:
-            user_settings.append(input_settings_path)
-        self._settings_handle = SettingsHandle.load_settings(user_settings)
-
-    def _prepare_dirs(self):
-        """
-        prepare directories
-        """
-        os.makedirs(self._task_dir, exist_ok=True)
-        os.makedirs(self._build_dir, exist_ok=True)
-        os.makedirs(self._pkg_dir, exist_ok=True)
-        os.makedirs(self._output_dir, exist_ok=True)
-        os.makedirs(self._deps_dir, exist_ok=True)
-        os.makedirs(self._test_deps_dir, exist_ok=True)
-
-    def _init_log(self):
-        """
-        init log
-        """
-        console_log_level = LogHandle.log_level(
-            self._settings_handle.log_console_level
-        )
-        file_log_level = LogHandle.log_level(
-            self._settings_handle.log_file_level
-        )
-        LogHandle.init_log(
-            os.path.join(self._task_dir, "log", "build.log"),
-            console_level=console_log_level,
-            file_level=file_log_level,
-            use_rotate=False)
-
-        self._command_logger = logging.getLogger("command")
-        self._command_logger.propagate = False
-        self._command_logger.setLevel(logging.INFO)
-        self._command_logger.addHandler(logging.StreamHandler())
-
     def _set_inner_vars(self):
         """
         set varaibles
@@ -525,45 +406,6 @@ class Builder:
         }
 
         return True
-
-    def _fillup_platform_info(self):
-        """
-        fillup platform informations
-        """
-        logging.debug("system: {}".format(platform.system()))
-        logging.debug("system release: {}".format(platform.release()))
-        logging.debug("system version: {}".format(platform.version()))
-        logging.debug("system architecture: {}".format(platform.architecture()))
-        logging.debug("system infos: {}".format(platform.platform()))
-        logging.debug("machine: {}".format(platform.machine()))
-        logging.debug("node: {}".format(platform.node()))
-        logging.debug("processor: {}".format(platform.processor()))
-        logging.debug("uname: {}".format(platform.uname()))
-
-        self._platform_name = platform.system().lower()
-        self._platform_release = platform.release()
-        self._platform_ver = platform.version()
-        self._platform_machine = platform.machine()
-
-        if self._platform_name == "linux":
-            logging.debug("linux distro id: {}".format(distro.id()))
-            logging.debug("linux distro version: {}".format(distro.version()))
-            self._platform_distr_id = distro.id()
-            self._platform_distr_ver = distro.version()
-            if len(self._platform_distr_ver) > 0:
-                self._platform_distr = "{}_{}".format(
-                    self._platform_distr_id, self._platform_distr_ver)
-            else:
-                self._platform_distr = self._platform_distr_id
-
-            libc_ver = platform.libc_ver()
-            logging.debug("libc: {}".format(libc_ver))
-            self._platform_libc = "-".join(libc_ver)
-        else:
-            self._platform_distr_id = ""
-            self._platform_distr_ver = ""
-            self._platform_distr = platform.version()
-            self._platform_libc = ""
 
     def _fillup_git_info(self):
         """
@@ -794,141 +636,6 @@ class Builder:
                 return False
         return True
 
-    def _exec_command(self, command):
-        """
-        exec command
-        :param command: exec command
-        """
-        logging.debug("exec command: {}".format(command))
-        self._workflow_fp.write("COMMAND|{}\n".format(command))
-
-        pos = command.find("cd ")
-        if pos != -1:
-            chpath = command[pos+2:].strip()
-            chpath = chpath.strip("\"")
-            if not os.path.isabs(chpath):
-                chpath = os.path.join(os.getcwd(), chpath)
-            os.chdir(chpath)
-            return True
-
-        p = subprocess.Popen(
-            command, shell=True,
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE)
-        try:
-            self._exec_subporcess(p)
-            p.communicate()
-            if p.returncode is not None and p.returncode != 0:
-                logging.error("failed exec: {}, ret code: {}".format(
-                    command, p.returncode))
-                return False
-        except Exception as e:
-            logging.warning("wait subprocess finish except: {}".format(e))
-            p.terminate()
-            return False
-        return True
-
-    def _exec_subporcess(self, p):
-        """
-        exec subporcess
-        :param p: subprocess
-        """
-        sel = selectors.DefaultSelector()
-        sel.register(p.stdout, selectors.EVENT_READ)
-        sel.register(p.stderr, selectors.EVENT_READ)
-        while True:
-            for key, _ in sel.select():
-                data = key.fileobj.read1().decode()
-                if not data:
-                    return
-                data = data.strip()
-                if key.fileobj is p.stdout:
-                    self._workflow_fp.write("INFO|{}\n".format(data))
-                    self._command_logger.info("{}".format(data))
-                elif key.fileobj is p.stderr:
-                    self._workflow_fp.write("ERROR|{}\n".format(data))
-                    self._command_logger.error("{}".format(data))
-                self._workflow_fp.flush()
-
-    def _download_src_git(self):
-        """
-        download git source
-        """
-        if len(self._settings_handle.source_path) == 0:
-            logging.error("failed find source path in settings")
-            return False
-
-        if self._src_maintainer == "":
-            logging.error(
-                "failed download source, field 'source.maintainer' is empty")
-            return False
-
-        if self._src_repo == "":
-            logging.error(
-                "failed download source, field 'source.repo' is empty")
-            return False
-
-        if self._src_repo_url == "":
-            logging.error(
-                "failed download source, field 'source.repo_url' is empty")
-            return False
-
-        if self._src_git_depth == 1:
-            if self._src_tag == "":
-                logging.error(
-                    "failed download source, "
-                    "use git depth=1 with field 'source.tag' is empty")
-                return False
-            self._source_path = os.path.join(
-                self._settings_handle.source_path,
-                self._src_maintainer,
-                "{}-{}".format(self._src_repo, self._src_tag)
-            )
-            if os.path.exists(self._source_path):
-                logging.info("{} already exists, skip download".format(
-                    self._source_path))
-                return True
-            command = "git clone --branch={} --depth={} {} {}".format(
-                self._src_tag,
-                self._src_git_depth,
-                self._src_repo_url,
-                self._source_path
-            )
-            logging.info("run command: {}".format(command))
-            return self._exec_command(command=command)
-        else:
-            self._source_path = os.path.join(
-                self._settings_handle.source_path,
-                self._src_maintainer,
-                self._src_repo
-            )
-            if os.path.exists(self._source_path):
-                return self._checkout_src_tag(self._source_path, self._src_tag)
-            command = "git clone {} {}".format(
-                self._src_repo_url,
-                self._source_path
-            )
-            logging.info("run command: {}".format(command))
-            ret = self._exec_command(command=command)
-            if ret is False:
-                return ret
-            return self._checkout_src_tag(self._source_path, self._src_tag)
-
-    def _checkout_src_tag(self, src_path, tag):
-        """
-        checkout git source tag
-        """
-        origin_dir = os.path.abspath(os.curdir)
-        os.chdir(src_path)
-        logging.info("change dir to: {}".format(os.path.abspath(os.curdir)))
-        command = "git checkout {}".format(tag)
-        logging.info("run command: {}".format(command))
-        ret = self._exec_command(command=command)
-        os.chdir(origin_dir)
-        logging.info("restore dir to: {}".format(os.path.abspath(os.curdir)))
-        return ret
-
     def _sort_jobs(self, jobs):
         """
         sort jobs
@@ -960,48 +667,3 @@ class Builder:
             result.append(job_name_list[idx])
 
         return result
-
-    def _get_git_tag(self):
-        """
-        get git tag
-        """
-        v = ""
-        try:
-            result = subprocess.run(
-                "git describe --tags --exact-match 2> /dev/null",
-                shell=True,
-                stdout=subprocess.PIPE)
-            v = result.stdout.decode("utf-8").strip()
-        except Exception as e:
-            logging.debug("failed get git tag: {}".format(str(e)))
-        return v
-
-    def _get_git_commit_id(self):
-        """
-        get git commit id
-        """
-        v = ""
-        try:
-            result = subprocess.run(
-                "git rev-parse --short HEAD",
-                shell=True,
-                stdout=subprocess.PIPE)
-            v = result.stdout.decode("utf-8").strip()
-        except Exception as e:
-            logging.debug("failed get git commit id: {}".format(str(e)))
-        return v
-
-    def _get_git_branch(self):
-        """
-        get git branch
-        """
-        v = ""
-        try:
-            result = subprocess.run(
-                "git symbolic-ref -q --short HEAD",
-                shell=True,
-                stdout=subprocess.PIPE)
-            v = result.stdout.decode("utf-8").strip()
-        except Exception as e:
-            logging.debug("failed get git branch: {}".format(str(e)))
-        return v

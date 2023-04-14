@@ -68,6 +68,16 @@ class TestPlatformInfo(unittest.TestCase):
         self.assertGreater(len(platform_info.system), 0)
         self.assertGreater(len(platform_info.machine), 0)
 
+    def test_field_distr(self):
+        platform_info = PlatformInfo()
+        platform_info.load(obj=self._obj)
+        self.assertEqual(platform_info.distr, "arch")
+
+    def test_field_libc(self):
+        platform_info = PlatformInfo()
+        platform_info.load(obj=self._obj)
+        self.assertEqual(platform_info.libc, "glibc-2.37")
+
     def assert_platform_info_eq(self, platform_info: PlatformInfo):
         self.assertEqual(platform_info.system, self._obj["system"])
         self.assertEqual(platform_info.release, self._obj["release"])

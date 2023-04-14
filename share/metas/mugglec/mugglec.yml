@@ -6,8 +6,8 @@ variables:
   - git_url: https://github.com/MuggleWei/mugglec.git
   - build_type: release
 source:
+  name: ${repo_name}
   maintainer: ${maintainer}
-  repo: ${repo_name}
   tag: ${git_tag}
   repo_kind: git
   repo_url: ${git_url}

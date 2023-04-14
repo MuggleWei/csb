@@ -29,6 +29,23 @@ class PlatformInfo:
     def __repr__(self) -> str:
         return self.__str__()
 
+    @property
+    def distr(self):
+        if self.system == "linux":
+            str_distr = self.distr_id
+            if len(self.distr_ver) > 0:
+                str_distr = str_distr + "-" + self.distr_ver
+            return str_distr
+        else:
+            return self.version
+
+    @property
+    def libc(self):
+        str_libc = self.libc_id
+        if len(self.libc_ver) > 0:
+            str_libc = str_libc + "-" + self.libc_ver
+        return str_libc
+
     def get_ordered_dict(self):
         """
         get field ordered dict
