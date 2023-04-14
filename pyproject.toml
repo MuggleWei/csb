@@ -4,7 +4,6 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "hpb"
-version = "0.0.1"
 authors = [
     {name="Muggle Wei", email="mugglewei@gmail.com"}
 ]
@@ -17,7 +16,7 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 
-dynamic = ["dependencies"]
+dynamic = ["dependencies", "version"]
 
 [project.scripts]
 hpb = "hpb.main:main"
@@ -31,6 +30,7 @@ include-package-data = true
 
 [tool.setuptools.dynamic]
 dependencies = {file = ["requirements.txt"]}
+version = {attr = "hpb.__version__.__version__"}
 
 [tool.setuptools.packages.find]
 include = ["hpb"]
