@@ -155,7 +155,7 @@ class RepoDepsHandle:
         """
         return k.split("$")
 
-    def _search_dep(self, dep) -> SearcherResult | None:
+    def _search_dep(self, dep) -> typing.Optional[SearcherResult]:
         """
         search dependency
         """

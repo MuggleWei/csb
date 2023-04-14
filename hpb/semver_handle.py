@@ -3,7 +3,7 @@ import typing
 
 class SemverHandle:
     @classmethod
-    def parse(cls, tag) -> typing.List | None:
+    def parse(cls, tag) -> typing.Optional[typing.List]:
         """
         check tag is semver
         semver format
