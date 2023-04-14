@@ -36,6 +36,7 @@ class PackageMeta:
             ("tag", self.source_info.tag),
             ("build_type", self.build_type),
             ("platform", self.platform),
+            ("deps", self.deps),
         ]), indent=2)
 
     def __repr__(self) -> str:

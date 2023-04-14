@@ -16,31 +16,33 @@ class PlatformInfo:
         """
         self.system = ""
         self.release = ""
-        self.ver = ""
+        self.version = ""
         self.machine = ""
         self.distr_id = ""
         self.distr_ver = ""
-        self.distr = ""
         self.libc_id = ""
         self.libc_ver = ""
-        self.libc = ""
 
     def __str__(self) -> str:
-        return json.dumps(OrderedDict([
-            ("system", self.system),
-            ("release", self.release),
-            ("version", self.ver),
-            ("machine", self.machine),
-            ("distr_id", self.distr_id),
-            ("distr_ver", self.distr_ver),
-            ("distr", self.distr),
-            ("libc_id", self.libc_id),
-            ("libc_ver", self.libc_ver),
-            ("libc", self.libc),
-        ]), indent=2)
+        return json.dumps(self.get_ordered_dict(), indent=2)
 
     def __repr__(self) -> str:
         return self.__str__()
+
+    def get_ordered_dict(self):
+        """
+        get field ordered dict
+        """
+        return OrderedDict([
+            ("system", self.system),
+            ("release", self.release),
+            ("version", self.version),
+            ("machine", self.machine),
+            ("distr_id", self.distr_id),
+            ("distr_ver", self.distr_ver),
+            ("libc_id", self.libc_id),
+            ("libc_ver", self.libc_ver),
+        ])
 
     def load(self, obj):
         """
@@ -52,10 +54,8 @@ class PlatformInfo:
         self.machine = obj.get("machine", "")
         self.distr_id = obj.get("distr_id", "")
         self.distr_ver = obj.get("distr_ver", "")
-        self.distr = obj.get("distr", "")
         self.libc_id = obj.get("libc_id", "")
         self.libc_ver = obj.get("libc_ver", "")
-        self.libc = obj.get("libc", "")
 
     def load_local(self):
         """
@@ -63,17 +63,12 @@ class PlatformInfo:
         """
         self.system = platform.system().lower()
         self.release = platform.release()
-        self.ver = platform.version()
+        self.version = platform.version()
         self.machine = platform.machine()
 
         if self.system == "linux":
             self.distr_id = distro.id()
             self.distr_ver = distro.version()
-            if len(self.distr_ver) > 0:
-                self.distr = "{}_{}".format(
-                    self.distr_id, self.distr_ver)
-            else:
-                self.distr = self.distr_id
 
             v = platform.libc_ver()
             if len(v) > 0:
@@ -84,11 +79,8 @@ class PlatformInfo:
                 self.libc_ver = v[1]
             else:
                 self.libc_ver = ""
-            self.libc = "-".join(v)
         else:
             self.distr_id = ""
             self.distr_ver = ""
-            self.distr = platform.version()
             self.libc_id = ""
             self.libc_ver = ""
-            self.libc = ""

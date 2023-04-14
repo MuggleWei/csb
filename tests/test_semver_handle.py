@@ -15,8 +15,8 @@ class TestSemverHandle(unittest.TestCase):
 
         for v in semver_list:
             semver = SemverHandle.parse(v)
+            self.assertIsNotNone(semver)
             if semver is None:
-                self.assertIsNotNone(semver)
                 # for get rid of editor warning
                 continue
             self.assertEqual(len(semver), 4)

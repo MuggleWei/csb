@@ -1,0 +1,7 @@
+source:
+  maintainer: mugglewei
+  name: hpb
+  tag: 1.0.0
+  repo_kind: git
+  repo_url: https://github.com/MuggleWei/hpb.git
+  git_depth: 1

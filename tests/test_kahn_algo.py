@@ -15,8 +15,8 @@ class TestKahnAlgo(unittest.TestCase):
         kahn = KahnAlgo()
         result = kahn.sort(5, edges)
 
+        self.assertIsNotNone(result)
         if result is None:
-            self.assertIsNotNone(result)
             # for get rid of editor warning
             return
 

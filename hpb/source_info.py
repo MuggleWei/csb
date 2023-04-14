@@ -16,17 +16,23 @@ class SourceInfo:
         self.git_depth = 1
 
     def __str__(self) -> str:
-        return json.dumps(OrderedDict([
+        return json.dumps(self.get_ordered_dict(), indent=2)
+
+    def __repr__(self) -> str:
+        return self.__str__()
+
+    def get_ordered_dict(self):
+        """
+        get field ordered dict
+        """
+        return OrderedDict([
             ("maintainer", self.maintainer),
             ("name", self.name),
             ("tag", self.tag),
             ("repo_kind", self.repo_kind),
             ("repo_url", self.repo_url),
             ("git_depth", self.git_depth),
-        ]), indent=2)
-
-    def __repr__(self) -> str:
-        return self.__str__()
+        ])
 
     def load(self, obj):
         """
