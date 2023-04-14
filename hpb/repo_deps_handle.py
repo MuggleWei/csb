@@ -1,6 +1,8 @@
 import logging
 import typing
 
+from hpb.semver_handle import SemverHandle
+
 from .downloader import Downloader, DownloaderConfig
 from .searcher import Searcher, SearcherConfig, SearcherResult
 from .settings_handle import SettingsHandle
@@ -71,15 +73,24 @@ class RepoDepsHandle:
         # comb same repo
         for k in self.search_result_dict.keys():
             maintainer, repo, tag = self._split_key(k)
-            repo_id = "{}${}".format(maintainer, repo)
-            if repo_id in repo_dict:
-                if tag > repo_dict[repo_id]:
+            semver = SemverHandle.parse(tag)
+            if semver is not None:
+                repo_id = "{}${}${}".format(maintainer, repo, semver[0])
+                if repo_id in repo_dict:
+                    if SemverHandle.compare(semver, repo_dict[repo_id]) > 0:
+                        repo_dict[repo_id] = tag
+                else:
                     repo_dict[repo_id] = tag
             else:
-                repo_dict[repo_id] = tag
+                repo_id = "{}${}$".format(maintainer, repo)
+                if repo_id in repo_dict:
+                    if tag > repo_dict[repo_id]:
+                        repo_dict[repo_id] = tag
+                else:
+                    repo_dict[repo_id] = tag
 
         for repo_id, tag in repo_dict.items():
-            maintainer, repo = repo_id.split("$")
+            maintainer, repo, _ = repo_id.split("$")
             key = self._gen_key(maintainer, repo, tag)
             result: SearcherResult = self.search_result_dict[key]
             if self._download_dep(result, download_dir) is False:
