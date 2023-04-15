@@ -1,13 +1,16 @@
 import datetime
 import logging
 import os
+import re
 import typing
-from hpb.builder import BuilderConfig
+from hpb.builder_config import BuilderConfig
 from hpb.command_handle import CommandHandle
 from hpb.constant_var import APP_NAME
 from hpb.git_info import GitInfo
+from hpb.kahn_algo import KahnAlgo
 from hpb.log_handle import LogHandle
 from hpb.platform_info import PlatformInfo
+from hpb.repo_deps_handle import RepoDepsHandle
 from hpb.settings_handle import SettingsHandle
 from hpb.source_downloader import SourceDownloader
 from hpb.source_info import SourceInfo
@@ -50,9 +53,16 @@ class WorkflowHandle:
         self.git_info = GitInfo()
 
         # variables
-        self.all_var_dict = {}
         self.inner_var_dict = {}
-        self.yml_vars = {}
+        self.yml_vars = []
+        self.all_var_dict = {}  # input_param_dict + inner_var_dict + yml_vars
+
+        # source
+        self.src = SourceInfo()
+
+        # deps
+        self.deps = []
+        self.test_deps = []
 
     def set_input_args(self, cfg: BuilderConfig):
         """
@@ -157,23 +167,12 @@ class WorkflowHandle:
         command_logger.setLevel(logging.INFO)
         command_logger.addHandler(logging.StreamHandler())
 
-    def prepare_dirs(self):
-        """
-        prepare directories
-        """
-        os.makedirs(self.task_dir, exist_ok=True)
-        os.makedirs(self.build_dir, exist_ok=True)
-        os.makedirs(self.pkg_dir, exist_ok=True)
-        os.makedirs(self.output_dir, exist_ok=True)
-        os.makedirs(self.deps_dir, exist_ok=True)
-        os.makedirs(self.test_deps_dir, exist_ok=True)
-
     def run(self):
         """
         run workflow
         """
-        # prepare directories
-        self.prepare_dirs()
+        # create directories
+        self.mk_dirs()
 
         # chdir to working directory
         os.chdir(self.working_dir)
@@ -185,7 +184,22 @@ class WorkflowHandle:
             if self.prepare() is False:
                 return False
 
+            self.generate_meta_file()
+
+            self.run_workflow()
+
         return True
+
+    def mk_dirs(self):
+        """
+        prepare directories
+        """
+        os.makedirs(self.task_dir, exist_ok=True)
+        os.makedirs(self.build_dir, exist_ok=True)
+        os.makedirs(self.pkg_dir, exist_ok=True)
+        os.makedirs(self.output_dir, exist_ok=True)
+        os.makedirs(self.deps_dir, exist_ok=True)
+        os.makedirs(self.test_deps_dir, exist_ok=True)
 
     def prepare(self):
         """
@@ -195,16 +209,154 @@ class WorkflowHandle:
         if self.load_yaml_file() is False:
             return False
 
-        if self.prepare_variables() is False:
+        if self.prepare_vars_and_src() is False:
             return False
 
+        self.output_vars()
+
         # TODO:
+        # if self.prepare_deps() is False:
+        #     return False
 
         return True
 
-    def prepare_variables(self):
+    def generate_meta_file(self):
         """
-        prepare all variables
+        generate pacakge meta files
+        """
+        self.generate_hpd_meta_file()
+        self.generate_pkg_meta_file()
+
+    def run_workflow(self):
+        """
+        run workflow
+        """
+        # set current working dir
+        os.chdir(self.working_dir)
+
+        # run jobs
+        jobs = self.yml_obj.jobs
+        ordered_jobs = self.sort_jobs(jobs)
+        logging.debug("workflow job order: {}".format(", ".join(ordered_jobs)))
+
+        ret = True
+        for job_name in ordered_jobs:
+            logging.info("run job: {}".format(job_name))
+            job = jobs[job_name]
+            if self.run_workflow_job(job=job) is False:
+                ret = False
+                break
+
+        # reset working dir
+        os.chdir(self.working_dir)
+
+        return ret
+
+    def run_workflow_job(self, job):
+        """
+        run workflow job
+        :param job: single job
+        """
+        steps = job.get("steps", [])
+        for i in range(len(steps)):
+            step = steps[i]
+            step_name = step.get("name", "")
+            logging.debug("run step[{}]: {}".format(i, step_name))
+            if self.run_workflow_step(step=step) is False:
+                return False
+        return True
+
+    def run_workflow_step(self, step):
+        """
+        run workflow step
+        """
+        command_str = step.get("run", "")
+        if len(command_str) == 0:
+            return True
+        pattern = re.compile(r'''((?:[^;"']|"[^"]*"|'[^']*')+)''')
+        commands = pattern.split(command_str)
+        for command in commands:
+            command = command.strip()
+            if len(command) == 0:
+                continue
+            if command == ";":
+                continue
+            logging.info("run command: {}".format(command))
+            real_command = VarReplaceHandle.replace(command, self.all_var_dict)
+            if real_command is None:
+                logging.error("failed replace variable in: {}".format(command))
+                return False
+            if self.command_handle.exec(command=real_command) is False:
+                return False
+        return True
+
+    def sort_jobs(self, jobs):
+        """
+        sort jobs
+        :param jobs: workflow jobs
+        """
+        job_name_list = []
+        job_idx_dict = {}
+        idx = 0
+        for job_name in jobs.keys():
+            job_idx_dict[job_name] = idx
+            idx += 1
+            job_name_list.append(job_name)
+
+        edges = []
+        for job_name, job in jobs.items():
+            dep_job_names = job.get("needs", [])
+            for dep_name in dep_job_names:
+                from_idx = job_idx_dict[dep_name]
+                to_idx = job_idx_dict[job_name]
+                edges.append([from_idx, to_idx])
+
+        dep_result = KahnAlgo().sort(len(jobs), edges)
+        if dep_result is None:
+            errmsg = "Cycle dependence in jobs!!!"
+            logging.error(errmsg)
+            raise Exception(errmsg)
+
+        result = []
+        for idx in dep_result:
+            result.append(job_name_list[idx])
+
+        return result
+
+    def generate_hpd_meta_file(self):
+        """
+        generate hpd meta dependencies file
+        """
+        d = {
+            "maintainer": self.src.maintainer,
+            "name": self.src.name,
+            "tag": self.src.tag,
+            "url": self.src.repo_url,
+            "platform": dict(self.platform_info.get_ordered_dict()),
+            "deps": self.deps,
+            "build_type": self.guess_build_type(self.all_var_dict),
+        }
+        filepath = os.path.join(self.task_dir, "{}.yml".format(APP_NAME))
+        yaml_handle = YamlHandle()
+        yaml_handle.write(filepath=filepath, obj=d)
+
+    def generate_pkg_meta_file(self):
+        """
+        generate hpd meta pkg file
+        """
+        d = {
+            "meta_file": os.path.join(
+                self.task_dir, "{}.yml".format(APP_NAME)),
+            "output_dir": self.inner_var_dict["OUTPUT_DIR"],
+            "pkg_dir": self.inner_var_dict["PKG_DIR"],
+        }
+        filepath = os.path.join(self.task_dir, "pkg.yml")
+        yaml_handle = YamlHandle()
+        yaml_handle.write(filepath=filepath, obj=d)
+
+    def prepare_vars_and_src(self):
+        """
+        prepare all variables and sources
         """
         # init inner variables
         self.init_inner_var_dict()
@@ -222,21 +374,18 @@ class WorkflowHandle:
         for k, v in self.input_param_dict.items():
             self.all_var_dict[k] = v
 
-        # first time replace
-        self.yml_vars = self.yml_obj.get_variables()
+        # first time replace yml variables
+        self.yml_vars = self.yml_obj.variables
         VarReplaceHandle.replace_list(self.yml_vars, self.all_var_dict)
 
         # try download source
         source_path = self.working_dir
 
-        src_info = self.get_yml_source(
-            self.yml_obj.get_source_dict(), self.all_var_dict)
-        if src_info is None:
-            return False
-        if self.need_download_source(src_info):
+        self.src = self.get_yml_source(self.yml_obj.source, self.all_var_dict)
+        if self.need_download_source(self.src):
             src_downloader = SourceDownloader(self.command_handle)
             if src_downloader.download(
-                    src_info, self.settings_handle.source_path) is False:
+                    self.src, self.settings_handle.source_path) is False:
                 return False
             source_path = src_downloader.source_path
 
@@ -253,9 +402,36 @@ class WorkflowHandle:
                 continue
             self.all_var_dict[var_name] = v
 
-        # second times replace variables
+        # second times replace yml variables
         if VarReplaceHandle.replace_list(
                 self.yml_vars, self.all_var_dict) is False:
+            return False
+
+        return True
+
+    def prepare_deps(self):
+        """
+        prepare dependencies
+        """
+        yaml_deps = self.yml_obj.deps
+
+        repo_deps_handle = RepoDepsHandle(
+            self.settings_handle,
+            self.platform_info,
+            self.guess_build_type(self.all_var_dict)
+        )
+        for dep in yaml_deps:
+            if repo_deps_handle.add(dep) is False:
+                return False
+
+        if repo_deps_handle.search_all_deps() is False:
+            logging.error("failed search dependencies")
+            return False
+
+        self.deps = repo_deps_handle.deps
+
+        if repo_deps_handle.download_all_deps(self.deps_dir) is False:
+            logging.error("failed download dependencies")
             return False
 
         return True
@@ -278,9 +454,9 @@ class WorkflowHandle:
             v = src_dict[k]
             v = VarReplaceHandle.replace(v, replace_dict)
             if v is None:
-                logging.error(
-                    "failed get yml source.{}: {}".format(k, src_dict[k]))
-                return None
+                errmsg = "failed get yml source.{}: {}".format(k, src_dict[k])
+                logging.error(errmsg)
+                raise Exception(errmsg)
             src_dict[k] = v
         src_info = SourceInfo()
         src_info.load(src_dict)
@@ -321,3 +497,71 @@ class WorkflowHandle:
         self.inner_var_dict["GIT_TAG"] = git_info.tag
         self.inner_var_dict["GIT_COMMIT_ID"] = git_info.commit_id
         self.inner_var_dict["GIT_BRANCH"] = git_info.branch
+
+    def guess_build_type(self, all_vars):
+        """
+        guess build type
+        """
+        build_type = ""
+        try_words = [
+            "build-type",
+            "build_type",
+            "BUILD_TYPE",
+            "BUILDTYPE",
+        ]
+        for word in try_words:
+            if word not in all_vars:
+                continue
+            build_type = all_vars[word]
+            break
+        return build_type
+
+    def output_vars(self):
+        """
+        output arguments
+        """
+        logging.debug(
+            "\n-------- input args --------\n"
+            "task_cfg={}\n"
+            "task_name={}\n"
+            "task_id={}\n"
+            "working_dir={}\n"
+            "artifacts_search_dir={}\n"
+            "params={}\n"
+            "output_dir={}\n"
+            "".format(
+                self.cfg_file_path,
+                self.task_name,
+                self.task_id,
+                self.working_dir,
+                self.settings_handle.pkg_search_repos,
+                self.input_param_dict,
+                self.output_dir,
+            )
+        )
+
+        s = ""
+        for k, v in self.inner_var_dict.items():
+            s = s + "{}_{}={}\n".format(APP_NAME.upper(), k, v)
+        logging.debug(
+            "\n-------- builder inner variables --------\n"
+            "{}".format(s)
+        )
+
+        s = ""
+        for k, v in self.input_param_dict.items():
+            s = s + "{}={}\n".format(k, v)
+        logging.debug(
+            "\n-------- builder user input variables --------\n"
+            "{}".format(s)
+        )
+
+        s = ""
+        for var in self.yml_vars:
+            for k in var.keys():
+                v = self.all_var_dict[k]
+                s = s + "{}={}\n".format(k, v)
+        logging.debug(
+            "\n-------- builder user yaml variables --------\n"
+            "{}".format(s)
+        )

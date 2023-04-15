@@ -7,12 +7,12 @@ class WorkflowYaml:
     """
 
     def __init__(self):
-        self.obj = {}
-        self.variables = []
-        self.source = {}
-        self.deps = {}
-        self.test_deps = {}
-        self.jobs = {}
+        self._obj = {}
+        self._variables = []
+        self._source = {}
+        self._deps = []
+        self._test_deps = []
+        self._jobs = {}
 
     def load(self, obj: typing.Optional[typing.Dict]):
         """
@@ -21,27 +21,40 @@ class WorkflowYaml:
         if obj is None:
             return False
 
-        self.obj = obj
+        self._obj = obj
 
-        self.variables = self.obj.get("variables", [])
-        self.source = self.obj.get("source", {})
-        self.deps = self.obj.get("deps", {})
-        self.test_deps = self.obj.get("test_deps", {})
-        self.jobs = self.obj.get("jobs", {})
+        self._variables = self._obj.get("variables", [])
+        self._source = self._obj.get("source", {})
+        self._deps = self._obj.get("deps", [])
+        self._test_deps = self._obj.get("test_deps", [])
+        self._jobs = self._obj.get("jobs", {})
 
         return True
 
-    def get_variables(self):
+    @property
+    def variables(self):
         """
         get yml variable dict
         """
-        return self.variables
+        return self._variables
 
-    def get_source_dict(self):
+    @property
+    def source(self):
         """
         get yml source info
         """
-        src_dict = {}
-        for k, v in self.source.items():
-            src_dict[k] = v
-        return src_dict
+        return self._source
+
+    @property
+    def deps(self):
+        """
+        get yml deps
+        """
+        return self._deps
+
+    @property
+    def jobs(self):
+        """
+        get jobs
+        """
+        return self._jobs

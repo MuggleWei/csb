@@ -1,5 +1,6 @@
 import logging
 import typing
+from hpb.platform_info import PlatformInfo
 
 from hpb.semver_handle import SemverHandle
 
@@ -8,20 +9,62 @@ from .searcher import Searcher, SearcherConfig, SearcherResult
 from .settings_handle import SettingsHandle
 
 
+class DepItem:
+    def __init__(self):
+        self.name = ""
+        self.maintainer = ""
+        self.tag = ""
+
+    def load(self, dep):
+        if not self.is_valid_dep(dep):
+            return False
+        self.name = dep["name"]
+        self.maintainer = dep["maintainer"]
+        self.tag = dep["tag"]
+
+        return True
+
+    def is_valid_dep(self, dep):
+        """
+        is valid dep info
+        """
+        if "name" not in dep:
+            return False
+        if "maintainer" not in dep:
+            return False
+        if "tag" not in dep:
+            return False
+        return True
+
+    def gen_key(self):
+        """
+        gen dep repo key
+        """
+        return "{}${}${}".format(
+            self.name, self.maintainer, self.tag)
+
+    def split_key(self, k):
+        """
+        split dep repo key
+        """
+        return k.split("$")
+
+
 class RepoDepsHandle:
     """
     handle repository dependencies
     """
 
-    def __init__(self):
-        self.settings_handle: SettingsHandle | None = None
-        self.platform_name = ""
-        self.platform_machine = ""
-        self.platform_distr = ""
-        self.platform_libc = ""
-        self.build_type = ""
+    def __init__(
+            self,
+            settings_handle: SettingsHandle,
+            platform_info: PlatformInfo,
+            build_type: str):
+        self.settings_handle = settings_handle
+        self.platform_info = platform_info
+        self.build_type = build_type
 
-        self.raw_deps = []
+        self.raw_deps: typing.List[DepItem] = []
         self.deps = []
         self.search_result_dict = {}
 
@@ -29,7 +72,11 @@ class RepoDepsHandle:
         """
         handle dep and dep's deps
         """
-        self.raw_deps.append(dep)
+        dep_item = DepItem()
+        if dep_item.load(dep) is False:
+            return False
+        self.raw_deps.append(dep_item)
+        return True
 
     def search_all_deps(self):
         """
@@ -37,11 +84,7 @@ class RepoDepsHandle:
         """
         self.search_result_dict.clear()
         for dep in self.raw_deps:
-            if not self._is_valid_dep(dep):
-                logging.error("dep is invalid: {}".format(dep))
-                return False
-
-            k = self._gen_key(dep["maintainer"], dep["repo"], dep["tag"])
+            k = dep.gen_key()
             if k in self.search_result_dict:
                 continue
 
@@ -160,11 +203,11 @@ class RepoDepsHandle:
         search dependency
         """
         search_cfg = SearcherConfig()
-        search_cfg.maintainer = dep["maintainer"]
-        search_cfg.repo = dep["repo"]
-        search_cfg.tag = dep["tag"]
-        search_cfg.system_name = self.platform_name
-        search_cfg.machine = self.platform_machine
+        search_cfg.repo = dep.name
+        search_cfg.maintainer = dep.maintainer
+        search_cfg.tag = dep.tag
+        search_cfg.system_name = self.platform_info.system
+        search_cfg.machine = self.platform_info.machine
 
         searcher = Searcher()
         search_results = searcher.search(search_cfg, self.settings_handle)
@@ -215,15 +258,3 @@ class RepoDepsHandle:
                 score += 1
             result_score_dict[result] = score
         return result_score_dict
-
-    def _is_valid_dep(self, dep):
-        """
-        is valid dep info
-        """
-        if "maintainer" not in dep:
-            return False
-        if "repo" not in dep:
-            return False
-        if "tag" not in dep:
-            return False
-        return True
