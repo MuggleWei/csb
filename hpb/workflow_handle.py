@@ -1,7 +1,6 @@
 import datetime
 import logging
 import os
-import re
 import typing
 from hpb.builder import BuilderConfig
 from hpb.command_handle import CommandHandle
@@ -12,6 +11,7 @@ from hpb.platform_info import PlatformInfo
 from hpb.settings_handle import SettingsHandle
 from hpb.source_downloader import SourceDownloader
 from hpb.source_info import SourceInfo
+from hpb.var_replace_handle import VarReplaceHandle
 from hpb.workflow_yml import WorkflowYaml
 from hpb.yaml_handle import YamlHandle
 
@@ -52,7 +52,7 @@ class WorkflowHandle:
         # variables
         self.all_var_dict = {}
         self.inner_var_dict = {}
-        self.yml_var_dict = {}
+        self.yml_vars = {}
 
     def set_input_args(self, cfg: BuilderConfig):
         """
@@ -223,20 +223,16 @@ class WorkflowHandle:
             self.all_var_dict[k] = v
 
         # first time replace
-        self.yml_var_dict = self.yml_obj.get_variables()
-        for k, v in self.yml_var_dict.items():
-            if k in self.all_var_dict:
-                continue
-            v = self.replace_variable(v, self.all_var_dict)
-            if v is None:
-                continue
-            self.all_var_dict[k] = v
+        self.yml_vars = self.yml_obj.get_variables()
+        VarReplaceHandle.replace_list(self.yml_vars, self.all_var_dict)
 
         # try download source
         source_path = self.working_dir
 
         src_info = self.get_yml_source(
             self.yml_obj.get_source_dict(), self.all_var_dict)
+        if src_info is None:
+            return False
         if self.need_download_source(src_info):
             src_downloader = SourceDownloader(self.command_handle)
             if src_downloader.download(
@@ -257,6 +253,11 @@ class WorkflowHandle:
                 continue
             self.all_var_dict[var_name] = v
 
+        # second times replace variables
+        if VarReplaceHandle.replace_list(
+                self.yml_vars, self.all_var_dict) is False:
+            return False
+
         return True
 
     def need_download_source(self, src_info: SourceInfo):
@@ -275,31 +276,15 @@ class WorkflowHandle:
         """
         for k in src_dict.keys():
             v = src_dict[k]
-            v = self.replace_variable(v, replace_dict)
+            v = VarReplaceHandle.replace(v, replace_dict)
             if v is None:
-                continue
+                logging.error(
+                    "failed get yml source.{}: {}".format(k, src_dict[k]))
+                return None
             src_dict[k] = v
         src_info = SourceInfo()
         src_info.load(src_dict)
         return src_info
-
-    def replace_variable(self, content, replace_dict: typing.Dict):
-        """
-        replace variable in content
-        :param content: variable value
-        :param replace_dict: current variable replace dict
-        """
-        content = str(content)
-        finds = re.findall(r'\${\w+}', content)
-        finds_set = set(finds)
-        if len(finds_set) == 0:
-            return content
-        for var in finds_set:
-            var_name = var[2:-1]
-            if var_name not in replace_dict:
-                return None
-            content = content.replace(var, replace_dict[var_name])
-        return content
 
     def init_inner_var_dict(self):
         """
