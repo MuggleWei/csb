@@ -331,10 +331,9 @@ class WorkflowHandle:
             "maintainer": self.src.maintainer,
             "name": self.src.name,
             "tag": self.src.tag,
-            "url": self.src.repo_url,
+            "build_type": self.guess_build_type(self.all_var_dict),
             "platform": dict(self.platform_info.get_ordered_dict()),
             "deps": self.deps,
-            "build_type": self.guess_build_type(self.all_var_dict),
         }
         filepath = os.path.join(self.task_dir, "{}.yml".format(APP_NAME))
         yaml_handle = YamlHandle()
