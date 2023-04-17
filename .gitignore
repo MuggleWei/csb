@@ -15,6 +15,9 @@ doc/compile_commands.json
 # clang-format
 .clang-format
 
+# pycharm
+.idea
+
 ######### build & artifacts #########
 _hpb/
 build/
