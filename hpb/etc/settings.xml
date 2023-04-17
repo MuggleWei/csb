@@ -14,7 +14,7 @@
         <!--
         <path>/path/to/source/download/directory</path>
         -->
-        <path>${HOME}/.hpb/sources</path>
+        <path>~/.hpb/sources</path>
     </sources>
 
     <!--
@@ -39,12 +39,12 @@
 
             <repo>
                 <kind>local</kind>
-                <path>${HOME}/.hpb/artifacts</path>
+                <path>~/.hpb/artifacts</path>
             </repo>
 
             <repo>
                 <kind>local</kind>
-                <path>${HOME}/.local/share/hpb/artifacts</path>
+                <path>~/.local/share/hpb/artifacts</path>
             </repo>
 
             <!--<repo>-->
@@ -65,7 +65,7 @@
             -->
             <repo>
                 <kind>local</kind>
-                <path>${HOME}/.hpb/artifacts</path>
+                <path>~/.hpb/artifacts</path>
             </repo>
         </upload>
     </artifacts>
