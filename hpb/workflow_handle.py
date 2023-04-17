@@ -95,7 +95,7 @@ class WorkflowHandle:
         # set task id
         if len(cfg.task_id) == 0:
             now = datetime.datetime.now()
-            micro_sec = "{:06}".format(now.strftime("%f"))
+            micro_sec = "{:06}".format(int(now.strftime("%f")))
             self.task_id = "{}-{}".format(
                 now.strftime("%Y%m%d-%H%M%S"), micro_sec)
         else:
