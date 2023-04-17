@@ -1,12 +1,12 @@
 name: mugglec
 variables:
   - maintainer: mugglewei
-  - repo_name: mugglec
+  - name: mugglec
   - git_tag: v1.0.2
   - git_url: https://github.com/MuggleWei/mugglec.git
   - build_type: release
 source:
-  name: ${repo_name}
+  name: ${name}
   maintainer: ${maintainer}
   tag: ${git_tag}
   repo_kind: git
@@ -14,7 +14,7 @@ source:
   git_depth: 1
 test_deps:
   - maintainer: google
-    repo: googletest
+    name: googletest
     tag: v1.13.0
 jobs:
   build:

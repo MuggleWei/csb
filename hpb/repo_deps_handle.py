@@ -1,3 +1,4 @@
+import json
 import logging
 import typing
 
@@ -13,13 +14,32 @@ class DepItem:
         self.name = ""
         self.maintainer = ""
         self.tag = ""
+        self.deps = []
+
+    def __str__(self):
+        return json.dumps(self.get_ordered_dict(), indent=2)
+
+    def __repr__(self) -> str:
+        return self.__str__()
+
+    def get_ordered_dict(self):
+        """
+        get field ordered dict
+        """
+        return typing.OrderedDict([
+            ("maintainer", self.maintainer),
+            ("name", self.name),
+            ("tag", self.tag),
+        ])
 
     def load(self, dep):
         if not self.is_valid_dep(dep):
+            logging.error("invalid dep item: {}".format(dep))
             return False
         self.name = dep["name"]
         self.maintainer = dep["maintainer"]
         self.tag = dep["tag"]
+        self.deps = dep.get("deps", [])
 
         return True
 
@@ -60,49 +80,26 @@ class RepoDepsHandle:
             platform_info: PlatformInfo,
             build_type: str):
         self.settings_handle = settings_handle
-        self.platform_info = platform_info
+        self.platform = platform_info
         self.build_type = build_type
 
-        self.raw_deps: typing.List[DepItem] = []
-        self.deps = []
+        self.deps: typing.List[DepItem] = []
         self.search_result_dict = {}
 
-    def add(self, dep):
-        """
-        handle dep and dep's deps
-        """
-        dep_item = DepItem()
-        if dep_item.load(dep) is False:
-            return False
-        self.raw_deps.append(dep_item)
-        return True
-
-    def search_all_deps(self):
+    def search_all_deps(self, deps):
         """
         search all dependencies
         """
-        self.search_result_dict.clear()
-        for dep in self.raw_deps:
-            k = dep.gen_key()
-            if k in self.search_result_dict:
-                continue
-
-            result = self._search_dep(dep)
-            if result is None:
-                logging.error("failed find dep: {}".format(dep))
+        for dep in deps:
+            dep_item = DepItem()
+            if dep_item.load(dep) is False:
                 return False
+            self.deps.append(dep_item)
 
-            self.deps.append({
-                "maintainer": result.meta.maintainer,
-                "repo": result.meta.repo,
-                "tag": result.meta.tag,
-                "deps": result.meta.deps,
-            })
-
-            self.search_result_dict[k] = result
-            if not result.meta.is_fat_pkg:
-                self._search_dep_deps(search_result=result)
-
+        self.search_result_dict.clear()
+        for dep in self.deps:
+            if self.search_dep_item(dep) is False:
+                return False
         return True
 
     def download_all_deps(self, download_dir):
@@ -141,28 +138,30 @@ class RepoDepsHandle:
 
         return True
 
-    def _search_dep_deps(self, search_result: SearcherResult):
+    def search_dep_item(self, dep: DepItem):
         """
         search dep's deps
         """
-        deps = search_result.meta.deps
-        for dep in deps:
-            if not self._is_valid_dep(dep):
-                logging.error("dep is invalid: {}".format(dep))
+        k = dep.gen_key()
+        if k in self.search_result_dict:
+            return True
+
+        result = self._search(dep)
+        if result is None:
+            logging.error("failed find dep: {}".format(dep))
+            return False
+
+        self.search_result_dict[k] = result
+        if result.meta.is_fat_pkg:
+            return True
+
+        for sub_dep in dep.deps:
+            dep_item = DepItem()
+            if dep_item.load(sub_dep) is False:
+                return False
+            if self.search_dep_item(dep_item) is False:
                 return False
 
-            k = self._gen_key(dep["maintainer"], dep["repo"], dep["tag"])
-            if k in self.search_result_dict:
-                continue
-
-            result = self._search_dep(dep)
-            if result is None:
-                logging.error("failed find dep: {}".format(dep))
-                return False
-
-            self.search_result_dict[k] = result
-            if not result.meta.is_fat_pkg:
-                self._search_dep_deps(search_result=result)
         return True
 
     def _download_dep(
@@ -182,6 +181,7 @@ class RepoDepsHandle:
         download_cfg.repo_type = search_result.repo_type
         download_cfg.path = search_result.path
         download_cfg.dest = download_dir
+        download_cfg.extract = True
         downloader = Downloader()
         return downloader.download(download_cfg)
 
@@ -197,7 +197,7 @@ class RepoDepsHandle:
         """
         return k.split("$")
 
-    def _search_dep(self, dep) -> typing.Optional[SearcherResult]:
+    def _search(self, dep: DepItem) -> typing.Optional[SearcherResult]:
         """
         search dependency
         """
@@ -205,8 +205,8 @@ class RepoDepsHandle:
         search_cfg.repo = dep.name
         search_cfg.maintainer = dep.maintainer
         search_cfg.tag = dep.tag
-        search_cfg.system_name = self.platform_info.system
-        search_cfg.machine = self.platform_info.machine
+        search_cfg.system_name = self.platform.system
+        search_cfg.machine = self.platform.machine
 
         searcher = Searcher()
         search_results = searcher.search(search_cfg, self.settings_handle)
@@ -235,21 +235,21 @@ class RepoDepsHandle:
         for result in search_result:
             score = 0
             meta = result.meta
-            if len(meta.platform_name) > 0 and \
-                    meta.platform_name != self.platform_name:
+            if len(meta.platform.system) > 0 and \
+                    meta.platform.system != self.platform.system:
                 continue
-            if len(meta.platform_machine) > 0 and \
-                    meta.platform_machine != self.platform_machine:
+            if len(meta.platform.machine) > 0 and \
+                    meta.platform.machine != self.platform.machine:
                 continue
-            if meta.platform_name == self.platform_name:
+            if meta.platform.system == self.platform.system:
                 score += 10
-            if meta.platform_machine == self.platform_machine:
+            if meta.platform.machine == self.platform.machine:
                 score += 10
-            if meta.platform_distro == self.platform_distr:
+            if meta.platform.distr == self.platform.distr:
                 score += 2
             if meta.is_fat_pkg is True:
                 score += 2
-            if meta.platform_libc == self.platform_libc:
+            if meta.platform.libc == self.platform.libc:
                 score += 2
             if meta.build_type.lower() == self.build_type.lower():
                 score += 2

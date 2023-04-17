@@ -215,9 +215,8 @@ class WorkflowHandle:
 
         self.output_vars()
 
-        # TODO:
-        # if self.prepare_deps() is False:
-        #     return False
+        if self.prepare_deps() is False:
+            return False
 
         return True
 
@@ -413,22 +412,17 @@ class WorkflowHandle:
         """
         prepare dependencies
         """
-        yaml_deps = self.yml_obj.deps
+        self.deps = self.yml_obj.deps
 
         repo_deps_handle = RepoDepsHandle(
             self.settings_handle,
             self.platform_info,
             self.guess_build_type(self.all_var_dict)
         )
-        for dep in yaml_deps:
-            if repo_deps_handle.add(dep) is False:
-                return False
 
-        if repo_deps_handle.search_all_deps() is False:
+        if repo_deps_handle.search_all_deps(self.deps) is False:
             logging.error("failed search dependencies")
             return False
-
-        self.deps = repo_deps_handle.deps
 
         if repo_deps_handle.download_all_deps(self.deps_dir) is False:
             logging.error("failed download dependencies")
