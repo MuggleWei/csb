@@ -1,0 +1,29 @@
+name: Hello
+variables:
+  - repo_name: test_repo
+  - art_ver: v1.0.0
+  - art_name: ${repo_name}-${art_ver}
+  - art_pkg: ${art_name}.tar.gz
+artifacts:
+  maintainer: mugglewei
+  repo: ${repo_name}
+  version: ${art_ver}
+  pkg: ${art_pkg}
+jobs:
+  build:
+    steps:
+      - name: build
+        run: >
+          cd ${HPB_TASK_DIR};
+          echo "before build";
+          echo "#!/bin/bash" >> hello.sh;
+          echo "" >> hello.sh;
+          echo "echo \"${ECHO_CONTENT}\"" >> hello.sh;
+          chmod u+x hello.sh;
+          echo "after build";
+  deploy:
+    steps:
+      - name: package
+        run: >
+          tar -czvf ${art_pkg} ./hello.sh;
+          mv ${art_pkg} ${HPB_OUTPUT_DIR};

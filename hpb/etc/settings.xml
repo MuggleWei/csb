@@ -1,0 +1,73 @@
+<HPB>
+
+    <!--
+    log config
+    :param console_level: console output log level
+    :param file_level: file output log level
+    -->
+	<log console_level="info" file_level="debug" />
+
+    <!--
+    local source directories
+    -->
+    <sources>
+        <!--
+        <path>/path/to/source/download/directory</path>
+        -->
+        <path>~/.hpb/sources</path>
+    </sources>
+
+    <!--
+    search/upload artifacts location
+    -->
+    <artifacts>
+        <!--
+    	search package location
+        -->
+        <search>
+
+            <!--
+            each repo is a search location
+            :param kind: 
+                - local: local path
+                - remote: package server
+            :param path: if kind is local, path represent a local path
+            :param url: if kind is remote, url represent server url
+            :param name: if kind is remote and server need login, name is request param
+            :param passwd: if kind is remote and server need login, passwd is request param
+            -->
+
+            <repo>
+                <kind>local</kind>
+                <path>~/.hpb/artifacts</path>
+            </repo>
+
+            <repo>
+                <kind>local</kind>
+                <path>~/.local/share/hpb/artifacts</path>
+            </repo>
+
+            <!--<repo>-->
+            <!--    <kind>remote</kind>-->
+            <!--    <url>https://repo.mugglewei.org/hpb</url>-->
+            <!--    <name>mugglewei</name>-->
+            <!--    <passwd>******</passwd>-->
+            <!--</repo>-->
+
+        </search>
+
+        <!--
+        update package location
+        -->
+        <upload>
+            <!--
+            the same as the repo in search
+            -->
+            <repo>
+                <kind>local</kind>
+                <path>~/.hpb/artifacts</path>
+            </repo>
+        </upload>
+    </artifacts>
+
+</HPB>

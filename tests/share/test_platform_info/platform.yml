@@ -1,0 +1,9 @@
+platform:
+  system: linux
+  release: 6.2.9-arch1-1
+  version: '#1 SMP PREEMPT_DYNAMIC Thu, 30 Mar 2023 14:51:14 +0000'
+  machine: x86_64
+  distr_id: arch
+  distr_ver: ''
+  libc_id: glibc
+  libc_ver: '2.37'

@@ -1,0 +1,30 @@
+name: docker build
+variables:
+  - registry: hpb
+  - os: ubuntu
+  - os_ver: 22.04
+  - yml_dir: mugglec
+  - yml_filename: mugglec.yml
+  - yml_filepath: ${HPB_FILE_DIR}/${yml_dir}/${yml_filename}
+jobs:
+  build:
+    steps:
+      - name: docker_build
+        run: >
+          cd ${HPB_TASK_DIR};
+          cp ${yml_filepath} ${HPB_TASK_DIR};
+          docker build \
+            --network host \
+            --build-arg REGISTRY=${registry} \
+            --build-arg OS=${os} \
+            --build-arg OS_VER=${os_ver} \
+            --build-arg FILENAME=${yml_filename} \
+            --network host \
+            -f ${HPB_FILE_DIR}/Dockerfile \
+            -t ${registry}/${yml_dir}:${os}${os_ver} \
+            .;
+      - name: extract
+        run: >
+          docker container create --name extract ${registry}/${yml_dir}:${os}${os_ver};
+          docker container cp extract:/root/.hpb/artifacts ${HPB_OUTPUT_DIR};
+          docker container rm -f extract;

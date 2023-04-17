@@ -1,0 +1,28 @@
+<HPB>
+
+	<log console_level="info" file_level="debug" />
+
+    <sources>
+        <path>./_hpb/sources</path>
+    </sources>
+
+    <artifacts>
+        <search>
+
+            <repo>
+                <kind>local</kind>
+                <path>./_hpb/artifacts</path>
+            </repo>
+
+        </search>
+
+        <upload>
+            <repo>
+                <kind>local</kind>
+                <path>./_hpb/artifacts</path>
+            </repo>
+        </upload>
+    </artifacts>
+
+</HPB>
+

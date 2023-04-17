@@ -1,0 +1,22 @@
+<artifacts>
+	<search>
+
+		<repo>
+			<kind>local</kind>
+			<path>${HOME}/.hpb/artifacts</path>
+		</repo>
+
+		<repo>
+			<kind>local</kind>
+			<path>${HOME}/.local/share/hpb/artifacts</path>
+		</repo>
+
+		<repo>
+			<kind>remote</kind>
+			<url>https://repo.mugglewei.org/hpb</url>
+			<name>hello</name>
+			<passwd>123456</passwd>
+		</repo>
+
+	</search>
+</artifacts>

@@ -1,0 +1,10 @@
+<artifacts>
+	<search>
+
+		<repo>
+			<kind>local</kind>
+			<path>/etc/share/hpb/artifacts</path>
+		</repo>
+
+	</search>
+</artifacts>
