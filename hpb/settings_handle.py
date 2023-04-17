@@ -60,6 +60,7 @@ class SettingsHandle:
             Utils.expand_path("~/.{}/settings.xml".format(APP_NAME)),
             Utils.expand_path(
                 "~/.local/share/{}/settings.xml".format(APP_NAME)),
+            "/usr/local/etc/{}/settings.xml".format(APP_NAME),
             "/etc/{}/settings.xml".format(APP_NAME),
         ])
         settings_handle = SettingsHandle()

@@ -2,7 +2,7 @@
 
 # handle argv
 if [ "$#" -lt 2 ]; then
-	echo "[ERROR] Usage: $0 <OS> <OS_VER> [mirror]"
+	echo "[ERROR] Usage: $0 <OS> <OS_VER> [mirror] [pypi_mirror]"
 	echo "    @param OS: alpine, ubuntu, etc..."
 	echo "    @param OS_VER: os version"
 	echo "    @param mirror: mirror address"
@@ -11,6 +11,8 @@ if [ "$#" -lt 2 ]; then
 	echo "    $0 ubuntu 22.04"
 	echo "    $0 alpine 3.17 mirrors.tuna.tsinghua.edu.cn"
 	echo "    $0 ubuntu 22.04 mirrors.ustc.edu.cn"
+	echo "    $0 alpine 3.17 mirrors.tuna.tsinghua.edu.cn https://pypi.tuna.tsinghua.edu.cn/simple"
+	echo "    $0 ubuntu 22.04 mirrors.ustc.edu.cn https://pypi.tuna.tsinghua.edu.cn/simple"
 	exit 1
 else
 	OS=$1
@@ -20,6 +22,12 @@ else
 		echo "mirror be set: $MIRROR"
 	else
 		MIRROR=
+	fi
+	if [[ $# -gt 3 ]]; then
+		PYPI_MIRROR=$4
+		echo "mirror be set: $MIRROR"
+	else
+		PYPI_MIRROR=
 	fi
 fi
 
@@ -36,3 +44,11 @@ docker build \
 	-f ./${OS}.Dockerfile \
 	-t ${img_name} \
 	.
+
+hpb_img_name="${REGISTRY}/${REGISTRY}_${OS}:${OS_VER}"
+docker build \
+	--build-arg IMAGE=${img_name} \
+	--build-arg PYPI_MIRROR=${PYPI_MIRROR} \
+	-f ./${REGISTRY}_${OS}.Dockerfile \
+	-t ${hpb_img_name} \
+	../../

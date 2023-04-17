@@ -133,7 +133,7 @@ class RepoDepsHandle:
             key = self._gen_key(maintainer, repo, tag)
             result: SearcherResult = self.search_result_dict[key]
             if self._download_dep(result, download_dir) is False:
-                logging.error("failed download {}".format(result.path))
+                logging.error("failed download: \n{}".format(result.path))
                 return False
 
         return True
@@ -148,7 +148,7 @@ class RepoDepsHandle:
 
         result = self._search(dep)
         if result is None:
-            logging.error("failed find dep: {}".format(dep))
+            logging.error("failed find dep: \n{}".format(dep))
             return False
 
         self.search_result_dict[k] = result

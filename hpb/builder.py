@@ -56,6 +56,15 @@ class Builder:
         if cfg is None:
             return False
 
+        if len(cfg.config_path) == 0:
+            print("Error! config path not be set")
+            print(self._usage_str)
+            sys.exit(1)
+
+        cfg.config_path = Utils.expand_path(cfg.config_path)
+        cfg.working_dir = Utils.expand_path(cfg.working_dir)
+        cfg.output_dir = Utils.expand_path(cfg.output_dir)
+
         if self._workflow.set_input_args(cfg) is False:
             return False
 
@@ -98,9 +107,5 @@ class Builder:
                 cfg.output_dir = arg
             elif opt in ("-s", "--settings"):
                 cfg.settings_path = arg
-
-        cfg.config_path = Utils.expand_path(cfg.config_path)
-        cfg.working_dir = Utils.expand_path(cfg.working_dir)
-        cfg.output_dir = Utils.expand_path(cfg.output_dir)
 
         return cfg
