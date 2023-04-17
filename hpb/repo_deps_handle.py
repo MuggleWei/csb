@@ -202,7 +202,7 @@ class RepoDepsHandle:
         search dependency
         """
         search_cfg = SearcherConfig()
-        search_cfg.repo = dep.name
+        search_cfg.name = dep.name
         search_cfg.maintainer = dep.maintainer
         search_cfg.tag = dep.tag
         search_cfg.system_name = self.platform.system

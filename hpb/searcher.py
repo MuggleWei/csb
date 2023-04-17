@@ -11,7 +11,7 @@ from hpb.settings_handle import RepoConfig, SettingsHandle
 class SearcherConfig:
     def __init__(self):
         self.maintainer = ""
-        self.repo = ""
+        self.name = ""
         self.tag = ""
         self.build_type = ""
         self.system_name = ""
@@ -40,7 +40,7 @@ class Searcher:
             "\n" \
             "Options: \n" \
             "  -m, --maintainer string [REQUIRED] repository maintainer\n" \
-            "  -r, --repo string       [REQUIRED] repository name\n" \
+            "  -n, --name string       [REQUIRED] repository name\n" \
             "  -v, --ver string        [OPTIONAL] package version\n" \
             "  -t, --build-type string [OPTIONAL] package build type, by default set release\n" \
             "  -s, --settings string   [OPTIONAL] manual set settings.xml\n" \
@@ -80,7 +80,7 @@ class Searcher:
 
         if len(self.cfg.maintainer) == 0:
             return []
-        if len(self.cfg.repo) == 0:
+        if len(self.cfg.name) == 0:
             return []
 
         return self._search_candidate()
@@ -119,7 +119,7 @@ class Searcher:
         search_path = os.path.join(
             repo.path,
             self.cfg.maintainer,
-            self.cfg.repo
+            self.cfg.name
         )
         if not os.path.exists(search_path):
             return []
@@ -208,8 +208,8 @@ class Searcher:
         if len(self.cfg.maintainer) == 0:
             print("Error! field 'maintainer' missing\n\n{}".format(self._usage_str))
             return False
-        if len(self.cfg.repo) == 0:
-            print("Error! field 'repo' missing\n\n{}".format(self._usage_str))
+        if len(self.cfg.name) == 0:
+            print("Error! field 'name' missing\n\n{}".format(self._usage_str))
             return False
 
         user_settings = []
@@ -225,9 +225,9 @@ class Searcher:
         """
         try:
             opts, _ = getopt.getopt(
-                args, "hm:r:v:t:d:s:",
+                args, "hm:n:v:t:d:s:",
                 [
-                    "help", "maintainer=", "repo=", "ver=",
+                    "help", "maintainer=", "name=", "ver=",
                     "build-type=", "system=", "distr=", "machine=",
                     "settings="
                 ]
@@ -250,8 +250,8 @@ class Searcher:
                 sys.exit(0)
             elif opt in ("-m", "--maintainer"):
                 cfg.maintainer = arg
-            elif opt in ("-r", "--repo"):
-                cfg.repo = arg
+            elif opt in ("-n", "--name"):
+                cfg.name = arg
             elif opt in ("-v", "--ver"):
                 cfg.tag = arg
             elif opt in ("-t", "--build-type"):
