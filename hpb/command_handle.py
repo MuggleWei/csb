@@ -14,17 +14,23 @@ class CommandHandle:
         """
         exec command
         """
+        command = command.strip()
         logging.debug("exec command: {}".format(command))
-        self._command_logger.info("COMMAND|{}".format(command))
+        self._command_logger.info("REAL_COMMAND|{}".format(command))
 
         pos = command.find("cd ")
-        if pos != -1:
+        if pos == 0:
             chpath = command[pos+2:].strip()
             chpath = chpath.strip("\"")
             if not os.path.isabs(chpath):
                 chpath = os.path.join(os.getcwd(), chpath)
             os.chdir(chpath)
             return True
+
+        # join multiple line and remove '\$' for windows
+        command = command.replace("\\\r\n", "")
+        command = command.replace("\\\n", "")
+        command = command.replace("\\\r", "")
 
         p = subprocess.Popen(
             command, shell=True,
@@ -68,14 +74,24 @@ class CommandHandle:
         tee subprocess output
         """
         def fanout(infile, filetype):
-            with infile:
-                for line in iter(infile.readline, b""):
-                    data = line.decode()
-                    data = data.strip()
-                    if filetype == "INFO":
-                        self._command_logger.info("INFO|{}".format(data))
-                    else:
-                        self._command_logger.error("ERROR|{}".format(data))
+            for line in iter(infile.readline, b""):
+                decode_failed = False
+                try:
+                    data = line.decode("utf-8")
+                except Exception:
+                    decode_failed = True
+
+                if decode_failed is True:
+                    try:
+                        data = line.decode("gb18030")
+                    except Exception:
+                        data = "*** failed decode ***"
+
+                data = data.strip()
+                if filetype == "INFO":
+                    self._command_logger.info("STDOUT|{}".format(data))
+                else:
+                    self._command_logger.error("STDERR|{}".format(data))
 
         t = Thread(target=fanout, args=(infile, filetype))
         t.daemon = True

@@ -281,6 +281,7 @@ class WorkflowHandle:
             if command == ";":
                 continue
             logging.info("run command: {}".format(command))
+            logging.getLogger("command").info("COMMAND|{}".format(command))
             real_command = VarReplaceHandle.replace(command, self.all_var_dict)
             if real_command is None:
                 logging.error("failed replace variable in: {}".format(command))
