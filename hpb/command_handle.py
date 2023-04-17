@@ -3,22 +3,19 @@ import os
 import selectors
 import subprocess
 
+from threading import Thread
+
 
 class CommandHandle:
     def __init__(self):
-        self._workflow_fp = None
         self._command_logger = logging.getLogger("command")
-
-    def set_fp(self, fp):
-        self._workflow_fp = fp
 
     def exec(self, command):
         """
         exec command
         """
         logging.debug("exec command: {}".format(command))
-        if self._workflow_fp is not None:
-            self._workflow_fp.write("COMMAND|{}\n".format(command))
+        self._command_logger.info("COMMAND|{}".format(command))
 
         pos = command.find("cd ")
         if pos != -1:
@@ -49,7 +46,45 @@ class CommandHandle:
 
     def _exec_subporcess(self, p):
         """
-        exec subporcess
+        exec subprocess
+        :param p: subprocess
+        """
+        # NOTE: windows not support select fileno
+        # self._exec_subprocess_with_select(p)
+        self._exec_subprocess_with_wait_threads(p)
+
+    def _exec_subprocess_with_wait_threads(self, p):
+        """
+        exec subprocess with wait thread
+        """
+        threads = []
+        threads.append(self._tee(p.stdout, "INFO"))
+        threads.append(self._tee(p.stderr, "ERROR"))
+        for t in threads:
+            t.join()
+
+    def _tee(self, infile, filetype):
+        """
+        tee subprocess output
+        """
+        def fanout(infile, filetype):
+            with infile:
+                for line in iter(infile.readline, b""):
+                    data = line.decode()
+                    data = data.strip()
+                    if filetype == "INFO":
+                        self._command_logger.info("INFO|{}".format(data))
+                    else:
+                        self._command_logger.error("ERROR|{}".format(data))
+
+        t = Thread(target=fanout, args=(infile, filetype))
+        t.daemon = True
+        t.start()
+        return t
+
+    def _exec_subprocess_with_select(self, p):
+        """
+        exec subprocess in *nix
         :param p: subprocess
         """
         sel = selectors.DefaultSelector()
@@ -62,11 +97,6 @@ class CommandHandle:
                     return
                 data = data.strip()
                 if key.fileobj is p.stdout:
-                    if self._workflow_fp is not None:
-                        self._workflow_fp.write("INFO|{}\n".format(data))
                     self._command_logger.info("{}".format(data))
                 elif key.fileobj is p.stderr:
-                    if self._workflow_fp is not None:
-                        self._workflow_fp.write("ERROR|{}\n".format(data))
                     self._command_logger.error("{}".format(data))
-                self._workflow_fp.flush()

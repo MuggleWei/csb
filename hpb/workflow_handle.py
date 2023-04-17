@@ -168,6 +168,9 @@ class WorkflowHandle:
         command_logger.setLevel(logging.INFO)
         command_logger.addHandler(logging.StreamHandler())
 
+        workflow_log_path = os.path.join(self.task_dir, "workflow.log")
+        command_logger.addHandler(logging.FileHandler(workflow_log_path, "w"))
+
     def run(self):
         """
         run workflow
@@ -178,16 +181,12 @@ class WorkflowHandle:
         # chdir to working directory
         os.chdir(self.working_dir)
 
-        workflow_log_path = os.path.join(self.task_dir, "workflow.log")
-        with open(workflow_log_path, "w") as f:
-            self.command_handle.set_fp(f)
+        if self.prepare() is False:
+            return False
 
-            if self.prepare() is False:
-                return False
+        self.generate_meta_file()
 
-            self.generate_meta_file()
-
-            self.run_workflow()
+        self.run_workflow()
 
         return True
 
