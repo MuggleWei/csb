@@ -3,9 +3,9 @@ import os
 import sys
 import typing
 
-from .constant_var import APP_NAME
-from .package_meta import MetaMatch, PackageMeta
-from .settings_handle import RepoConfig, SettingsHandle
+from hpb.constant_var import APP_NAME
+from hpb.package_meta import MetaMatch, PackageMeta
+from hpb.settings_handle import RepoConfig, SettingsHandle
 
 
 class SearcherConfig:
@@ -93,10 +93,15 @@ class Searcher:
         if len(self._settings_handle.pkg_search_repos) == 0:
             print("WARNING! Artifacts search repo list is empty")
 
+        result_dict = set()
         for search_repo in self._settings_handle.pkg_search_repos:
             if search_repo.kind == "local":
-                local_target_paths = self._search_candidate_local(search_repo)
-                results.extend(local_target_paths)
+                local_target_results = self._search_candidate_local(search_repo)
+                for result in local_target_results:
+                    if result.path in result_dict:
+                        continue
+                    results.append(result)
+                    result_dict.add(result.path)
             elif search_repo.kind == "remote":
                 print("WARNING! "
                       "Artifacts search remote repo currently not support")
@@ -104,7 +109,8 @@ class Searcher:
                 print("invalid search repo kind: {}".format(search_repo.kind))
         return results
 
-    def _search_candidate_local(self, repo: RepoConfig):
+    def _search_candidate_local(self, repo: RepoConfig) \
+            -> typing.List[SearcherResult]:
         """
         get search candidate in local repo
         """
@@ -161,7 +167,7 @@ class Searcher:
             print("Warning! failed find meta file in {}".format(pkg_dir))
             return None
         pkg_meta = PackageMeta()
-        if pkg_meta.load(meta_file) is False:
+        if pkg_meta.load_from_file(meta_file) is False:
             print("Warning! failed load meta file: {}".format(meta_file))
             return None
         return pkg_meta

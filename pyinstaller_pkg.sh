@@ -21,8 +21,8 @@ fi
 
 pip install -r requirements.dev.txt
 
-pyinstaller -F src/main.py --distpath dist/hpb -n hpb
-cp -r ./etc dist/hpb/
+pyinstaller -F hpb/main.py --distpath dist/hpb -n hpb
+cp -r ./hpb/etc dist/hpb/
 cp -r ./share dist/hpb/
 cp ./README.md dist/hpb/
 cp ./README_cn.md dist/hpb/

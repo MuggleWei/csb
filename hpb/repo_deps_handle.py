@@ -1,12 +1,11 @@
 import logging
 import typing
+
+from hpb.downloader import Downloader, DownloaderConfig
 from hpb.platform_info import PlatformInfo
-
+from hpb.searcher import Searcher, SearcherConfig, SearcherResult
 from hpb.semver_handle import SemverHandle
-
-from .downloader import Downloader, DownloaderConfig
-from .searcher import Searcher, SearcherConfig, SearcherResult
-from .settings_handle import SettingsHandle
+from hpb.settings_handle import SettingsHandle
 
 
 class DepItem:

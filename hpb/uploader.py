@@ -3,11 +3,11 @@ import os
 import shutil
 import sys
 
-from .constant_var import APP_NAME
-from .package_meta import PackageMeta
-from .settings_handle import SettingsHandle
-from .utils import Utils
-from .yaml_handle import YamlHandle
+from hpb.constant_var import APP_NAME
+from hpb.package_meta import PackageMeta
+from hpb.settings_handle import SettingsHandle
+from hpb.utils import Utils
+from hpb.yaml_handle import YamlHandle
 
 
 class UploaderConfig:
@@ -51,15 +51,15 @@ class Uploader:
 
         self.meta_file = os.path.join(self.pkg_dir, "{}.yml".format(APP_NAME))
         self.pkg_meta = PackageMeta()
-        if self.pkg_meta.load(filepath=self.meta_file) is False:
+        if self.pkg_meta.load_from_file(filepath=self.meta_file) is False:
             return False
 
         if self._output_repo.kind == "local":
             dir_name = self.pkg_meta.gen_pkg_dirname()
             art_output_dir = os.path.join(
                 self._output_repo.path,
-                self.pkg_meta.maintainer,
-                self.pkg_meta.repo,
+                self.pkg_meta.source_info.maintainer,
+                self.pkg_meta.source_info.name,
                 dir_name,
             )
             if os.path.exists(art_output_dir):

@@ -1,4 +1,6 @@
 import json
+import logging
+
 from typing import OrderedDict
 
 
@@ -43,4 +45,17 @@ class SourceInfo:
         self.tag = obj.get("tag", "")
         self.repo_kind = obj.get("repo_kind", "")
         self.repo_url = obj.get("repo_url", "")
-        self.git_depth = obj.get("git_depth", "")
+        self.git_depth = obj.get("git_depth", 1)
+
+        if type(self.git_depth) is str:
+            if self.git_depth.isdigit():
+                self.git_depth = int(self.git_depth)
+            else:
+                logging.warning(
+                    "source.git_depth is invalid, set default value 1")
+                self.git_depth = 1
+
+        if self.git_depth != 0 and self.git_depth != 1:
+            logging.warning(
+                "source.git_depth is invalid, set default value 1")
+            self.git_depth = 1

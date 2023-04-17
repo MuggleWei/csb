@@ -4,8 +4,8 @@ import shutil
 import sys
 import tarfile
 
-from .constant_var import APP_NAME
-from .utils import Utils
+from hpb.constant_var import APP_NAME
+from hpb.utils import Utils
 
 
 class DownloaderConfig:
@@ -13,6 +13,7 @@ class DownloaderConfig:
         self.repo_type = ""
         self.path = ""
         self.dest = ""
+        self.extract = False
 
 
 class Downloader:
@@ -27,9 +28,10 @@ class Downloader:
         self._usage_str = "Usage: {0} pull [OPTIONS]\n" \
             "\n" \
             "Options: \n" \
-            "  -t, --type string  [REQUIRED] local or remote\n" \
-            "  -p, --path string  [REQUIRED] package path or url\n" \
-            "  -d, --dest string  [REQUIRED] download destination\n" \
+            "  -t, --type string    [REQUIRED] local or remote\n" \
+            "  -p, --path string    [REQUIRED] package path or url\n" \
+            "  -d, --dest string    [REQUIRED] download destination\n" \
+            "  -x, --extract string [OPTIONAL] extract files from packags\n" \
             "e.g.\n" \
             "  {0} pull -t local -p ~/.hpb/artifacts/google/googletest/v1.13.0-release-linux-arch-x86_64/googletest-v1.13.0-release-linux-x86_64.tar.gz\n" \
             "".format(APP_NAME)
@@ -70,9 +72,37 @@ class Downloader:
         """
         self.cfg: DownloaderConfig = cfg
         if self.cfg.repo_type == "local":
-            return self._download_local()
+            ret = self._download_local()
+        else:
+            print("unregconize repot_type: {}".format(self.cfg.repo_type))
+            ret = False
+
+        if ret is False:
+            return ret
+
+        if self.cfg.extract is True:
+            self._extract(self.cfg)
 
         return True
+
+    def _extract(self, cfg):
+        """
+        extract artifacts
+        """
+        dest = Utils.expand_path(cfg.dest)
+        if dest.endswith("tar.gz"):
+            dest = os.path.dirname(dest)
+
+        filename = os.path.basename(cfg.path)
+
+        origin_dir = os.path.abspath(os.curdir)
+        os.chdir(dest)
+
+        with tarfile.open(filename) as f:
+            f.extractall(".")
+        os.remove(filename)
+
+        os.chdir(origin_dir)
 
     def _download_local(self):
         """
@@ -87,17 +117,6 @@ class Downloader:
             os.makedirs(dest, exist_ok=True)
         shutil.copy(self.cfg.path, dest)
 
-        filename = os.path.basename(self.cfg.path)
-
-        origin_dir = os.path.abspath(os.curdir)
-        os.chdir(dest)
-
-        with tarfile.open(filename) as f:
-            f.extractall(".")
-        os.remove(filename)
-
-        os.chdir(origin_dir)
-
         return True
 
     def _parse_args(self, args):
@@ -107,9 +126,9 @@ class Downloader:
         cfg = DownloaderConfig()
         try:
             opts, _ = getopt.getopt(
-                args, "ht:p:d:",
+                args, "ht:p:d:x",
                 [
-                    "help", "type=", "path=", "dest="
+                    "help", "type=", "path=", "dest=", "extract"
                 ]
             )
         except Exception as e:
@@ -126,5 +145,7 @@ class Downloader:
                 cfg.path = arg
             elif opt in ("-d", "--dest"):
                 cfg.dest = arg
+            elif opt in ("-x", "--extract"):
+                cfg.extract = True
 
         return cfg

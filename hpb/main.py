@@ -1,14 +1,14 @@
 import sys
 
-from .__version__ import __version__
-from .builder import Builder
-from .downloader import Downloader
-from .packer import Packer
-from .searcher import Searcher
-from .uploader import Uploader
+from hpb.__version__ import __version__
+from hpb.builder import Builder
+from hpb.downloader import Downloader
+from hpb.packer import Packer
+from hpb.searcher import Searcher
+from hpb.uploader import Uploader
 
 
-def run_builde():
+def run_builder():
     """
     run builder
     """
@@ -77,7 +77,7 @@ def main():
         sys.exit(0)
 
     command_dict = {
-        "build": run_builde,
+        "build": run_builder,
         "push": run_push,
         "search": run_search,
         "pull": run_pull,

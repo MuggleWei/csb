@@ -1,8 +1,8 @@
 import getopt
 import logging
 import sys
-from hpb.builder_config import BuilderConfig
 
+from hpb.builder_config import BuilderConfig
 from hpb.constant_var import APP_NAME
 from hpb.utils import Utils
 from hpb.workflow_handle import WorkflowHandle

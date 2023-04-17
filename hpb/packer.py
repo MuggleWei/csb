@@ -4,10 +4,10 @@ import shutil
 import sys
 import tarfile
 
-from .constant_var import APP_NAME
-from .package_meta import PackageMeta
-from .utils import Utils
-from .yaml_handle import YamlHandle
+from hpb.constant_var import APP_NAME
+from hpb.package_meta import PackageMeta
+from hpb.utils import Utils
+from hpb.yaml_handle import YamlHandle
 
 
 class PackerConfig:
@@ -76,7 +76,7 @@ class Packer:
         self.pkg_dir = pkg_info["pkg_dir"]
 
         self.pkg_meta = PackageMeta()
-        if self.pkg_meta.load(filepath=self.meta_file) is False:
+        if self.pkg_meta.load_from_file(filepath=self.meta_file) is False:
             return False
 
         return True

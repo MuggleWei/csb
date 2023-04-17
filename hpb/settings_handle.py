@@ -6,8 +6,8 @@ import xml.dom.minidom
 
 from xml.dom.minidom import Element
 
-from .constant_var import APP_NAME
-from .utils import Utils
+from hpb.constant_var import APP_NAME
+from hpb.utils import Utils
 
 
 class RepoConfig:
