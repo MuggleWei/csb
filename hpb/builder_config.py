@@ -1,5 +1,6 @@
 class BuilderConfig:
     def __init__(self):
+        self.mode = "dev"
         self.working_dir = ""
         self.params = []
         self.config_path = ""

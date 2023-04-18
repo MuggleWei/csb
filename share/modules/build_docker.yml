@@ -6,6 +6,8 @@ variables:
   - yml_dir: mugglec
   - yml_filename: mugglec.yml
   - yml_filepath: ${HPB_FILE_DIR}/${yml_dir}/${yml_filename}
+  - img_name: ${registry}/docker_build_${yml_dir}:${os}${os_ver}
+  - extract_name: extract
 jobs:
   build:
     steps:
@@ -21,10 +23,11 @@ jobs:
             --build-arg FILENAME=${yml_filename} \
             --network host \
             -f ${HPB_FILE_DIR}/Dockerfile \
-            -t ${registry}/${yml_dir}:${os}${os_ver} \
+            -t ${img_name} \
             .;
       - name: extract
         run: >
-          docker container create --name extract ${registry}/${yml_dir}:${os}${os_ver};
-          docker container cp extract:/root/.hpb/artifacts ${HPB_OUTPUT_DIR};
-          docker container rm -f extract;
+          docker container create --name ${extract_name} ${img_name};
+          docker container cp ${extract_name}:/root/.hpb/artifacts ${HPB_OUTPUT_DIR};
+          docker container rm -f ${extract_name};
+          docker rmi ${img_name}

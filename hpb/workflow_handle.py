@@ -10,6 +10,7 @@ from hpb.constant_var import APP_NAME
 from hpb.git_info import GitInfo
 from hpb.kahn_algo import KahnAlgo
 from hpb.log_handle import LogHandle
+from hpb.package_meta import PackageMeta
 from hpb.platform_info import PlatformInfo
 from hpb.repo_deps_handle import RepoDepsHandle
 from hpb.settings_handle import SettingsHandle
@@ -36,6 +37,7 @@ class WorkflowHandle:
         # directories
         self.task_dir = ""  # task directory
         self.build_dir = ""  # build directory
+        self.hpb_dir = ""  # hpb directory
         self.pkg_dir = ""  # package directory
         self.deps_dir = ""  # dependencies directory
         self.test_deps_dir = ""  # test dependencies directory
@@ -60,6 +62,9 @@ class WorkflowHandle:
 
         # source
         self.src = SourceInfo()
+
+        # extra meta
+        self.is_fat_pkg = False
 
         # deps
         self.deps = []
@@ -110,17 +115,27 @@ class WorkflowHandle:
                 self.input_param_dict[kv[0]] = kv[1]
 
         # set directories
-        self.task_dir = os.path.join(
-            self.working_dir,
-            "_{}".format(APP_NAME),
-            "{}.{}".format(self.task_name, self.task_id))
-        self.build_dir = os.path.join(self.task_dir, "build")
-        self.pkg_dir = os.path.join(self.task_dir, "pkg")
-        self.deps_dir = os.path.join(self.task_dir, "deps")
-        self.test_deps_dir = os.path.join(self.task_dir, "test_deps")
+        if cfg.mode == "dev":
+            self.build_dir = os.path.join(self.working_dir, "build")
+            self.hpb_dir = os.path.join(self.build_dir, "_{}".format(APP_NAME))
+            self.task_dir = self.hpb_dir
+        elif cfg.mode == "task":
+            self.task_dir = os.path.join(
+                self.working_dir,
+                "_{}".format(APP_NAME),
+                "{}.{}".format(self.task_name, self.task_id))
+            self.build_dir = os.path.join(self.task_dir, "build")
+            self.hpb_dir = self.task_dir
+        else:
+            print("invalid builder mode: {}".format(cfg.mode))
+            return False
+
+        self.pkg_dir = os.path.join(self.hpb_dir, "pkg")
+        self.deps_dir = os.path.join(self.hpb_dir, "deps")
+        self.test_deps_dir = os.path.join(self.hpb_dir, "test_deps")
 
         if len(cfg.output_dir) == 0:
-            self.output_dir = os.path.join(self.task_dir, "output")
+            self.output_dir = os.path.join(self.hpb_dir, "output")
         else:
             self.output_dir = cfg.output_dir
 
@@ -158,7 +173,7 @@ class WorkflowHandle:
             self.settings_handle.log_file_level
         )
         LogHandle.init_log(
-            os.path.join(self.task_dir, "log", "build.log"),
+            os.path.join(self.hpb_dir, "log", "build.log"),
             console_level=console_log_level,
             file_level=file_log_level,
             use_rotate=False)
@@ -168,7 +183,7 @@ class WorkflowHandle:
         command_logger.setLevel(logging.INFO)
         command_logger.addHandler(logging.StreamHandler())
 
-        workflow_log_path = os.path.join(self.task_dir, "workflow.log")
+        workflow_log_path = os.path.join(self.hpb_dir, "workflow.log")
         command_logger.addHandler(logging.FileHandler(workflow_log_path, "w"))
 
     def run(self):
@@ -217,6 +232,12 @@ class WorkflowHandle:
         if self.prepare_deps() is False:
             return False
 
+        if self.prepare_test_deps() is False:
+            return False
+
+        if self.prepare_build_meta() is False:
+            return False
+
         return True
 
     def generate_meta_file(self):
@@ -260,9 +281,14 @@ class WorkflowHandle:
         for i in range(len(steps)):
             step = steps[i]
             step_name = step.get("name", "")
-            logging.debug("run step[{}]: {}".format(i, step_name))
-            if self.run_workflow_step(step=step) is False:
-                return False
+            ignore_value = step.get("ignore", False)
+            if self.get_bool(ignore_value):
+                logging.debug("ignore step[{}]: {}".format(i, step_name))
+                continue
+            else:
+                logging.debug("run step[{}]: {}".format(i, step_name))
+                if self.run_workflow_step(step=step) is False:
+                    return False
         return True
 
     def run_workflow_step(self, step):
@@ -327,17 +353,15 @@ class WorkflowHandle:
         """
         generate hpd meta dependencies file
         """
-        d = {
-            "maintainer": self.src.maintainer,
-            "name": self.src.name,
-            "tag": self.src.tag,
-            "build_type": self.guess_build_type(self.all_var_dict),
-            "platform": dict(self.platform_info.get_ordered_dict()),
-            "deps": self.deps,
-        }
-        filepath = os.path.join(self.task_dir, "{}.yml".format(APP_NAME))
-        yaml_handle = YamlHandle()
-        yaml_handle.write(filepath=filepath, obj=d)
+        pkg_meta = PackageMeta()
+        pkg_meta.source_info = self.src
+        pkg_meta.build_type = self.guess_build_type(self.all_var_dict)
+        pkg_meta.is_fat_pkg = self.is_fat_pkg
+        pkg_meta.platform = self.platform_info
+        pkg_meta.deps = self.deps
+
+        filepath = os.path.join(self.hpb_dir, "{}.yml".format(APP_NAME))
+        pkg_meta.dump(filepath)
 
     def generate_pkg_meta_file(self):
         """
@@ -348,8 +372,9 @@ class WorkflowHandle:
                 self.task_dir, "{}.yml".format(APP_NAME)),
             "output_dir": self.inner_var_dict["OUTPUT_DIR"],
             "pkg_dir": self.inner_var_dict["PKG_DIR"],
+            "deps_dir": self.inner_var_dict["DEPS_DIR"],
         }
-        filepath = os.path.join(self.task_dir, "pkg.yml")
+        filepath = os.path.join(self.hpb_dir, "pkg.yml")
         yaml_handle = YamlHandle()
         yaml_handle.write(filepath=filepath, obj=d)
 
@@ -427,6 +452,37 @@ class WorkflowHandle:
         if repo_deps_handle.download_all_deps(self.deps_dir) is False:
             logging.error("failed download dependencies")
             return False
+
+        return True
+
+    def prepare_test_deps(self):
+        """
+        prepare test dependencies
+        """
+        self.test_deps = self.yml_obj.test_deps
+
+        repo_deps_handle = RepoDepsHandle(
+            self.settings_handle,
+            self.platform_info,
+            self.guess_build_type(self.all_var_dict)
+        )
+
+        if repo_deps_handle.search_all_deps(self.test_deps) is False:
+            logging.error("failed search dependencies")
+            return False
+
+        if repo_deps_handle.download_all_deps(self.test_deps_dir) is False:
+            logging.error("failed download dependencies")
+            return False
+
+    def prepare_build_meta(self):
+        """
+        prepare build meta
+        """
+        build_meta = self.yml_obj.build
+
+        build_fat_pkg = build_meta.get("fat_pkg", False)
+        self.is_fat_pkg = self.get_bool(build_fat_pkg)
 
         return True
 
@@ -509,6 +565,27 @@ class WorkflowHandle:
             build_type = all_vars[word]
             break
         return build_type
+
+    def get_bool(self, val):
+        """
+        is need ignore
+        """
+        if type(val) is str:
+            val = VarReplaceHandle.replace(val, self.all_var_dict)
+
+        if type(val) is bool:
+            return val
+        elif type(val) is int:
+            if val == 0:
+                return False
+            else:
+                return True
+        elif type(val) is str:
+            if val.lower() in ["true", "1", "yes"]:
+                return True
+            else:
+                return False
+        return False
 
     def output_vars(self):
         """

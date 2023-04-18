@@ -1,0 +1,9 @@
+name: hello
+jobs:
+  build:
+    steps:
+      - name: build
+        run: >
+          cd ${HPB_TASK_DIR};
+          cmake -S ${HPB_SOURCE_PATH} -B ${HPB_BUILD_DIR};
+          cmake --build ${HPB_BUILD_DIR};

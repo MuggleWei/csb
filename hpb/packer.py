@@ -37,6 +37,8 @@ class Packer:
         if self._load_pkg_info() is False:
             return False
 
+        self._handle_fat_pkg()
+
         if self._pack_output() is False:
             return False
 
@@ -74,12 +76,30 @@ class Packer:
         self.meta_file = pkg_info["meta_file"]
         self.output_dir = pkg_info["output_dir"]
         self.pkg_dir = pkg_info["pkg_dir"]
+        self.deps_dir = pkg_info["deps_dir"]
 
         self.pkg_meta = PackageMeta()
         if self.pkg_meta.load_from_file(filepath=self.meta_file) is False:
             return False
 
         return True
+
+    def _handle_fat_pkg(self):
+        """
+        handle fat package
+        """
+        if not self.pkg_meta.is_fat_pkg:
+            return
+
+        if not os.path.exists(self.deps_dir):
+            return
+
+        shutil.copytree(
+            src=self.deps_dir,
+            dst=self.output_dir,
+            symlinks=True,
+            dirs_exist_ok=True
+        )
 
     def _pack_output(self):
         """
@@ -94,7 +114,7 @@ class Packer:
 
         print("tar: {}".format(filename))
         files = os.listdir(self.output_dir)
-        with tarfile.open(filename, "w:gz") as tar:
+        with tarfile.open(filename, "w:gz", format=tarfile.GNU_FORMAT) as tar:
             for f in files:
                 print("add {}".format(f))
                 tar.add(f)

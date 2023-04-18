@@ -174,7 +174,7 @@ class RepoDepsHandle:
         :param download_dir: download directory
         :param recursive: need download dep's deps
         """
-        logging.debug("download {}".format(
+        logging.info("download dep: {}".format(
             search_result.path
         ))
         download_cfg = DownloaderConfig()
