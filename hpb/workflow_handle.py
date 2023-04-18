@@ -37,6 +37,7 @@ class WorkflowHandle:
         # directories
         self.task_dir = ""  # task directory
         self.build_dir = ""  # build directory
+        self.hpb_dir = ""  # hpb directory
         self.pkg_dir = ""  # package directory
         self.deps_dir = ""  # dependencies directory
         self.test_deps_dir = ""  # test dependencies directory
@@ -114,17 +115,27 @@ class WorkflowHandle:
                 self.input_param_dict[kv[0]] = kv[1]
 
         # set directories
-        self.task_dir = os.path.join(
-            self.working_dir,
-            "_{}".format(APP_NAME),
-            "{}.{}".format(self.task_name, self.task_id))
-        self.build_dir = os.path.join(self.task_dir, "build")
-        self.pkg_dir = os.path.join(self.task_dir, "pkg")
-        self.deps_dir = os.path.join(self.task_dir, "deps")
-        self.test_deps_dir = os.path.join(self.task_dir, "test_deps")
+        if cfg.mode == "dev":
+            self.task_dir = self.working_dir
+            self.build_dir = os.path.join(self.task_dir, "build")
+            self.hpb_dir = os.path.join(self.build_dir, "_{}".format(APP_NAME))
+        elif cfg.mode == "task":
+            self.task_dir = os.path.join(
+                self.working_dir,
+                "_{}".format(APP_NAME),
+                "{}.{}".format(self.task_name, self.task_id))
+            self.build_dir = os.path.join(self.task_dir, "build")
+            self.hpb_dir = self.task_dir
+        else:
+            print("invalid builder mode: {}".format(cfg.mode))
+            return False
+
+        self.pkg_dir = os.path.join(self.hpb_dir, "pkg")
+        self.deps_dir = os.path.join(self.hpb_dir, "deps")
+        self.test_deps_dir = os.path.join(self.hpb_dir, "test_deps")
 
         if len(cfg.output_dir) == 0:
-            self.output_dir = os.path.join(self.task_dir, "output")
+            self.output_dir = os.path.join(self.hpb_dir, "output")
         else:
             self.output_dir = cfg.output_dir
 
@@ -162,7 +173,7 @@ class WorkflowHandle:
             self.settings_handle.log_file_level
         )
         LogHandle.init_log(
-            os.path.join(self.task_dir, "log", "build.log"),
+            os.path.join(self.hpb_dir, "log", "build.log"),
             console_level=console_log_level,
             file_level=file_log_level,
             use_rotate=False)
@@ -172,7 +183,7 @@ class WorkflowHandle:
         command_logger.setLevel(logging.INFO)
         command_logger.addHandler(logging.StreamHandler())
 
-        workflow_log_path = os.path.join(self.task_dir, "workflow.log")
+        workflow_log_path = os.path.join(self.hpb_dir, "workflow.log")
         command_logger.addHandler(logging.FileHandler(workflow_log_path, "w"))
 
     def run(self):
@@ -349,7 +360,7 @@ class WorkflowHandle:
         pkg_meta.platform = self.platform_info
         pkg_meta.deps = self.deps
 
-        filepath = os.path.join(self.task_dir, "{}.yml".format(APP_NAME))
+        filepath = os.path.join(self.hpb_dir, "{}.yml".format(APP_NAME))
         pkg_meta.dump(filepath)
 
     def generate_pkg_meta_file(self):
@@ -363,7 +374,7 @@ class WorkflowHandle:
             "pkg_dir": self.inner_var_dict["PKG_DIR"],
             "deps_dir": self.inner_var_dict["DEPS_DIR"],
         }
-        filepath = os.path.join(self.task_dir, "pkg.yml")
+        filepath = os.path.join(self.hpb_dir, "pkg.yml")
         yaml_handle = YamlHandle()
         yaml_handle.write(filepath=filepath, obj=d)
 

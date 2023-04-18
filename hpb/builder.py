@@ -18,6 +18,7 @@ class Builder:
             "\n" \
             "Options: \n" \
             "  -c, --config string     [REQUIRED] build config file\n" \
+            "  -m, --mode string       [OPTIONAL] dev or task, use dev by default \n" \
             "    , --task-name string  [OPTIONAL] build task name, if empty, use config file without suffix as task-name\n" \
             "    , --task-id string    [OPTIONAL] build task id, if empty, set 'yyyymmddHHMMSSxxxx' as task-id\n" \
             "    , --work-dir string   [OPTIONAL] working directory(by default, use current working directory)\n" \
@@ -79,9 +80,9 @@ class Builder:
         cfg = BuilderConfig()
         try:
             opts, _ = getopt.getopt(
-                args, "hc:p:o:s:",
+                args, "hc:m:p:o:s:",
                 [
-                    "help", "config=", "task-name=", "task-id=",
+                    "help", "config=", "mode=", "task-name=", "task-id=",
                     "work-dir=", "param=", "output-dir=", "settings="
                 ]
             )
@@ -95,6 +96,8 @@ class Builder:
                 sys.exit(0)
             elif opt in ("-c", "--config"):
                 cfg.config_path = arg
+            elif opt in ("-m", "--mode"):
+                cfg.mode = arg
             elif opt in ("--task-name"):
                 cfg.task_name = arg
             elif opt in ("--task-id"):
