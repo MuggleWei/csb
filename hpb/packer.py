@@ -94,7 +94,7 @@ class Packer:
 
         print("tar: {}".format(filename))
         files = os.listdir(self.output_dir)
-        with tarfile.open(filename, "w:gz") as tar:
+        with tarfile.open(filename, "w:gz", format=tarfile.GNU_FORMAT) as tar:
             for f in files:
                 print("add {}".format(f))
                 tar.add(f)
