@@ -116,9 +116,9 @@ class WorkflowHandle:
 
         # set directories
         if cfg.mode == "dev":
-            self.task_dir = self.working_dir
-            self.build_dir = os.path.join(self.task_dir, "build")
+            self.build_dir = os.path.join(self.working_dir, "build")
             self.hpb_dir = os.path.join(self.build_dir, "_{}".format(APP_NAME))
+            self.task_dir = self.hpb_dir
         elif cfg.mode == "task":
             self.task_dir = os.path.join(
                 self.working_dir,
