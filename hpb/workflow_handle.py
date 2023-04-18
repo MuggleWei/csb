@@ -10,6 +10,7 @@ from hpb.constant_var import APP_NAME
 from hpb.git_info import GitInfo
 from hpb.kahn_algo import KahnAlgo
 from hpb.log_handle import LogHandle
+from hpb.package_meta import PackageMeta
 from hpb.platform_info import PlatformInfo
 from hpb.repo_deps_handle import RepoDepsHandle
 from hpb.settings_handle import SettingsHandle
@@ -60,6 +61,9 @@ class WorkflowHandle:
 
         # source
         self.src = SourceInfo()
+
+        # extra meta
+        self.is_fat_pkg = False
 
         # deps
         self.deps = []
@@ -263,10 +267,36 @@ class WorkflowHandle:
         for i in range(len(steps)):
             step = steps[i]
             step_name = step.get("name", "")
-            logging.debug("run step[{}]: {}".format(i, step_name))
-            if self.run_workflow_step(step=step) is False:
-                return False
+            ignore_value = step.get("ignore", False)
+            if self.need_ignore(ignore_value):
+                logging.debug("ignore step[{}]: {}".format(i, step_name))
+                continue
+            else:
+                logging.debug("run step[{}]: {}".format(i, step_name))
+                if self.run_workflow_step(step=step) is False:
+                    return False
         return True
+
+    def need_ignore(self, val):
+        """
+        is need ignore
+        """
+        if type(val) is str:
+            val = VarReplaceHandle.replace(val, self.all_var_dict)
+
+        if type(val) is bool:
+            return val
+        elif type(val) is int:
+            if val == 0:
+                return False
+            else:
+                return True
+        elif type(val) is str:
+            if val.lower() == "true":
+                return True
+            else:
+                return False
+        return False
 
     def run_workflow_step(self, step):
         """
@@ -330,17 +360,15 @@ class WorkflowHandle:
         """
         generate hpd meta dependencies file
         """
-        d = {
-            "maintainer": self.src.maintainer,
-            "name": self.src.name,
-            "tag": self.src.tag,
-            "build_type": self.guess_build_type(self.all_var_dict),
-            "platform": dict(self.platform_info.get_ordered_dict()),
-            "deps": self.deps,
-        }
+        pkg_meta = PackageMeta()
+        pkg_meta.source_info = self.src
+        pkg_meta.build_type = self.guess_build_type(self.all_var_dict)
+        pkg_meta.is_fat_pkg = self.is_fat_pkg
+        pkg_meta.platform = self.platform_info
+        pkg_meta.deps = self.deps
+
         filepath = os.path.join(self.task_dir, "{}.yml".format(APP_NAME))
-        yaml_handle = YamlHandle()
-        yaml_handle.write(filepath=filepath, obj=d)
+        pkg_meta.dump(filepath)
 
     def generate_pkg_meta_file(self):
         """

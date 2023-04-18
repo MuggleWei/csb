@@ -5,6 +5,12 @@ variables:
   - git_tag: v1.0.2
   - git_url: https://github.com/MuggleWei/mugglec.git
   - build_type: release
+  - ignore_build_test:
+      windows: true
+      default: true
+  - build_testing:
+      windows: 'OFF'
+      default: 'OFF'
   - test_target:
       default: test
       windows: RUN_TESTS
@@ -32,9 +38,10 @@ jobs:
             -DBUILD_SHARED_LIBS=ON \
             -DCMAKE_INSTALL_PREFIX=${HPB_OUTPUT_DIR} \
             -DCMAKE_PREFIX_PATH="${HPB_DEPS_DIR};${HPB_TEST_DEPS_DIR}" \
-            -DMUGGLE_BUILD_TESTING=ON;
+            -DMUGGLE_BUILD_TESTING=${build_testing};
           cmake --build ${HPB_BUILD_DIR} --config ${build_type};
       - name: test
+        ignore: ${ignore_build_test}
         run: >
           cmake --build ${HPB_BUILD_DIR} --target ${test_target};
       - name: install
