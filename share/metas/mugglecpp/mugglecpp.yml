@@ -5,6 +5,7 @@ variables:
   - git_tag: v1.0.3
   - git_url: https://github.com/MuggleWei/mugglecpp.git
   - build_type: release
+  - build_fat_pkg: false
 source:
   maintainer: ${maintainer}
   name: ${name}
@@ -12,6 +13,8 @@ source:
   repo_kind: git
   repo_url: ${git_url}
   git_depth: 1
+build:
+  fat_pkg: ${build_fat_pkg}
 deps:
   - maintainer: mugglewei
     name: mugglec

@@ -224,6 +224,9 @@ class WorkflowHandle:
         if self.prepare_test_deps() is False:
             return False
 
+        if self.prepare_build_meta() is False:
+            return False
+
         return True
 
     def generate_meta_file(self):
@@ -268,7 +271,7 @@ class WorkflowHandle:
             step = steps[i]
             step_name = step.get("name", "")
             ignore_value = step.get("ignore", False)
-            if self.need_ignore(ignore_value):
+            if self.get_bool(ignore_value):
                 logging.debug("ignore step[{}]: {}".format(i, step_name))
                 continue
             else:
@@ -276,27 +279,6 @@ class WorkflowHandle:
                 if self.run_workflow_step(step=step) is False:
                     return False
         return True
-
-    def need_ignore(self, val):
-        """
-        is need ignore
-        """
-        if type(val) is str:
-            val = VarReplaceHandle.replace(val, self.all_var_dict)
-
-        if type(val) is bool:
-            return val
-        elif type(val) is int:
-            if val == 0:
-                return False
-            else:
-                return True
-        elif type(val) is str:
-            if val.lower() == "true":
-                return True
-            else:
-                return False
-        return False
 
     def run_workflow_step(self, step):
         """
@@ -379,6 +361,7 @@ class WorkflowHandle:
                 self.task_dir, "{}.yml".format(APP_NAME)),
             "output_dir": self.inner_var_dict["OUTPUT_DIR"],
             "pkg_dir": self.inner_var_dict["PKG_DIR"],
+            "deps_dir": self.inner_var_dict["DEPS_DIR"],
         }
         filepath = os.path.join(self.task_dir, "pkg.yml")
         yaml_handle = YamlHandle()
@@ -481,6 +464,17 @@ class WorkflowHandle:
             logging.error("failed download dependencies")
             return False
 
+    def prepare_build_meta(self):
+        """
+        prepare build meta
+        """
+        build_meta = self.yml_obj.build
+
+        build_fat_pkg = build_meta.get("fat_pkg", False)
+        self.is_fat_pkg = self.get_bool(build_fat_pkg)
+
+        return True
+
     def need_download_source(self, src_info: SourceInfo):
         """
         check is need to download source
@@ -560,6 +554,27 @@ class WorkflowHandle:
             build_type = all_vars[word]
             break
         return build_type
+
+    def get_bool(self, val):
+        """
+        is need ignore
+        """
+        if type(val) is str:
+            val = VarReplaceHandle.replace(val, self.all_var_dict)
+
+        if type(val) is bool:
+            return val
+        elif type(val) is int:
+            if val == 0:
+                return False
+            else:
+                return True
+        elif type(val) is str:
+            if val.lower() in ["true", "1", "yes"]:
+                return True
+            else:
+                return False
+        return False
 
     def output_vars(self):
         """
