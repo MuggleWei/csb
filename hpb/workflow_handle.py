@@ -217,6 +217,9 @@ class WorkflowHandle:
         if self.prepare_deps() is False:
             return False
 
+        if self.prepare_test_deps() is False:
+            return False
+
         return True
 
     def generate_meta_file(self):
@@ -429,6 +432,26 @@ class WorkflowHandle:
             return False
 
         return True
+
+    def prepare_test_deps(self):
+        """
+        prepare test dependencies
+        """
+        self.test_deps = self.yml_obj.test_deps
+
+        repo_deps_handle = RepoDepsHandle(
+            self.settings_handle,
+            self.platform_info,
+            self.guess_build_type(self.all_var_dict)
+        )
+
+        if repo_deps_handle.search_all_deps(self.test_deps) is False:
+            logging.error("failed search dependencies")
+            return False
+
+        if repo_deps_handle.download_all_deps(self.test_deps_dir) is False:
+            logging.error("failed download dependencies")
+            return False
 
     def need_download_source(self, src_info: SourceInfo):
         """

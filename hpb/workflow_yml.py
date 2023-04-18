@@ -53,6 +53,13 @@ class WorkflowYaml:
         return self._deps
 
     @property
+    def test_deps(self):
+        """
+        get yml deps
+        """
+        return self._test_deps
+
+    @property
     def jobs(self):
         """
         get jobs
