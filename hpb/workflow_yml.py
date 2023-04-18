@@ -1,3 +1,4 @@
+import platform
 import typing
 
 
@@ -36,7 +37,29 @@ class WorkflowYaml:
         """
         get yml variable dict
         """
-        return self._variables
+        variables = []
+        for var in self._variables:
+            for k, v in var.items():
+                if type(v) is dict:
+                    val = self._get_platform_var(v)
+                    variables.append({k: val})
+                else:
+                    variables.append(var)
+        return variables
+
+    def _get_platform_var(self, vdict):
+        """
+        get platform specific variable
+        """
+        curr_system = platform.system().lower()
+        val = ""
+        for k, v in vdict.items():
+            if k == "default":
+                val = v
+            elif k == curr_system:
+                val = v
+                break
+        return val
 
     @property
     def source(self):
