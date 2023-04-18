@@ -25,15 +25,14 @@ jobs:
           cmake \
             -S ${HPB_SOURCE_PATH} \
             -B ${HPB_BUILD_DIR} \
-            -DCMAKE_BUILD_TYPE=${build_type} \
             -DBUILD_SHARED_LIBS=ON \
             -DCMAKE_INSTALL_PREFIX=${HPB_OUTPUT_DIR} \
             -DCMAKE_PREFIX_PATH="${HPB_DEPS_DIR};${HPB_TEST_DEPS_DIR}" \
             -DMUGGLE_BUILD_TESTING=ON;
-          cmake --build ${HPB_BUILD_DIR};
+          cmake --build ${HPB_BUILD_DIR} --config ${build_type};
       - name: test
         run: >
-          cmake --build ${HPB_BUILD_DIR} --target test;
+          cmake --build ${HPB_BUILD_DIR} --target RUN_TESTS;
       - name: install
         run: >
           cmake --build ${HPB_BUILD_DIR} --target install;

@@ -31,7 +31,7 @@ jobs:
             -DCMAKE_PREFIX_PATH=${HPB_DEPS_DIR};
       - name: install
         run: >
-          cmake --build build --target install;
+          cmake --build ${HPB_BUILD_DIR} --target install;
   package:
     needs: [build]
     steps:
