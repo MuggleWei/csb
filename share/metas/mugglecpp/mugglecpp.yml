@@ -32,15 +32,12 @@ jobs:
             -DBUILD_SHARED_LIBS=ON \
             -DCMAKE_INSTALL_PREFIX=${HPB_OUTPUT_DIR} \
             -DCMAKE_PREFIX_PATH=${HPB_DEPS_DIR};
-      - name: install
-        run: >
           cmake --build ${HPB_BUILD_DIR} --target install;
   package:
     needs: [build]
     steps:
       - name: pack
         run: >
-          cd ${HPB_TASK_DIR};
           hpb pack;
   upload:
     needs: [package]

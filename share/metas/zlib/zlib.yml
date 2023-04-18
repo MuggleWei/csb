@@ -1,9 +1,9 @@
-name: mugglec
+name: zlib
 variables:
-  - maintainer: mugglewei
-  - name: mugglec
-  - git_tag: v1.0.2
-  - git_url: https://github.com/MuggleWei/mugglec.git
+  - maintainer: madler
+  - name: zlib
+  - git_tag: v1.2.13
+  - git_url: https://github.com/madler/zlib.git
   - build_type: release
 source:
   maintainer: ${maintainer}
