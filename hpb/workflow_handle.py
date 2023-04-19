@@ -65,6 +65,7 @@ class WorkflowHandle:
 
         # extra meta
         self.is_fat_pkg = False
+        self.build_type = ""
 
         # deps
         self.deps = []
@@ -229,13 +230,13 @@ class WorkflowHandle:
 
         self.output_vars()
 
+        if self.prepare_build_meta() is False:
+            return False
+
         if self.prepare_deps() is False:
             return False
 
         if self.prepare_test_deps() is False:
-            return False
-
-        if self.prepare_build_meta() is False:
             return False
 
         return True
@@ -355,7 +356,7 @@ class WorkflowHandle:
         """
         pkg_meta = PackageMeta()
         pkg_meta.source_info = self.src
-        pkg_meta.build_type = self.guess_build_type(self.all_var_dict)
+        pkg_meta.build_type = self.build_type
         pkg_meta.is_fat_pkg = self.is_fat_pkg
         pkg_meta.platform = self.platform_info
         pkg_meta.deps = self.deps
@@ -445,7 +446,7 @@ class WorkflowHandle:
         repo_deps_handle = RepoDepsHandle(
             self.settings_handle,
             self.platform_info,
-            self.guess_build_type(self.all_var_dict)
+            self.build_type,
         )
 
         if repo_deps_handle.search_all_deps(self.deps) is False:
@@ -470,7 +471,7 @@ class WorkflowHandle:
         repo_deps_handle = RepoDepsHandle(
             self.settings_handle,
             self.platform_info,
-            self.guess_build_type(self.all_var_dict)
+            self.build_type,
         )
 
         if repo_deps_handle.search_all_deps(self.test_deps) is False:
@@ -489,6 +490,12 @@ class WorkflowHandle:
 
         build_fat_pkg = build_meta.get("fat_pkg", False)
         self.is_fat_pkg = self.get_bool(build_fat_pkg)
+
+        build_type = build_meta.get("build_type", "")
+        if len(build_type) == 0:
+            build_type = self.guess_build_type(self.all_var_dict)
+        if len(build_type) == 0:
+            build_type = "release"
 
         return True
 
