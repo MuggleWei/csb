@@ -13,6 +13,8 @@ from hpb.yaml_handle import YamlHandle
 class PackerConfig:
     def __init__(self):
         self.config = ""
+        self.copy_to = ""
+        self.move_to = ""
 
 
 class Packer:
@@ -24,6 +26,8 @@ class Packer:
         self._usage_str = "Usage: {0} pack [OPTIONS]\n" \
             "\n" \
             "Options: \n" \
+            "  -o, --copy-to string [OPTIONAL] copy generated artifacts to destination directory\n" \
+            "    , --move-to string [OPTIONAL] move generated artifacts to destination directory, if it's be set, --copy-to will be ignored\n" \
             "  -c, --config string  [OPTIONAL] pkg.yml whick builder generated, if not be set, search in current working dir\n" \
             "".format(APP_NAME)
 
@@ -44,6 +48,8 @@ class Packer:
 
         if self._copy_meta_files() is False:
             return False
+
+        self._user_copy()
 
         return True
 
@@ -132,6 +138,26 @@ class Packer:
         """
         shutil.copy(self.meta_file, self.pkg_dir)
 
+    def _user_copy(self):
+        """
+        copy or move
+        """
+        if len(self.cfg.move_to) == 0 and len(self.cfg.copy_to) == 0:
+            return
+
+        files = os.listdir(self.pkg_dir)
+        for f in files:
+            src_f = os.path.join(self.pkg_dir, f)
+            if len(self.cfg.move_to) != 0:
+                dst_dir = self.cfg.move_to
+                print("move {} -> {}".format(src_f, dst_dir))
+                shutil.move(src_f, dst_dir)
+            elif len(self.cfg.copy_to) != 0:
+                dst_dir = self.cfg.copy_to
+                print("copy {} -> {}".format(src_f, dst_dir))
+                shutil.copytree(
+                    self.pkg_dir, self.cfg.copy_to, dirs_exist_ok=True)
+
     def _parse_args(self, args):
         """
         init arguments
@@ -139,7 +165,9 @@ class Packer:
         cfg = PackerConfig()
         try:
             opts, _ = getopt.getopt(
-                args, "hc:", ["help", "config="]
+                args, "hc:o:", [
+                    "help", "config=", "copy-to=", "move-to="
+                ]
             )
         except Exception as e:
             print("{}, exit...".format(str(e)))
@@ -151,6 +179,10 @@ class Packer:
                 sys.exit(0)
             elif opt in ("-c", "--config"):
                 cfg.config = arg
+            elif opt in ("-o", "--copy-to"):
+                cfg.copy_to = arg
+            elif opt in ("--move-to"):
+                cfg.move_to = arg
 
         cfg.config = Utils.expand_path(cfg.config)
 
