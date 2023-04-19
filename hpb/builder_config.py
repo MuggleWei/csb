@@ -6,5 +6,4 @@ class BuilderConfig:
         self.config_path = ""
         self.task_id = ""
         self.task_name = ""
-        self.output_dir = ""
         self.settings_path = ""

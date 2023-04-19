@@ -25,7 +25,6 @@
     , --task-id string    [OPTIONAL] build task id, if empty, set 'yyyymmddHHMMSSxxxx' as task-id
     , --work-dir string   [OPTIONAL] working directory(by default, use current working directory)
   -p, --param list        [OPTIONAL] build parameters, e.g. --params foo=123 -p bar=456
-  -o, --output-dir string [OPTIONAL] output directory
   -s, --settings string   [OPTIONAL] manual set settings.xml
 ```
 * -c, --config: 用于指定构建使用的 yaml 文件
@@ -37,7 +36,6 @@
 * --task-id: 指定本次构建的任务 id, 当没有设定时,使用当前时间的 `yyyymmddHHMMSSxxxx` 格式作为任务 id. 如果调用者想要自己指定 id, 我们建议调用者确保相同的任务名称下, 任务 id 应该是唯一的. **此参数仅在 task 模式下生效**
 * --work-dir: 指定本次任务的工作目录, 默认情况下是当前的工作目录
 * -p, --param: 设置构建参数
-* -o, --output-dir: 指定输出目录, 若没有设置, 默认情况下使用 `任务目录/output` 作为输出目录
 * -s, --settings: 额外指定配置文件
 
 ### hpb build - hello world

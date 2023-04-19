@@ -2,6 +2,7 @@ import datetime
 import logging
 import os
 import re
+import shutil
 import typing
 
 from hpb.builder_config import BuilderConfig
@@ -134,11 +135,7 @@ class WorkflowHandle:
         self.pkg_dir = os.path.join(self.hpb_dir, "pkg")
         self.deps_dir = os.path.join(self.hpb_dir, "deps")
         self.test_deps_dir = os.path.join(self.hpb_dir, "test_deps")
-
-        if len(cfg.output_dir) == 0:
-            self.output_dir = os.path.join(self.hpb_dir, "output")
-        else:
-            self.output_dir = cfg.output_dir
+        self.output_dir = os.path.join(self.hpb_dir, "output")
 
         return True
 
@@ -212,10 +209,26 @@ class WorkflowHandle:
         """
         os.makedirs(self.task_dir, exist_ok=True)
         os.makedirs(self.build_dir, exist_ok=True)
-        os.makedirs(self.pkg_dir, exist_ok=True)
-        os.makedirs(self.output_dir, exist_ok=True)
-        os.makedirs(self.deps_dir, exist_ok=True)
-        os.makedirs(self.test_deps_dir, exist_ok=True)
+        self._mk_empty_dir(self.pkg_dir)
+        self._mk_empty_dir(self.output_dir)
+        self._mk_empty_dir(self.deps_dir)
+        self._mk_empty_dir(self.test_deps_dir)
+
+    def _mk_empty_dir(self, dst_dir):
+        """
+        create empty directory
+        """
+        if os.path.exists(dst_dir):
+            logging.info("clear dir: {}".format(dst_dir))
+            files = os.listdir(dst_dir)
+            for f in files:
+                filepath = os.path.join(dst_dir, f)
+                if os.path.isdir(filepath):
+                    shutil.rmtree(os.path.join(dst_dir, f))
+                else:
+                    os.remove(filepath)
+        else:
+            os.makedirs(dst_dir, exist_ok=True)
 
     def prepare(self):
         """

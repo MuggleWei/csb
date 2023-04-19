@@ -23,7 +23,6 @@ class Builder:
             "    , --task-id string    [OPTIONAL] build task id, if empty, set 'yyyymmddHHMMSSxxxx' as task-id\n" \
             "    , --work-dir string   [OPTIONAL] working directory(by default, use current working directory)\n" \
             "  -p, --param list        [OPTIONAL] build parameters, e.g. --params foo=123 -p bar=456\n" \
-            "  -o, --output-dir string [OPTIONAL] output directory\n" \
             "  -s, --settings string   [OPTIONAL] manual set settings.xml\n" \
             "".format(APP_NAME)
 
@@ -64,7 +63,6 @@ class Builder:
 
         cfg.config_path = Utils.expand_path(cfg.config_path)
         cfg.working_dir = Utils.expand_path(cfg.working_dir)
-        cfg.output_dir = Utils.expand_path(cfg.output_dir)
 
         if self._workflow.set_input_args(cfg) is False:
             return False
@@ -80,10 +78,10 @@ class Builder:
         cfg = BuilderConfig()
         try:
             opts, _ = getopt.getopt(
-                args, "hc:m:p:o:s:",
+                args, "hc:m:p:s:",
                 [
                     "help", "config=", "mode=", "task-name=", "task-id=",
-                    "work-dir=", "param=", "output-dir=", "settings="
+                    "work-dir=", "param=", "settings="
                 ]
             )
         except Exception as e:
@@ -106,8 +104,6 @@ class Builder:
                 cfg.working_dir = arg
             elif opt in ("-p", "--param"):
                 cfg.params.append(arg)
-            elif opt in ("-o", "--output-dir"):
-                cfg.output_dir = arg
             elif opt in ("-s", "--settings"):
                 cfg.settings_path = arg
 

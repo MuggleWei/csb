@@ -49,6 +49,9 @@ class Uploader:
         if self._init(args=args) is False:
             return False
 
+        if self._check_pkg_dir() is False:
+            return False
+
         self.meta_file = os.path.join(self.pkg_dir, "{}.yml".format(APP_NAME))
         self.pkg_meta = PackageMeta()
         if self.pkg_meta.load_from_file(filepath=self.meta_file) is False:
@@ -64,11 +67,47 @@ class Uploader:
             )
             if os.path.exists(art_output_dir):
                 shutil.rmtree(art_output_dir)
+
             print("push {} -> {}".format(self.pkg_dir, art_output_dir))
             shutil.copytree(self.pkg_dir, art_output_dir)
         else:
             print("WARNING! "
                   "Artifacts push to remote repo currently not support")
+
+        return True
+
+    def _check_pkg_dir(self):
+        """
+        check package directory is valid
+        """
+        art_files = os.listdir(self.pkg_dir)
+        pkg_files = []
+        meta_files = []
+        for art_file in art_files:
+            if art_file.endswith(".tar.gz"):
+                pkg_files.append(art_file)
+            elif art_file.endswith(".yml"):
+                meta_files.append(art_file)
+
+        if len(pkg_files) == 0:
+            print("ERROR! Can't find package file in {}\n".format(self.pkg_dir))
+            return False
+        if len(pkg_files) > 1:
+            print("ERROR! Multiple package file in {}\n{}\n".format(
+                self.pkg_dir,
+                "\n".join(pkg_files)
+            ))
+            return False
+
+        if len(meta_files) == 0:
+            print("ERROR! Can't find meta file in {}\n".format(self.pkg_dir))
+            return False
+        if len(meta_files) > 1:
+            print("ERROR! Multiple meta file in {}\n{}\n".format(
+                self.pkg_dir,
+                "\n".join(meta_files)
+            ))
+            return False
 
         return True
 

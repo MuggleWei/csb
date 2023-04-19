@@ -130,6 +130,7 @@ class Packer:
 
         src_filepath = os.path.join(self.output_dir, filename)
         dst_filepath = os.path.join(self.pkg_dir, filename)
+
         shutil.move(src_filepath, dst_filepath)
 
     def _copy_meta_files(self):
