@@ -488,14 +488,21 @@ class WorkflowHandle:
         """
         build_meta = self.yml_obj.build
 
+        # get fat_pkg
         build_fat_pkg = build_meta.get("fat_pkg", False)
         self.is_fat_pkg = self.get_bool(build_fat_pkg)
 
+        # get build_type
         build_type = build_meta.get("build_type", "")
+        build_type = VarReplaceHandle.replace(build_type, self.all_var_dict)
+        if build_type is None:
+            logging.error("failed get build_type")
+            return False
         if len(build_type) == 0:
             build_type = self.guess_build_type(self.all_var_dict)
         if len(build_type) == 0:
             build_type = "release"
+        self.build_type = build_type
 
         return True
 
