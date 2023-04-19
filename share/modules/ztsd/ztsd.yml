@@ -1,0 +1,40 @@
+name: ztsd
+variables:
+  - maintainer: faceboot
+  - name: ztsd
+  - git_tag: v1.5.5
+  - git_url: https://github.com/facebook/zstd.git
+  - build_type: release
+source:
+  maintainer: ${maintainer}
+  name: ${name}
+  tag: ${git_tag}
+  repo_kind: git
+  repo_url: ${git_url}
+  git_depth: 1
+jobs:
+  build:
+    steps:
+      - run: >
+          cd ${HPB_TASK_DIR};
+          cmake \
+            -S ${HPB_SOURCE_PATH}/build/cmake \
+            -B ${HPB_BUILD_DIR} \
+            -DCMAKE_BUILD_TYPE=${build_type} \
+            -DCMAKE_INSTALL_PREFIX=${HPB_OUTPUT_DIR} \
+            -DCMAKE_PREFIX_PATH=${HPB_DEPS_DIR} \
+            -DZSTD_BUILD_TESTS=OFF;
+          cmake --build ${HPB_BUILD_DIR} --config ${build_type};
+          cmake --build ${HPB_BUILD_DIR} --target install;
+  package:
+    needs: [build]
+    steps:
+      - name: pack
+        run: >
+          hpb pack;
+  upload:
+    needs: [package]
+    steps:
+      - name: upload
+        run: >
+          hpb push;
