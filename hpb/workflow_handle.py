@@ -438,6 +438,9 @@ class WorkflowHandle:
         prepare dependencies
         """
         self.deps = self.yml_obj.deps
+        for dep in self.deps:
+            for k in dep.keys():
+                dep[k] = VarReplaceHandle.replace(dep[k], self.all_var_dict)
 
         repo_deps_handle = RepoDepsHandle(
             self.settings_handle,
@@ -460,6 +463,9 @@ class WorkflowHandle:
         prepare test dependencies
         """
         self.test_deps = self.yml_obj.test_deps
+        for dep in self.test_deps:
+            for k in dep.keys():
+                dep[k] = VarReplaceHandle.replace(dep[k], self.all_var_dict)
 
         repo_deps_handle = RepoDepsHandle(
             self.settings_handle,
