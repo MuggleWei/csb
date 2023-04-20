@@ -6,6 +6,7 @@ import typing
 from hpb.constant_var import APP_NAME
 from hpb.package_meta import MetaMatch, PackageMeta
 from hpb.settings_handle import RepoConfig, SettingsHandle
+from hpb.ptree import ptree
 
 
 class SearcherConfig:
@@ -61,12 +62,14 @@ class Searcher:
             return False
 
         results: typing.List[SearcherResult] = self._search_candidate()
-        print("search results: ")
-        for result in results:
-            if result.repo_type == "local":
-                print("--------")
-                print("package: {}".format(result.path))
-                print("meta file: {}".format(result.meta))
+
+        # for result in results:
+        #     if result.repo_type == "local":
+        #         print("--------")
+        #         print("package: {}".format(result.path))
+        #         print("meta file: {}".format(result.meta))
+
+        self._draw(results)
 
     def search(self, cfg: SearcherConfig, settings_handle) \
             -> typing.List[SearcherResult]:
@@ -196,6 +199,33 @@ class Searcher:
         :param filename: filename without dir
         """
         return filename.endswith(".tar.gz")
+
+    def _draw(self, results: typing.List[SearcherResult]):
+        """
+        draw results
+        """
+        tree_dict = {}
+        for result in results:
+            tag = result.meta.source_info.tag
+            if tag not in tree_dict:
+                tree_dict[tag] = []
+            if result.repo_type == "local":
+                node = os.path.dirname(result.path)
+            else:
+                # TODO: support remote
+                node = "(unrecognize repo_type)"
+            tree_dict[tag].append(node)
+
+        tag_list = []
+        for k in tree_dict.keys():
+            tag_list.append(k)
+
+        s = "{}/{}".format(self.cfg.maintainer, self.cfg.name)
+        tree_dict[s] = tag_list
+        if len(tag_list) > 0:
+            ptree(s, tree_dict)
+        else:
+            print("Search results is empty")
 
     def _init(self, args):
         """

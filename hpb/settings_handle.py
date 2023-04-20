@@ -81,6 +81,7 @@ class SettingsHandle:
         self.source_path = ""
         self.pkg_search_repos: typing.List[RepoConfig] = []
         self.pkg_upload_repo = None
+        self.build_if_not_exists = False
 
     def load(self, filepath):
         """

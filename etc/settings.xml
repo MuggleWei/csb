@@ -70,4 +70,9 @@
         </upload>
     </artifacts>
 
+    <!--
+    build source if package not exists
+    -->
+    <build_src_if_not_exists>true</build_src_if_not_exists>
+
 </HPB>
