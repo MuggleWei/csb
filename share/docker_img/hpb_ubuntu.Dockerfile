@@ -16,8 +16,10 @@ RUN mkdir -p /app/src/hpb
 WORKDIR /app/src/hpb/
 COPY hpb ./hpb
 COPY share ./share
+COPY etc ./etc
 COPY README.md ./
 COPY README_cn.md ./
+COPY LICENSE ./
 COPY requirements.dev.txt ./
 COPY pyinstaller_pkg.sh ./
 RUN ./pyinstaller_pkg.sh

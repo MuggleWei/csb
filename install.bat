@@ -1,5 +1,5 @@
-call pyinstaller_pkg.bat
+python -m pip install --user -e .
 
 md %UserProfile%\.hpb
-xcopy dist\hpb\etc\settings.xml  %UserProfile%\.hpb\ /Y
-xcopy dist\hpb\share\ %UserProfile%\.hpb\share\ /Y /S
+xcopy etc\settings.xml  %UserProfile%\.hpb\ /Y
+xcopy share\ %UserProfile%\.hpb\share\ /Y /S
