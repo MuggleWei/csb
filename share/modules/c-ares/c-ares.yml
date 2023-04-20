@@ -1,16 +1,14 @@
 name: c-ares
 variables:
-  - maintainer: c-ares
-  - name: c-ares
-  - git_tag: cares-1_19_0
-  - git_url: https://github.com/c-ares/c-ares.git
   - build_type: release
+  - cares_tag: cares-1_19_0
+  - cares_url: https://github.com/c-ares/c-ares.git
 source:
-  maintainer: ${maintainer}
-  name: ${name}
-  tag: ${git_tag}
+  maintainer: c-ares
+  name: c-ares
+  tag: ${cares_tag}
   repo_kind: git
-  repo_url: ${git_url}
+  repo_url: ${cares_url}
   git_depth: 1
 jobs:
   build:

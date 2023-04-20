@@ -1,16 +1,14 @@
 name: brotli
 variables:
-  - maintainer: google
-  - name: brotli
-  - git_tag: v1.0.9
-  - git_url: https://github.com/google/brotli.git
   - build_type: release
+  - brotli_tag: v1.0.9
+  - brotli_url: https://github.com/google/brotli.git
 source:
-  maintainer: ${maintainer}
-  name: ${name}
-  tag: ${git_tag}
+  maintainer: google
+  name: brotli
+  tag: ${brotli_tag}
   repo_kind: git
-  repo_url: ${git_url}
+  repo_url: ${brotli_url}
   git_depth: 1
 jobs:
   build:
