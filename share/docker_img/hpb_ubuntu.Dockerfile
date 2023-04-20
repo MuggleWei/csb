@@ -17,6 +17,7 @@ WORKDIR /app/src/hpb/
 COPY hpb ./hpb
 COPY share ./share
 COPY etc ./etc
+COPY doc ./doc
 COPY README.md ./
 COPY README_cn.md ./
 COPY LICENSE ./
