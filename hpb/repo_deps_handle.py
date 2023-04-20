@@ -155,7 +155,7 @@ class RepoDepsHandle:
         if result.meta.is_fat_pkg:
             return True
 
-        for sub_dep in dep.deps:
+        for sub_dep in result.meta.deps:
             dep_item = DepItem()
             if dep_item.load(sub_dep) is False:
                 return False
