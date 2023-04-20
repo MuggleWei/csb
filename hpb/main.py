@@ -73,7 +73,7 @@ def main():
         sys.exit(0)
 
     if sys.argv[1] in ("-v", "--version"):
-        print("{}".format(__version__))
+        print("hpb {}".format(__version__))
         sys.exit(0)
 
     command_dict = {

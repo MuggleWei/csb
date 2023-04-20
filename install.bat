@@ -1,4 +1,4 @@
-python -m pip install --user -e .
+python -m pip install .
 
 md %UserProfile%\.hpb
 xcopy etc\settings.xml  %UserProfile%\.hpb\ /Y

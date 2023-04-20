@@ -26,20 +26,22 @@ HPB(Happy Package Builder)是一个包构建辅助工具
 ## 安装
 
 ### 从源码安装
-首先确保 python 已安装, 并且 python-pip 和 python-venv 可以正常使用, 通过下面命令来检查是否已经正确安装
+首先确保 python 已安装, 并且 python-pip, 通过下面命令来检查是否已经正确安装
 ```
 python --verion
 python -m pip --version
-python -m venv -h
 ```
 
-接着, 根据不同的操作系统, 执行对应的安装脚本
-
-#### Unix类系统
+**Unix类系统**  
 确保 `~/.local/bin` 在 PATH 中, 接着执行项目根目录中的脚本 `install.sh`  
 
-#### Windows系统
-执行 `install.bat`, 接着将 `dist/hpb/hpb.exe` 文件任意放入一个目录, 将此目录加入环境变量 Path 当中
+**Windows系统**  
+执行项目根目录中的脚本 `install.bat`  
+
+执行完安装脚本之后, 通过以下命令检测是否安装成功
+```
+hpb -v
+```
 
 ## 使用指南
 当你已经成功完成了安装工作, 可以通过 [入门指南](./doc/cn/user_guide.md), 来一步一步的逐渐了解如何使用 `hpb`, 本指南将会让你学到 `hpb` 的一些基本概念和用法.  
