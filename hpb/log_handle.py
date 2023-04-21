@@ -7,7 +7,13 @@ class LogHandle(object):
     """simple log handle"""
 
     @staticmethod
-    def init_log(filename, console_level=logging.WARNING, file_level=logging.DEBUG, use_rotate=False, mode="a"):
+    def init_log(
+            filename,
+            console_level=logging.WARNING,
+            file_level=logging.DEBUG,
+            use_rotate=False,
+            mode="a",
+            formatter=None):
         """
         init log
         :param filename: log output file path
@@ -17,25 +23,26 @@ class LogHandle(object):
         :param mode: log file open mode
         :return:
         """
-        folder = os.path.dirname(filename)
-        if not os.path.exists(folder):
-            os.makedirs(folder, exist_ok=True)
-
-        formatter = LogHandle.get_formatter()
-
-        ch = LogHandle.get_console_handler(console_level)
-        if use_rotate is True:
-            fh = LogHandle.get_rotating_handler(level=file_level, filename=filename, mode=mode)
-        else:
-            fh = LogHandle.get_file_handler(level=file_level, filename=filename, mode=mode)
-
-        ch.setFormatter(formatter)
-        fh.setFormatter(formatter)
-
         logger = logging.getLogger()
         logger.setLevel(logging.DEBUG)
+        if formatter is None:
+            formatter = LogHandle.get_formatter()
+
+        ch = LogHandle.get_console_handler(console_level)
+        ch.setFormatter(formatter)
         logger.addHandler(ch)
-        logger.addHandler(fh)
+
+        if filename is not None:
+            folder = os.path.dirname(filename)
+            if not os.path.exists(folder):
+                os.makedirs(folder, exist_ok=True)
+
+            if use_rotate is True:
+                fh = LogHandle.get_rotating_handler(level=file_level, filename=filename, mode=mode)
+            else:
+                fh = LogHandle.get_file_handler(level=file_level, filename=filename, mode=mode)
+            fh.setFormatter(formatter)
+            logger.addHandler(fh)
 
     @staticmethod
     def get_formatter():

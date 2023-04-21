@@ -2,6 +2,7 @@ import sys
 
 from hpb.__version__ import __version__
 from hpb.builder import Builder
+from hpb.dbsync import DbSync
 from hpb.downloader import Downloader
 from hpb.packer import Packer
 from hpb.searcher import Searcher
@@ -57,7 +58,9 @@ def run_dbsync():
     """
     sync local db and local artifacts upload directory
     """
-    pass
+    db_sync = DbSync()
+    if db_sync.run(sys.argv[2:]) is False:
+        sys.exit(1)
 
 
 def main():
@@ -90,6 +93,7 @@ def main():
         "search": run_search,
         "pull": run_pull,
         "pack": run_pack,
+        "dbsync": run_dbsync,
     }
 
     command = sys.argv[1]

@@ -57,22 +57,23 @@ class Uploader:
         if self.pkg_meta.load_from_file(filepath=self.meta_file) is False:
             return False
 
-        if self._output_repo.kind == "local":
-            dir_name = self.pkg_meta.gen_pkg_dirname()
-            art_output_dir = os.path.join(
-                self._output_repo.path,
-                self.pkg_meta.source_info.maintainer,
-                self.pkg_meta.source_info.name,
-                dir_name,
-            )
-            if os.path.exists(art_output_dir):
-                shutil.rmtree(art_output_dir)
+        for output_repo in self._settings_handle.pkg_upload_repos:
+            if output_repo.kind == "local":
+                dir_name = self.pkg_meta.gen_pkg_dirname()
+                art_output_dir = os.path.join(
+                    output_repo.path,
+                    self.pkg_meta.source_info.maintainer,
+                    self.pkg_meta.source_info.name,
+                    dir_name,
+                )
+                if os.path.exists(art_output_dir):
+                    shutil.rmtree(art_output_dir)
 
-            print("push {} -> {}".format(self.pkg_dir, art_output_dir))
-            shutil.copytree(self.pkg_dir, art_output_dir)
-        else:
-            print("WARNING! "
-                  "Artifacts push to remote repo currently not support")
+                print("push {} -> {}".format(self.pkg_dir, art_output_dir))
+                shutil.copytree(self.pkg_dir, art_output_dir)
+            else:
+                print("WARNING! "
+                      "Artifacts push to remote repo currently not support")
 
         return True
 
@@ -138,10 +139,9 @@ class Uploader:
             print("ERROR! {}".format(str(e)))
             return False
 
-        if self._settings_handle.pkg_upload_repo is None:
+        if len(self._settings_handle.pkg_upload_repos) == 0:
             print("ERROR! 'artifacts/upload' not be set in settings file")
             return False
-        self._output_repo = self._settings_handle.pkg_upload_repo
 
         return True
 

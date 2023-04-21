@@ -3,8 +3,6 @@ import os
 import typing
 import xml.dom.minidom
 
-from xml.dom.minidom import Element
-
 from hpb.constant_var import APP_NAME
 from hpb.utils import Utils
 
@@ -39,6 +37,13 @@ class RepoConfig:
 
     def __repr__(self) -> str:
         return self.__str__()
+
+    def key(self) -> str:
+        if self.kind == "local":
+            return "l#{}".format(self.path)
+        elif self.kind == "remote":
+            return "r#{}".format(self.url)
+        return ""
 
 
 class SettingsHandle:
@@ -87,9 +92,10 @@ class SettingsHandle:
         """
         self.log_console_level = ""
         self.log_file_level = ""
+        self.db_path = ""
         self.source_path = ""
         self.pkg_search_repos: typing.List[RepoConfig] = []
-        self.pkg_upload_repo = None
+        self.pkg_upload_repos: typing.List[RepoConfig] = []
         self.build_if_not_exists = False
 
     def load(self, filepath):
@@ -107,21 +113,32 @@ class SettingsHandle:
         parse xml dom
         """
         nodes = root.getElementsByTagName("log")
-        for node in nodes:
-            self._load_log(node)
+        self._load_log(nodes)
+
+        nodes = root.getElementsByTagName("db")
+        self._load_db(nodes)
 
         nodes = root.getElementsByTagName("sources")
-        for node in nodes:
-            self._load_sources(node)
+        self._load_sources(nodes)
 
         nodes = root.getElementsByTagName("artifacts")
-        for node in nodes:
-            self._load_artifacts(node)
+        self._load_artifacts(nodes)
 
-    def _load_log(self, node_log: Element):
+    def _load_log(self, nodes):
         """
         load log config
         """
+        if len(nodes) == 0:
+            print("WARNING! Can't find 'log' in settings, use default")
+            self.log_console_level = "info"
+            self.log_file_level = "debug"
+            return
+
+        if len(nodes) > 1:
+            print("WARNING! Multiple 'log' in settings, use first node")
+
+        node_log = nodes[0]
+
         if len(self.log_console_level) == 0 and \
                 node_log.hasAttribute("console_level"):
             self.log_console_level = node_log.getAttribute("console_level")
@@ -129,42 +146,101 @@ class SettingsHandle:
                 node_log.hasAttribute("file_level"):
             self.log_file_level = node_log.getAttribute("file_level")
 
-    def _load_sources(self, node_sources):
+    def _load_db(self, nodes):
+        """
+        load db config
+        """
+        if len(nodes) == 0:
+            print("WARNING! Can't find 'db' in settings, use default")
+            default_db_path = "~/.{0}/{0}.db".format(APP_NAME)
+            self.db_path = Utils.expand_path(default_db_path)
+            return
+
+        if len(nodes) > 1:
+            print("WARNING! Multiple 'db' in settings, use first node")
+
+        node_db = nodes[0]
+        val = node_db.firstChild.nodeValue
+        self.db_path = Utils.expand_path(val)
+
+    def _load_sources(self, nodes):
         """
         load sources path
         """
-        if len(self.source_path) == 0:
-            node_source_list = node_sources.getElementsByTagName("path")
-            for node_source in node_source_list:
-                val = node_source.firstChild.nodeValue
-                val = Utils.expand_path(val)
-                self.source_path = val
-                break
+        default_source_path = "~/.{}/sources".format(APP_NAME)
 
-    def _load_artifacts(self, node_artifacts):
+        if len(nodes) == 0:
+            print("WARNING! Can't find 'sources' in settings, use default")
+            self.source_path = Utils.expand_path(default_source_path)
+            return
+
+        if len(nodes) > 1:
+            print("WARNING! Multiple 'sources' in settings, use first node")
+
+        node_sources = nodes[0]
+        node_path_list = node_sources.getElementsByTagName("path")
+        if len(node_path_list) == 0:
+            print("WARNING! Can't find 'sources/path' in settings, use default")
+            self.source_path = Utils.expand_path(default_source_path)
+            return
+
+        if len(node_path_list) > 1:
+            print(
+                "WARNING! Multiple 'sources.path' in settings, use first node")
+
+        node_source = node_path_list[0]
+        val = node_source.firstChild.nodeValue
+        self.source_path = Utils.expand_path(val)
+
+    def _load_artifacts(self, nodes):
         """
         load artifacts search path
         """
-        node_search_list = node_artifacts.getElementsByTagName("search")
-        for node_search in node_search_list:
-            node_repos = node_search.getElementsByTagName("repo")
-            for node_repo in node_repos:
-                repo = self._parse_repo(node_repo=node_repo)
-                if repo is None:
-                    continue
-                self.pkg_search_repos.append(repo)
+        default_repo = RepoConfig()
+        default_repo.kind = "local"
+        default_repo.path = "~/.{}/artifacts".format(APP_NAME)
 
-        node_upload_list = node_artifacts.getElementsByTagName("upload")
-        for node_upload in node_upload_list:
-            if self.pkg_upload_repo is not None:
-                break
-            node_repos = node_upload.getElementsByTagName("repo")
+        if len(nodes) == 0:
+            print("WARNING! Can't find 'artifacts' in settings, use default")
+            self.pkg_search_repos.append(default_repo)
+            self.pkg_upload_repos.append(default_repo)
+            return
+
+        if len(nodes) > 1:
+            print("WARNING! Multiple 'artifacts' in settings, use first node")
+
+        node_artifacts = nodes[0]
+
+        self.pkg_search_repos = self._get_repos(node_artifacts, "search")
+        if len(self.pkg_search_repos) == 0:
+            self.pkg_search_repos.append(default_repo)
+
+        self.pkg_upload_repos = self._get_repos(node_artifacts, "upload")
+        if len(self.pkg_upload_repos) == 0:
+            self.pkg_upload_repos.append(default_repo)
+
+    def _get_repos(self, parent, node_name):
+        """
+        get repo list in parent[node_name]
+        """
+        node_list = parent.getElementsByTagName(node_name)
+        keys = set()
+        ret_list = []
+        for node in node_list:
+            node_repos = node.getElementsByTagName("repo")
             for node_repo in node_repos:
                 repo = self._parse_repo(node_repo=node_repo)
                 if repo is None:
                     continue
-                self.pkg_upload_repo = repo
-                break
+
+                k = repo.key()
+                if k in keys:
+                    continue
+                keys.add(k)
+
+                ret_list.append(repo)
+
+        return ret_list
 
     def _parse_repo(self, node_repo):
         """
@@ -184,19 +260,8 @@ class SettingsHandle:
             repo.path = node_paths[0].firstChild.nodeValue
             repo.path = Utils.expand_path(repo.path)
         elif repo.kind == "remote":
-            node_urls = node_repo.getElementsByTagName("url")
-            if len(node_urls) != 1:
-                print("Error! failed find single 'url' in repo")
-                return None
-            repo.url = node_urls[0].firstChild.nodeValue
-
-            node_name = node_repo.getElementsByTagName("name")
-            if len(node_name) == 1:
-                repo.name = node_name[0].firstChild.nodeValue
-
-            node_passwd = node_repo.getElementsByTagName("passwd")
-            if len(node_passwd) == 1:
-                repo.passwd = node_passwd[0].firstChild.nodeValue
+            print("WARNING! Temporary not support remote repo")
+            return None
         else:
             print("Error! invalid repo kind: {}".format(repo.kind))
             return None
