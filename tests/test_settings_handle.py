@@ -1,7 +1,7 @@
 import unittest
+from hpb.component.settings_handle import SettingsHandle
 from hpb.data_type.constant_var import APP_NAME
 
-from hpb.settings_handle import SettingsHandle
 from hpb.utils.utils import Utils
 
 

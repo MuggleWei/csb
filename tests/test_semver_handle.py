@@ -1,6 +1,6 @@
 import unittest
 
-from hpb.semver_handle import SemverHandle
+from hpb.component.semver_handle import SemverHandle
 
 
 class TestSemverHandle(unittest.TestCase):

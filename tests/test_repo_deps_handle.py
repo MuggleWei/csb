@@ -1,6 +1,6 @@
 import unittest
 
-from hpb.settings_handle import SettingsHandle
+from hpb.component.settings_handle import SettingsHandle
 
 
 class TestRepoDepsHandle(unittest.TestCase):
