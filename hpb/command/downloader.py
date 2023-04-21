@@ -1,10 +1,13 @@
 import getopt
+import logging
 import os
 import shutil
 import sys
 import tarfile
+from hpb.component.settings_handle import SettingsHandle
 
 from hpb.data_type.constant_var import APP_NAME
+from hpb.utils.log_handle import LogHandle
 from hpb.utils.utils import Utils
 
 
@@ -28,21 +31,23 @@ class Downloader:
         self._usage_str = "Usage: {0} pull [OPTIONS]\n" \
             "\n" \
             "Options: \n" \
-            "  -t, --type string    [REQUIRED] local or remote\n" \
-            "  -p, --path string    [REQUIRED] package path or url\n" \
-            "  -d, --dest string    [REQUIRED] download destination\n" \
+            "  -p, --path string    [REQUIRED] package dir/path or url\n" \
+            "  -d, --dest string    [OPTIONAL] download destination\n" \
             "  -x, --extract string [OPTIONAL] extract files from packags\n" \
             "e.g.\n" \
-            "  {0} pull -t local -p ~/.hpb/artifacts/google/googletest/v1.13.0-release-linux-arch-x86_64/googletest-v1.13.0-release-linux-x86_64.tar.gz\n" \
+            "  {0} pull -p ~/.hpb/artifacts/google/googletest/v1.13.0-release-linux-arch-x86_64\n" \
             "".format(APP_NAME)
 
     def run(self, args):
         """
         run package downloader
         """
-        cfg = self._init(args=args)
-        if cfg is None:
+        try:
+            cfg = self._init(args=args)
+        except Exception as e:
+            print("{}".format(str(e)))
             return False
+
         return self.download(cfg=cfg)
 
     def _init(self, args):
@@ -51,20 +56,32 @@ class Downloader:
         """
         cfg = self._parse_args(args=args)
 
-        if len(cfg.repo_type) == 0:
-            print("pull package without field 'type'\n\n"
-                  "{}".format(self._usage_str))
-            return None
         if len(cfg.path) == 0:
-            print("pull package without field 'path'\n\n"
-                  "{}".format(self._usage_str))
-            return None
+            errmsg = "pull package without field 'path'\n\n{}".format(self._usage_str)
+            raise Exception(errmsg)
+        if len(cfg.repo_type) == 0:
+            cfg.repo_type = self._guess_type(cfg.path)
         if len(cfg.dest) == 0:
-            print("pull package without field 'dest'\n\n"
-                  "{}".format(self._usage_str))
-            return None
+            cfg.dest = os.path.abspath(".")
+
+        self._settings_handle = SettingsHandle.load_settings("")
+        log_level = LogHandle.log_level(self._settings_handle.log_console_level)
+        LogHandle.init_log(
+            filename=None,
+            console_level=log_level,
+            formatter=logging.Formatter("%(message)s")
+        )
 
         return cfg
+
+    def _guess_type(self, path):
+        """
+        guess download repo type
+        """
+        # TODO: now, only have local
+        if path.startswith(""):
+            pass
+        return "local"
 
     def download(self, cfg):
         """
@@ -109,13 +126,32 @@ class Downloader:
         download local artifacts
         """
         self.cfg.path = Utils.expand_path(self.cfg.path)
+        if os.path.isdir(self.cfg.path):
+            files = os.listdir(self.cfg.path)
+            candidates = []
+            for f in files:
+                if f.endswith("tar.gz"):
+                    candidates.append(f)
+            if len(candidates) == 0:
+                logging.error("failed find package in {}".format(self.cfg.path))
+                return False
+            if len(candidates) > 1:
+                logging.error("multiple package in {}".format(self.cfg.path))
+                return False
+            pkg_filepath = os.path.join(self.cfg.path, candidates[0])
+        else:
+            pkg_filepath = self.cfg.path
+
         dest = Utils.expand_path(self.cfg.dest)
         if dest.endswith("tar.gz"):
             dest = os.path.dirname(dest)
 
         if not os.path.isdir(dest):
             os.makedirs(dest, exist_ok=True)
-        shutil.copy(self.cfg.path, dest)
+
+        logging.info(
+            "download local package: {} -> {}".format(pkg_filepath, dest))
+        shutil.copy(pkg_filepath, dest)
 
         return True
 
@@ -123,29 +159,22 @@ class Downloader:
         """
         parse arguments
         """
-        cfg = DownloaderConfig()
-        try:
-            opts, _ = getopt.getopt(
-                args, "ht:p:d:x",
-                [
-                    "help", "type=", "path=", "dest=", "extract"
-                ]
-            )
-        except Exception as e:
-            print("{}, exit...".format(str(e)))
-            sys.exit(1)
+        opts, _ = getopt.getopt(
+            args, "hp:d:x",
+            [
+                "help", "path=", "dest=", "extract"
+            ]
+        )
 
+        cfg = DownloaderConfig()
         for opt, arg in opts:
             if opt in ("-h", "--help"):
                 print(self._usage_str)
                 sys.exit(0)
-            elif opt in ("-t", "--type"):
-                cfg.repo_type = arg
             elif opt in ("-p", "--path"):
                 cfg.path = arg
             elif opt in ("-d", "--dest"):
                 cfg.dest = arg
             elif opt in ("-x", "--extract"):
                 cfg.extract = True
-
         return cfg
