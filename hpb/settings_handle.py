@@ -1,6 +1,5 @@
 import json
 import os
-import pkgutil
 import typing
 import xml.dom.minidom
 
@@ -48,28 +47,31 @@ class SettingsHandle:
     """
 
     @classmethod
-    def load_settings(cls, user_settings=None):
+    def load_settings(cls, user_settings=""):
         """
         load settings
         """
-        settings_path = []
-        if user_settings is None:
-            user_settings = []
-        settings_path.extend(user_settings)
-        settings_path.extend([
+        default_settings_paths = []
+        default_settings_paths.extend([
             Utils.expand_path("~/.{}/settings.xml".format(APP_NAME)),
             Utils.expand_path(
                 "~/.local/share/{}/settings.xml".format(APP_NAME)),
             "/usr/local/etc/{}/settings.xml".format(APP_NAME),
             "/etc/{}/settings.xml".format(APP_NAME),
+            "/usr/share/{}/settings.xml".format(APP_NAME),
         ])
-        settings_handle = SettingsHandle()
 
-        for filepath in settings_path:
-            if os.path.exists(filepath):
-                print("load settings: {}".format(filepath))
-                settings_handle.load(filepath=filepath)
-        settings_handle.load_pkg_res()
+        settings_handle = SettingsHandle()
+        if len(user_settings) > 0:
+            settings_handle.load(filepath=user_settings)
+        else:
+            for filepath in default_settings_paths:
+                if not os.path.exists(filepath):
+                    continue
+                settings_handle.load(Utils.expand_path(filepath))
+                break
+            raise Exception("Can't find settings.xml")
+
         return settings_handle
 
     def __init__(self):
@@ -92,19 +94,6 @@ class SettingsHandle:
             return False
         root = xml.dom.minidom.parse(file=filepath)
         self._parse_dom(root=root)
-
-    def load_pkg_res(self):
-        """
-        load package resources
-        """
-        try:
-            content = pkgutil.get_data("hpb", "etc/settings.xml")
-            if content is None:
-                return
-            root = xml.dom.minidom.parseString(content.decode("utf-8"))
-            self._parse_dom(root=root)
-        except Exception:
-            return
 
     def _parse_dom(self, root):
         """

@@ -144,10 +144,7 @@ class WorkflowHandle:
         load settings
         :param input_settings_path: user input settings path
         """
-        user_settings = []
-        if len(input_settings_path) > 0:
-            user_settings.append(input_settings_path)
-        self.settings_handle = SettingsHandle.load_settings(user_settings)
+        self.settings_handle = SettingsHandle.load_settings(input_settings_path)
 
     def load_yaml_file(self):
         """

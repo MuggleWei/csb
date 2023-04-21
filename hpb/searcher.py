@@ -242,10 +242,12 @@ class Searcher:
             print("Error! field 'name' missing\n\n{}".format(self._usage_str))
             return False
 
-        user_settings = []
-        if len(self.cfg.settings_path) > 0:
-            user_settings.append(self.cfg.settings_path)
-        self._settings_handle = SettingsHandle.load_settings(user_settings)
+        try:
+            self._settings_handle = \
+                SettingsHandle.load_settings(self.cfg.settings_path)
+        except Exception as e:
+            print("ERROR! {}".format(str(e)))
+            return False
 
         return True
 

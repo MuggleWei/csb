@@ -131,10 +131,12 @@ class Uploader:
         if len(self.pkg_dir) == 0:
             return False
 
-        user_settings = []
-        if len(self.cfg.settings_path) > 0:
-            user_settings.append(self.cfg.settings_path)
-        self._settings_handle = SettingsHandle.load_settings(user_settings)
+        try:
+            self._settings_handle = \
+                SettingsHandle.load_settings(self.cfg.settings_path)
+        except Exception as e:
+            print("ERROR! {}".format(str(e)))
+            return False
 
         if self._settings_handle.pkg_upload_repo is None:
             print("ERROR! 'artifacts/upload' not be set in settings file")

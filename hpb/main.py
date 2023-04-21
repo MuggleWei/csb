@@ -53,6 +53,13 @@ def run_pack():
         sys.exit(1)
 
 
+def run_dbsync():
+    """
+    sync local db and local artifacts upload directory
+    """
+    pass
+
+
 def main():
     usage_str = "Usage: {} COMMAND [OPTIONS]\n" \
         "\n" \
@@ -62,6 +69,7 @@ def main():
         "  search   search package\n" \
         "  pull     pull package\n" \
         "  pack     pack artifacts\n" \
+        "  dbsync   sync local db and local artifacts dirctory\n" \
         "".format(sys.argv[0])
 
     if len(sys.argv) < 2:

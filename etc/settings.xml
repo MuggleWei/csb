@@ -8,6 +8,11 @@
 	<log console_level="info" file_level="debug" />
 
     <!--
+    local db path
+    -->
+    <db>~/.hpb/hpb.db</db>
+
+    <!--
     local source directories
     -->
     <sources>
@@ -60,13 +65,12 @@
         update package location
         -->
         <upload>
-            <!--
-            the same as the repo in search
-            -->
+
             <repo>
                 <kind>local</kind>
                 <path>~/.hpb/artifacts</path>
             </repo>
+
         </upload>
     </artifacts>
 
