@@ -1,7 +1,7 @@
 import json
 import unittest
-from hpb.component.yaml_handle import YamlHandle
 
+from hpb.component.yaml_handle import YamlHandle
 from hpb.data_type.package_meta import PackageMeta
 
 

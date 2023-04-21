@@ -4,13 +4,13 @@ import os
 import re
 import shutil
 import typing
+
 from hpb.component.command_handle import CommandHandle
 from hpb.component.repo_deps_handle import RepoDepsHandle
 from hpb.component.settings_handle import SettingsHandle
 from hpb.component.source_downloader import SourceDownloader
 from hpb.component.var_replace_handle import VarReplaceHandle
 from hpb.component.yaml_handle import YamlHandle
-
 from hpb.data_type.builder_config import BuilderConfig
 from hpb.data_type.constant_var import APP_NAME
 from hpb.data_type.git_info import GitInfo

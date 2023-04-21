@@ -3,6 +3,7 @@ import os
 import shutil
 import sys
 import tarfile
+
 from hpb.component.yaml_handle import YamlHandle
 from hpb.data_type.constant_var import APP_NAME
 from hpb.data_type.package_meta import PackageMeta

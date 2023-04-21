@@ -2,10 +2,10 @@ import getopt
 import os
 import sys
 import typing
+
 from hpb.component.settings_handle import RepoConfig, SettingsHandle
 from hpb.data_type.constant_var import APP_NAME
 from hpb.data_type.package_meta import MetaMatch, PackageMeta
-
 from hpb.utils.ptree import ptree
 
 

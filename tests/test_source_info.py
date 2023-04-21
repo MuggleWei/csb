@@ -1,8 +1,8 @@
 import json
 import typing
 import unittest
-from hpb.component.yaml_handle import YamlHandle
 
+from hpb.component.yaml_handle import YamlHandle
 from hpb.data_type.source_info import SourceInfo
 
 
