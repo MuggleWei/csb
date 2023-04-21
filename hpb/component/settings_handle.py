@@ -3,8 +3,8 @@ import os
 import typing
 import xml.dom.minidom
 
-from hpb.constant_var import APP_NAME
-from hpb.utils import Utils
+from hpb.data_type.constant_var import APP_NAME
+from hpb.utils.utils import Utils
 
 
 class RepoConfig:

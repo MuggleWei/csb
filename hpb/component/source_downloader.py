@@ -1,8 +1,8 @@
 import logging
 import os
 
-from hpb.command_handle import CommandHandle
-from hpb.source_info import SourceInfo
+from hpb.component.command_handle import CommandHandle
+from hpb.data_type.source_info import SourceInfo
 
 
 class SourceDownloader:

@@ -1,8 +1,8 @@
 import unittest
+from hpb.data_type.constant_var import APP_NAME
 
-from hpb.constant_var import APP_NAME
 from hpb.settings_handle import SettingsHandle
-from hpb.utils import Utils
+from hpb.utils.utils import Utils
 
 
 class TestSettingsHandle(unittest.TestCase):

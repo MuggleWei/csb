@@ -1,9 +1,9 @@
 import getopt
 import logging
 import sys
-from hpb.constant_var import APP_NAME
-from hpb.log_handle import LogHandle
-from hpb.settings_handle import SettingsHandle
+from hpb.component.settings_handle import SettingsHandle
+from hpb.data_type.constant_var import APP_NAME
+from hpb.utils.log_handle import LogHandle
 
 
 class DbSyncConfig:

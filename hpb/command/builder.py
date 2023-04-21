@@ -2,10 +2,10 @@ import getopt
 import logging
 import sys
 
-from hpb.builder_config import BuilderConfig
-from hpb.constant_var import APP_NAME
-from hpb.utils import Utils
-from hpb.workflow_handle import WorkflowHandle
+from hpb.component.workflow_handle import WorkflowHandle
+from hpb.data_type.builder_config import BuilderConfig
+from hpb.data_type.constant_var import APP_NAME
+from hpb.utils.utils import Utils
 
 
 class Builder:

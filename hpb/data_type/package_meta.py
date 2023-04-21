@@ -1,11 +1,11 @@
 from enum import Enum
 import json
 import os
-from typing import OrderedDict
 
-from hpb.platform_info import PlatformInfo
-from hpb.source_info import SourceInfo
-from hpb.yaml_handle import YamlHandle
+from typing import OrderedDict
+from hpb.component.yaml_handle import YamlHandle
+from hpb.data_type.platform_info import PlatformInfo
+from hpb.data_type.source_info import SourceInfo
 
 
 class MetaMatch(Enum):

@@ -4,22 +4,22 @@ import os
 import re
 import shutil
 import typing
+from hpb.component.command_handle import CommandHandle
+from hpb.component.repo_deps_handle import RepoDepsHandle
+from hpb.component.settings_handle import SettingsHandle
+from hpb.component.source_downloader import SourceDownloader
+from hpb.component.var_replace_handle import VarReplaceHandle
+from hpb.component.yaml_handle import YamlHandle
 
-from hpb.builder_config import BuilderConfig
-from hpb.command_handle import CommandHandle
-from hpb.constant_var import APP_NAME
-from hpb.git_info import GitInfo
-from hpb.kahn_algo import KahnAlgo
-from hpb.log_handle import LogHandle
-from hpb.package_meta import PackageMeta
-from hpb.platform_info import PlatformInfo
-from hpb.repo_deps_handle import RepoDepsHandle
-from hpb.settings_handle import SettingsHandle
-from hpb.source_downloader import SourceDownloader
-from hpb.source_info import SourceInfo
-from hpb.var_replace_handle import VarReplaceHandle
-from hpb.workflow_yml import WorkflowYaml
-from hpb.yaml_handle import YamlHandle
+from hpb.data_type.builder_config import BuilderConfig
+from hpb.data_type.constant_var import APP_NAME
+from hpb.data_type.git_info import GitInfo
+from hpb.data_type.package_meta import PackageMeta
+from hpb.data_type.platform_info import PlatformInfo
+from hpb.data_type.source_info import SourceInfo
+from hpb.data_type.workflow_yml import WorkflowYaml
+from hpb.utils.kahn_algo import KahnAlgo
+from hpb.utils.log_handle import LogHandle
 
 
 class WorkflowHandle:

@@ -1,12 +1,12 @@
 import json
 import logging
 import typing
+
 from hpb.command.downloader import Downloader, DownloaderConfig
 from hpb.command.searcher import Searcher, SearcherConfig, SearcherResult
-
-from hpb.platform_info import PlatformInfo
-from hpb.semver_handle import SemverHandle
-from hpb.settings_handle import SettingsHandle
+from hpb.component.semver_handle import SemverHandle
+from hpb.component.settings_handle import SettingsHandle
+from hpb.data_type.platform_info import PlatformInfo
 
 
 class DepItem:
