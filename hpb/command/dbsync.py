@@ -53,8 +53,7 @@ class DbSync:
         log_level = LogHandle.log_level(self._settings_handle.log_console_level)
         LogHandle.init_log(
             filename=None,
-            console_level=log_level,
-            formatter=logging.Formatter("%(message)s")
+            console_level=log_level
         )
 
         return True

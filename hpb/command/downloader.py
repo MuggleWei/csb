@@ -4,8 +4,8 @@ import os
 import shutil
 import sys
 import tarfile
-from hpb.component.settings_handle import SettingsHandle
 
+from hpb.component.settings_handle import SettingsHandle
 from hpb.data_type.constant_var import APP_NAME
 from hpb.utils.log_handle import LogHandle
 from hpb.utils.utils import Utils
@@ -69,7 +69,6 @@ class Downloader:
         LogHandle.init_log(
             filename=None,
             console_level=log_level,
-            formatter=logging.Formatter("%(message)s")
         )
 
         return cfg
