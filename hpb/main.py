@@ -1,12 +1,12 @@
 import sys
 
 from hpb.__version__ import __version__
-from hpb.builder import Builder
-from hpb.dbsync import DbSync
-from hpb.downloader import Downloader
-from hpb.packer import Packer
-from hpb.searcher import Searcher
-from hpb.uploader import Uploader
+from hpb.command.builder import Builder
+from hpb.command.dbsync import DbSync
+from hpb.command.downloader import Downloader
+from hpb.command.packer import Packer
+from hpb.command.searcher import Searcher
+from hpb.command.uploader import Uploader
 
 
 def run_builder():

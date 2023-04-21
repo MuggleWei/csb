@@ -1,10 +1,10 @@
 import json
 import logging
 import typing
+from hpb.command.downloader import Downloader, DownloaderConfig
+from hpb.command.searcher import Searcher, SearcherConfig, SearcherResult
 
-from hpb.downloader import Downloader, DownloaderConfig
 from hpb.platform_info import PlatformInfo
-from hpb.searcher import Searcher, SearcherConfig, SearcherResult
 from hpb.semver_handle import SemverHandle
 from hpb.settings_handle import SettingsHandle
 
