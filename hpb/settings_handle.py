@@ -61,17 +61,24 @@ class SettingsHandle:
             "/usr/share/{}/settings.xml".format(APP_NAME),
         ])
 
-        settings_handle = SettingsHandle()
+        settings_filepath = ""
         if len(user_settings) > 0:
-            settings_handle.load(filepath=user_settings)
+            if not os.path.exists(user_settings):
+                raise Exception("User input settings.xml({}) not exists".format(
+                    user_settings
+                ))
+            settings_filepath = user_settings
         else:
             for filepath in default_settings_paths:
                 if not os.path.exists(filepath):
                     continue
-                settings_handle.load(Utils.expand_path(filepath))
-                break
+                settings_filepath = filepath
+
+        if len(settings_filepath) == 0:
             raise Exception("Can't find settings.xml")
 
+        settings_handle = SettingsHandle()
+        settings_handle.load(Utils.expand_path(settings_filepath))
         return settings_handle
 
     def __init__(self):
