@@ -10,6 +10,7 @@ authors = [
 description = "Happy Package Builder"
 readme = "README.md"
 requires-python = ">=3.7"
+keywords = ["dependency", "libraries", "package", "artifacts", "manager"]
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",

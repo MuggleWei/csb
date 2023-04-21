@@ -2,12 +2,39 @@ import logging
 import logging.handlers
 import os
 
+class ConsoleColorFormatter(logging.Formatter):
+
+    def __init__(self, formatter):
+        grey = "\x1b[38;20m"
+        yellow = "\x1b[33;20m"
+        red = "\x1b[31;20m"
+        bold_red = "\x1b[31;1m"
+        reset = "\x1b[0m"
+
+        self.FORMATS = {
+            logging.DEBUG: grey + formatter + reset,
+            logging.INFO: grey + formatter + reset,
+            logging.WARNING: yellow + formatter + reset,
+            logging.ERROR: red + formatter + reset,
+            logging.CRITICAL: bold_red + formatter + reset
+        }
+
+    def format(self, record):
+        log_fmt = self.FORMATS.get(record.levelno)
+        formatter = logging.Formatter(log_fmt)
+        return formatter.format(record)
+
 
 class LogHandle(object):
     """simple log handle"""
 
     @staticmethod
-    def init_log(filename, console_level=logging.WARNING, file_level=logging.DEBUG, use_rotate=False, mode="a"):
+    def init_log(
+            filename,
+            console_level=logging.WARNING,
+            file_level=logging.DEBUG,
+            use_rotate=False,
+            mode="a"):
         """
         init log
         :param filename: log output file path
@@ -17,28 +44,34 @@ class LogHandle(object):
         :param mode: log file open mode
         :return:
         """
-        folder = os.path.dirname(filename)
-        if not os.path.exists(folder):
-            os.makedirs(folder, exist_ok=True)
-
-        formatter = LogHandle.get_formatter()
-
-        ch = LogHandle.get_console_handler(console_level)
-        if use_rotate is True:
-            fh = LogHandle.get_rotating_handler(level=file_level, filename=filename, mode=mode)
-        else:
-            fh = LogHandle.get_file_handler(level=file_level, filename=filename, mode=mode)
-
-        ch.setFormatter(formatter)
-        fh.setFormatter(formatter)
-
         logger = logging.getLogger()
         logger.setLevel(logging.DEBUG)
+
+        ch = LogHandle.get_console_handler(console_level)
+        ch.setFormatter(LogHandle.get_console_formatter())
         logger.addHandler(ch)
-        logger.addHandler(fh)
+
+        if filename is not None:
+            folder = os.path.dirname(filename)
+            if not os.path.exists(folder):
+                os.makedirs(folder, exist_ok=True)
+
+            if use_rotate is True:
+                fh = LogHandle.get_rotating_handler(level=file_level, filename=filename, mode=mode)
+            else:
+                fh = LogHandle.get_file_handler(level=file_level, filename=filename, mode=mode)
+            fh.setFormatter(LogHandle.get_file_formatter())
+            logger.addHandler(fh)
 
     @staticmethod
-    def get_formatter():
+    def get_console_formatter():
+        """
+        console formatter
+        """
+        return ConsoleColorFormatter("%(levelname)s - %(message)s")
+
+    @staticmethod
+    def get_file_formatter():
         """
         log formatter
         """

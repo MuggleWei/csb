@@ -2,23 +2,24 @@ import datetime
 import logging
 import os
 import re
+import shutil
 import typing
 
-from hpb.builder_config import BuilderConfig
-from hpb.command_handle import CommandHandle
-from hpb.constant_var import APP_NAME
-from hpb.git_info import GitInfo
-from hpb.kahn_algo import KahnAlgo
-from hpb.log_handle import LogHandle
-from hpb.package_meta import PackageMeta
-from hpb.platform_info import PlatformInfo
-from hpb.repo_deps_handle import RepoDepsHandle
-from hpb.settings_handle import SettingsHandle
-from hpb.source_downloader import SourceDownloader
-from hpb.source_info import SourceInfo
-from hpb.var_replace_handle import VarReplaceHandle
-from hpb.workflow_yml import WorkflowYaml
-from hpb.yaml_handle import YamlHandle
+from hpb.component.command_handle import CommandHandle
+from hpb.component.repo_deps_handle import RepoDepsHandle
+from hpb.component.settings_handle import SettingsHandle
+from hpb.component.source_downloader import SourceDownloader
+from hpb.component.var_replace_handle import VarReplaceHandle
+from hpb.component.yaml_handle import YamlHandle
+from hpb.data_type.builder_config import BuilderConfig
+from hpb.data_type.constant_var import APP_NAME
+from hpb.data_type.git_info import GitInfo
+from hpb.data_type.package_meta import PackageMeta
+from hpb.data_type.platform_info import PlatformInfo
+from hpb.data_type.source_info import SourceInfo
+from hpb.data_type.workflow_yml import WorkflowYaml
+from hpb.utils.kahn_algo import KahnAlgo
+from hpb.utils.log_handle import LogHandle
 
 
 class WorkflowHandle:
@@ -65,6 +66,7 @@ class WorkflowHandle:
 
         # extra meta
         self.is_fat_pkg = False
+        self.build_type = ""
 
         # deps
         self.deps = []
@@ -133,11 +135,7 @@ class WorkflowHandle:
         self.pkg_dir = os.path.join(self.hpb_dir, "pkg")
         self.deps_dir = os.path.join(self.hpb_dir, "deps")
         self.test_deps_dir = os.path.join(self.hpb_dir, "test_deps")
-
-        if len(cfg.output_dir) == 0:
-            self.output_dir = os.path.join(self.hpb_dir, "output")
-        else:
-            self.output_dir = cfg.output_dir
+        self.output_dir = os.path.join(self.hpb_dir, "output")
 
         return True
 
@@ -146,10 +144,7 @@ class WorkflowHandle:
         load settings
         :param input_settings_path: user input settings path
         """
-        user_settings = []
-        if len(input_settings_path) > 0:
-            user_settings.append(input_settings_path)
-        self.settings_handle = SettingsHandle.load_settings(user_settings)
+        self.settings_handle = SettingsHandle.load_settings(input_settings_path)
 
     def load_yaml_file(self):
         """
@@ -211,10 +206,26 @@ class WorkflowHandle:
         """
         os.makedirs(self.task_dir, exist_ok=True)
         os.makedirs(self.build_dir, exist_ok=True)
-        os.makedirs(self.pkg_dir, exist_ok=True)
-        os.makedirs(self.output_dir, exist_ok=True)
-        os.makedirs(self.deps_dir, exist_ok=True)
-        os.makedirs(self.test_deps_dir, exist_ok=True)
+        self._mk_empty_dir(self.pkg_dir)
+        self._mk_empty_dir(self.output_dir)
+        self._mk_empty_dir(self.deps_dir)
+        self._mk_empty_dir(self.test_deps_dir)
+
+    def _mk_empty_dir(self, dst_dir):
+        """
+        create empty directory
+        """
+        if os.path.exists(dst_dir):
+            logging.info("clear dir: {}".format(dst_dir))
+            files = os.listdir(dst_dir)
+            for f in files:
+                filepath = os.path.join(dst_dir, f)
+                if os.path.isdir(filepath):
+                    shutil.rmtree(os.path.join(dst_dir, f))
+                else:
+                    os.remove(filepath)
+        else:
+            os.makedirs(dst_dir, exist_ok=True)
 
     def prepare(self):
         """
@@ -229,13 +240,13 @@ class WorkflowHandle:
 
         self.output_vars()
 
+        if self.prepare_build_meta() is False:
+            return False
+
         if self.prepare_deps() is False:
             return False
 
         if self.prepare_test_deps() is False:
-            return False
-
-        if self.prepare_build_meta() is False:
             return False
 
         return True
@@ -355,7 +366,7 @@ class WorkflowHandle:
         """
         pkg_meta = PackageMeta()
         pkg_meta.source_info = self.src
-        pkg_meta.build_type = self.guess_build_type(self.all_var_dict)
+        pkg_meta.build_type = self.build_type
         pkg_meta.is_fat_pkg = self.is_fat_pkg
         pkg_meta.platform = self.platform_info
         pkg_meta.deps = self.deps
@@ -438,11 +449,14 @@ class WorkflowHandle:
         prepare dependencies
         """
         self.deps = self.yml_obj.deps
+        for dep in self.deps:
+            for k in dep.keys():
+                dep[k] = VarReplaceHandle.replace(dep[k], self.all_var_dict)
 
         repo_deps_handle = RepoDepsHandle(
             self.settings_handle,
             self.platform_info,
-            self.guess_build_type(self.all_var_dict)
+            self.build_type,
         )
 
         if repo_deps_handle.search_all_deps(self.deps) is False:
@@ -460,11 +474,14 @@ class WorkflowHandle:
         prepare test dependencies
         """
         self.test_deps = self.yml_obj.test_deps
+        for dep in self.test_deps:
+            for k in dep.keys():
+                dep[k] = VarReplaceHandle.replace(dep[k], self.all_var_dict)
 
         repo_deps_handle = RepoDepsHandle(
             self.settings_handle,
             self.platform_info,
-            self.guess_build_type(self.all_var_dict)
+            self.build_type,
         )
 
         if repo_deps_handle.search_all_deps(self.test_deps) is False:
@@ -481,8 +498,21 @@ class WorkflowHandle:
         """
         build_meta = self.yml_obj.build
 
+        # get fat_pkg
         build_fat_pkg = build_meta.get("fat_pkg", False)
         self.is_fat_pkg = self.get_bool(build_fat_pkg)
+
+        # get build_type
+        build_type = build_meta.get("build_type", "")
+        build_type = VarReplaceHandle.replace(build_type, self.all_var_dict)
+        if build_type is None:
+            logging.error("failed get build_type")
+            return False
+        if len(build_type) == 0:
+            build_type = self.guess_build_type(self.all_var_dict)
+        if len(build_type) == 0:
+            build_type = "release"
+        self.build_type = build_type
 
         return True
 

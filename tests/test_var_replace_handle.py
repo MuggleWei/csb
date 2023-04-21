@@ -1,6 +1,6 @@
 import unittest
 
-from hpb.var_replace_handle import VarReplaceHandle
+from hpb.component.var_replace_handle import VarReplaceHandle
 
 
 class TestVarReplaceHandle(unittest.TestCase):
@@ -27,12 +27,12 @@ class TestVarReplaceHandle(unittest.TestCase):
 
     def test_replace_list(self):
         vars = [
-            { "maintainer": "mugglewei" },
-            { "repo_name": "hpb" },
-            { "tag": "1.0.0" },
-            { "git_url": "https://github.com/MuggleWei/${repo_name}.git" },
-            { "build_type": "debug" },
-            { "pkg_name": "${repo_name}-${tag}-${build_type}-${machine}" },
+            {"maintainer": "mugglewei"},
+            {"repo_name": "hpb"},
+            {"tag": "1.0.0"},
+            {"git_url": "https://github.com/MuggleWei/${repo_name}.git"},
+            {"build_type": "debug"},
+            {"pkg_name": "${repo_name}-${tag}-${build_type}-${machine}"},
         ]
         ret = VarReplaceHandle.replace_list(vars, self.replace_dict)
         self.assertTrue(ret)

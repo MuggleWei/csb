@@ -1,27 +1,26 @@
-name: mugglec
+name: ztsd
 variables:
   - build_type: release
-  - mugglec_tag: v1.0.2
-  - mugglec_url: https://github.com/MuggleWei/mugglec.git
+  - ztsd_tag: v1.5.5
+  - ztsd_url: https://github.com/facebook/zstd.git
 source:
-  maintainer: mugglewei
-  name: mugglec
-  tag: ${mugglec_tag}
+  maintainer: faceboot
+  name: ztsd
+  tag: ${ztsd_tag}
   repo_kind: git
-  repo_url: ${mugglec_url}
+  repo_url: ${ztsd_url}
   git_depth: 1
 jobs:
   build:
     steps:
-      - name: build
-        run: >
+      - run: >
           cd ${HPB_TASK_DIR};
           cmake \
-            -S ${HPB_SOURCE_PATH} \
+            -S ${HPB_SOURCE_PATH}/build/cmake \
             -B ${HPB_BUILD_DIR} \
             -DCMAKE_BUILD_TYPE=${build_type} \
-            -DBUILD_SHARED_LIBS=ON \
-            -DCMAKE_INSTALL_PREFIX=${HPB_OUTPUT_DIR};
+            -DCMAKE_INSTALL_PREFIX=${HPB_OUTPUT_DIR} \
+            -DCMAKE_PREFIX_PATH=${HPB_DEPS_DIR};
           cmake --build ${HPB_BUILD_DIR} --config ${build_type};
           cmake --build ${HPB_BUILD_DIR} --target install;
   package:

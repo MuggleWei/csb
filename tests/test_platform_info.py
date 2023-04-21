@@ -2,8 +2,8 @@ import json
 import typing
 import unittest
 
-from hpb.platform_info import PlatformInfo
-from hpb.yaml_handle import YamlHandle
+from hpb.component.yaml_handle import YamlHandle
+from hpb.data_type.platform_info import PlatformInfo
 
 
 class TestPlatformInfo(unittest.TestCase):

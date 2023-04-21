@@ -3,11 +3,11 @@ import os
 import shutil
 import sys
 
-from hpb.constant_var import APP_NAME
-from hpb.package_meta import PackageMeta
-from hpb.settings_handle import SettingsHandle
-from hpb.utils import Utils
-from hpb.yaml_handle import YamlHandle
+from hpb.component.settings_handle import SettingsHandle
+from hpb.component.yaml_handle import YamlHandle
+from hpb.data_type.constant_var import APP_NAME
+from hpb.data_type.package_meta import PackageMeta
+from hpb.utils.utils import Utils
 
 
 class UploaderConfig:
@@ -49,26 +49,66 @@ class Uploader:
         if self._init(args=args) is False:
             return False
 
+        if self._check_pkg_dir() is False:
+            return False
+
         self.meta_file = os.path.join(self.pkg_dir, "{}.yml".format(APP_NAME))
         self.pkg_meta = PackageMeta()
         if self.pkg_meta.load_from_file(filepath=self.meta_file) is False:
             return False
 
-        if self._output_repo.kind == "local":
-            dir_name = self.pkg_meta.gen_pkg_dirname()
-            art_output_dir = os.path.join(
-                self._output_repo.path,
-                self.pkg_meta.source_info.maintainer,
-                self.pkg_meta.source_info.name,
-                dir_name,
-            )
-            if os.path.exists(art_output_dir):
-                shutil.rmtree(art_output_dir)
-            print("push {} -> {}".format(self.pkg_dir, art_output_dir))
-            shutil.copytree(self.pkg_dir, art_output_dir)
-        else:
-            print("WARNING! "
-                  "Artifacts push to remote repo currently not support")
+        for output_repo in self._settings_handle.pkg_upload_repos:
+            if output_repo.kind == "local":
+                dir_name = self.pkg_meta.gen_pkg_dirname()
+                art_output_dir = os.path.join(
+                    output_repo.path,
+                    self.pkg_meta.source_info.maintainer,
+                    self.pkg_meta.source_info.name,
+                    dir_name,
+                )
+                if os.path.exists(art_output_dir):
+                    shutil.rmtree(art_output_dir)
+
+                print("push {} -> {}".format(self.pkg_dir, art_output_dir))
+                shutil.copytree(self.pkg_dir, art_output_dir)
+            else:
+                print("WARNING! "
+                      "Artifacts push to remote repo currently not support")
+
+        return True
+
+    def _check_pkg_dir(self):
+        """
+        check package directory is valid
+        """
+        art_files = os.listdir(self.pkg_dir)
+        pkg_files = []
+        meta_files = []
+        for art_file in art_files:
+            if art_file.endswith(".tar.gz"):
+                pkg_files.append(art_file)
+            elif art_file.endswith(".yml"):
+                meta_files.append(art_file)
+
+        if len(pkg_files) == 0:
+            print("ERROR! Can't find package file in {}\n".format(self.pkg_dir))
+            return False
+        if len(pkg_files) > 1:
+            print("ERROR! Multiple package file in {}\n{}\n".format(
+                self.pkg_dir,
+                "\n".join(pkg_files)
+            ))
+            return False
+
+        if len(meta_files) == 0:
+            print("ERROR! Can't find meta file in {}\n".format(self.pkg_dir))
+            return False
+        if len(meta_files) > 1:
+            print("ERROR! Multiple meta file in {}\n{}\n".format(
+                self.pkg_dir,
+                "\n".join(meta_files)
+            ))
+            return False
 
         return True
 
@@ -92,15 +132,16 @@ class Uploader:
         if len(self.pkg_dir) == 0:
             return False
 
-        user_settings = []
-        if len(self.cfg.settings_path) > 0:
-            user_settings.append(self.cfg.settings_path)
-        self._settings_handle = SettingsHandle.load_settings(user_settings)
+        try:
+            self._settings_handle = \
+                SettingsHandle.load_settings(self.cfg.settings_path)
+        except Exception as e:
+            print("ERROR! {}".format(str(e)))
+            return False
 
-        if self._settings_handle.pkg_upload_repo is None:
+        if len(self._settings_handle.pkg_upload_repos) == 0:
             print("ERROR! 'artifacts/upload' not be set in settings file")
             return False
-        self._output_repo = self._settings_handle.pkg_upload_repo
 
         return True
 

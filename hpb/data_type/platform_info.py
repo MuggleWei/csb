@@ -1,8 +1,8 @@
+import distro
 import json
 import platform
-from typing import OrderedDict
 
-import distro
+from typing import OrderedDict
 
 
 class PlatformInfo:

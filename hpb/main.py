@@ -1,11 +1,12 @@
 import sys
 
 from hpb.__version__ import __version__
-from hpb.builder import Builder
-from hpb.downloader import Downloader
-from hpb.packer import Packer
-from hpb.searcher import Searcher
-from hpb.uploader import Uploader
+from hpb.command.builder import Builder
+from hpb.command.dbsync import DbSync
+from hpb.command.downloader import Downloader
+from hpb.command.packer import Packer
+from hpb.command.searcher import Searcher
+from hpb.command.uploader import Uploader
 
 
 def run_builder():
@@ -53,6 +54,15 @@ def run_pack():
         sys.exit(1)
 
 
+def run_dbsync():
+    """
+    sync local db and local artifacts upload directory
+    """
+    db_sync = DbSync()
+    if db_sync.run(sys.argv[2:]) is False:
+        sys.exit(1)
+
+
 def main():
     usage_str = "Usage: {} COMMAND [OPTIONS]\n" \
         "\n" \
@@ -62,6 +72,7 @@ def main():
         "  search   search package\n" \
         "  pull     pull package\n" \
         "  pack     pack artifacts\n" \
+        "  dbsync   sync local db and local artifacts dirctory\n" \
         "".format(sys.argv[0])
 
     if len(sys.argv) < 2:
@@ -73,7 +84,7 @@ def main():
         sys.exit(0)
 
     if sys.argv[1] in ("-v", "--version"):
-        print("{}".format(__version__))
+        print("hpb {}".format(__version__))
         sys.exit(0)
 
     command_dict = {
@@ -82,6 +93,7 @@ def main():
         "search": run_search,
         "pull": run_pull,
         "pack": run_pack,
+        "dbsync": run_dbsync,
     }
 
     command = sys.argv[1]

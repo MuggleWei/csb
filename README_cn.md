@@ -9,9 +9,11 @@
 
 
 # HPB
-HPB(Happy Package Builder)是一个包构建辅助工具
-* 最基础的方面, 它可以作为 CI 的本地执行器
-* 更有趣的, 它也可以用于本地源码和制品库管理的工具; 如果你使用的是c/c++, 总是喜欢自己从源码开始编译, 并且想要清晰的管理本地代码和库文件, 而不是当需要某个库时使用平台特定的 `apt install` 或 `pacman -S` 来搞定依赖库, 那么相信 `hpb` 会是一个趁手的工具  
+HPB(Happy Package Builder) 是一个 C/C++ 包管理工具, 同时也可以作为一个 CI 本地执行器使用  
+
+* 保持功能小巧, 聚焦于解决包的本地管理, 依赖包的获取问题
+* 不会侵入你的构建工具, 无论使用 CMake, Meson, Makefile, Ninja 或者三体人的某个编译工具, 都可以使用 `hpb` 作为包管理 (好吧, 三体人的编译工具应该是不可以的)
+* 去中心化, 用户可以在没有包管理服务器的情况下, 在本地管理自己的源码和包
 
 ## 使用帮助
 可以使用 `hpb -h` 来查看帮助, 当前 `hpb` 支持下面几个子命令  
@@ -26,20 +28,22 @@ HPB(Happy Package Builder)是一个包构建辅助工具
 ## 安装
 
 ### 从源码安装
-首先确保 python 已安装, 并且 python-pip 和 python-venv 可以正常使用, 通过下面命令来检查是否已经正确安装
+首先确保 python 已安装, 并且 python-pip 可以正常使用, 通过下面命令来检查是否已经正确安装
 ```
 python --verion
 python -m pip --version
-python -m venv -h
 ```
 
-接着, 根据不同的操作系统, 执行对应的安装脚本
-
-#### Unix类系统
+**Unix类系统**  
 确保 `~/.local/bin` 在 PATH 中, 接着执行项目根目录中的脚本 `install.sh`  
 
-#### Windows系统
-执行 `install.bat`, 接着将 `dist/hpb/hpb.exe` 文件任意放入一个目录, 将此目录加入环境变量 Path 当中
+**Windows系统**  
+执行项目根目录中的脚本 `install.bat`  
+
+执行完安装脚本之后, 通过以下命令检测是否安装成功
+```
+hpb -v
+```
 
 ## 使用指南
 当你已经成功完成了安装工作, 可以通过 [入门指南](./doc/cn/user_guide.md), 来一步一步的逐渐了解如何使用 `hpb`, 本指南将会让你学到 `hpb` 的一些基本概念和用法.  

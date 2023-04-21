@@ -3,11 +3,11 @@
 origin_dir="$(dirname "$(readlink -f "$0")")"
 cd $origin_dir
 
-./pyinstaller_pkg.sh
-
-mkdir -p ~/.local/bin
-cp dist/hpb/hpb ~/.local/bin/
+echo "# start install hpb"
+python -m pip install --user .
 
 mkdir -p ~/.hpb
-cp -r dist/hpb/etc/settings.xml ~/.hpb/
-cp -r dist/hpb/share ~/.hpb/
+echo "# copy etc/settings.xml -> ~/.hpb/"
+cp -r ./etc/settings.xml ~/.hpb/
+echo "# copy share -> ~/.hpb/"
+cp -r ./share ~/.hpb/

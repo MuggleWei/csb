@@ -3,9 +3,10 @@ import os
 import sys
 import typing
 
-from hpb.constant_var import APP_NAME
-from hpb.package_meta import MetaMatch, PackageMeta
-from hpb.settings_handle import RepoConfig, SettingsHandle
+from hpb.component.settings_handle import RepoConfig, SettingsHandle
+from hpb.data_type.constant_var import APP_NAME
+from hpb.data_type.package_meta import MetaMatch, PackageMeta
+from hpb.utils.ptree import ptree
 
 
 class SearcherConfig:
@@ -61,12 +62,14 @@ class Searcher:
             return False
 
         results: typing.List[SearcherResult] = self._search_candidate()
-        print("search results: ")
-        for result in results:
-            if result.repo_type == "local":
-                print("--------")
-                print("package: {}".format(result.path))
-                print("meta file: {}".format(result.meta))
+
+        # for result in results:
+        #     if result.repo_type == "local":
+        #         print("--------")
+        #         print("package: {}".format(result.path))
+        #         print("meta file: {}".format(result.meta))
+
+        self._draw(results)
 
     def search(self, cfg: SearcherConfig, settings_handle) \
             -> typing.List[SearcherResult]:
@@ -197,6 +200,33 @@ class Searcher:
         """
         return filename.endswith(".tar.gz")
 
+    def _draw(self, results: typing.List[SearcherResult]):
+        """
+        draw results
+        """
+        tree_dict = {}
+        for result in results:
+            tag = result.meta.source_info.tag
+            if tag not in tree_dict:
+                tree_dict[tag] = []
+            if result.repo_type == "local":
+                node = os.path.dirname(result.path)
+            else:
+                # TODO: support remote
+                node = "(unrecognize repo_type)"
+            tree_dict[tag].append(node)
+
+        tag_list = []
+        for k in tree_dict.keys():
+            tag_list.append(k)
+
+        s = "{}/{}".format(self.cfg.maintainer, self.cfg.name)
+        tree_dict[s] = tag_list
+        if len(tag_list) > 0:
+            ptree(s, tree_dict)
+        else:
+            print("Search results is empty")
+
     def _init(self, args):
         """
         init input arguments
@@ -212,10 +242,12 @@ class Searcher:
             print("Error! field 'name' missing\n\n{}".format(self._usage_str))
             return False
 
-        user_settings = []
-        if len(self.cfg.settings_path) > 0:
-            user_settings.append(self.cfg.settings_path)
-        self._settings_handle = SettingsHandle.load_settings(user_settings)
+        try:
+            self._settings_handle = \
+                SettingsHandle.load_settings(self.cfg.settings_path)
+        except Exception as e:
+            print("ERROR! {}".format(str(e)))
+            return False
 
         return True
 

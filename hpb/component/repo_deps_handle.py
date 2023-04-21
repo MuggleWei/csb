@@ -2,11 +2,11 @@ import json
 import logging
 import typing
 
-from hpb.downloader import Downloader, DownloaderConfig
-from hpb.platform_info import PlatformInfo
-from hpb.searcher import Searcher, SearcherConfig, SearcherResult
-from hpb.semver_handle import SemverHandle
-from hpb.settings_handle import SettingsHandle
+from hpb.command.downloader import Downloader, DownloaderConfig
+from hpb.command.searcher import Searcher, SearcherConfig, SearcherResult
+from hpb.component.semver_handle import SemverHandle
+from hpb.component.settings_handle import SettingsHandle
+from hpb.data_type.platform_info import PlatformInfo
 
 
 class DepItem:
@@ -155,7 +155,7 @@ class RepoDepsHandle:
         if result.meta.is_fat_pkg:
             return True
 
-        for sub_dep in dep.deps:
+        for sub_dep in result.meta.deps:
             dep_item = DepItem()
             if dep_item.load(sub_dep) is False:
                 return False

@@ -3,10 +3,7 @@ variables:
   - registry: hpb
   - os: ubuntu
   - os_ver: 22.04
-  - yml_dir: mugglec
-  - yml_filename: mugglec.yml
-  - yml_filepath: ${HPB_FILE_DIR}/${yml_dir}/${yml_filename}
-  - img_name: ${registry}/docker_build_${yml_dir}:${os}${os_ver}
+  - img_name: ${registry}/docker_${HPB_TASK_NAME}_${HPB_TASK_ID}:${os}${os_ver}
   - extract_name: extract
 jobs:
   build:
@@ -14,13 +11,13 @@ jobs:
       - name: docker_build
         run: >
           cd ${HPB_TASK_DIR};
-          cp ${yml_filepath} ${HPB_TASK_DIR};
+          cp ${yml_filepath} ${HPB_TASK_DIR}/build.yml;
           docker build \
             --network host \
             --build-arg REGISTRY=${registry} \
             --build-arg OS=${os} \
             --build-arg OS_VER=${os_ver} \
-            --build-arg FILENAME=${yml_filename} \
+            --build-arg FILENAME=build.yml \
             --network host \
             -f ${HPB_FILE_DIR}/Dockerfile \
             -t ${img_name} \

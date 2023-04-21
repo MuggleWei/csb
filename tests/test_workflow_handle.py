@@ -2,8 +2,7 @@ import os
 import shutil
 import unittest
 
-from hpb.builder import BuilderConfig
-from hpb.utils import Utils
+from hpb.utils.utils import Utils
 
 
 class TestWorkflowHandle(unittest.TestCase):
