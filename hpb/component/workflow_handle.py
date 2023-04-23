@@ -11,6 +11,7 @@ from hpb.component.settings_handle import SettingsHandle
 from hpb.component.source_downloader import SourceDownloader
 from hpb.component.var_replace_handle import VarReplaceHandle
 from hpb.component.yaml_handle import YamlHandle
+from hpb.data_type.build_info import BuildInfo
 from hpb.data_type.builder_config import BuilderConfig
 from hpb.data_type.constant_var import APP_NAME
 from hpb.data_type.git_info import GitInfo
@@ -20,6 +21,7 @@ from hpb.data_type.source_info import SourceInfo
 from hpb.data_type.workflow_yml import WorkflowYaml
 from hpb.utils.kahn_algo import KahnAlgo
 from hpb.utils.log_handle import LogHandle
+from hpb.utils.utils import Utils
 
 
 class WorkflowHandle:
@@ -65,8 +67,7 @@ class WorkflowHandle:
         self.src = SourceInfo()
 
         # extra meta
-        self.is_fat_pkg = False
-        self.build_type = ""
+        self.build_info = BuildInfo()
 
         # deps
         self.deps = []
@@ -240,7 +241,7 @@ class WorkflowHandle:
 
         self.output_vars()
 
-        if self.prepare_build_meta() is False:
+        if self.prepare_build_info() is False:
             return False
 
         if self.prepare_deps() is False:
@@ -293,7 +294,7 @@ class WorkflowHandle:
             step = steps[i]
             step_name = step.get("name", "")
             ignore_value = step.get("ignore", False)
-            if self.get_bool(ignore_value):
+            if Utils.get_boolean(ignore_value, self.all_var_dict):
                 logging.debug("ignore step[{}]: {}".format(i, step_name))
                 continue
             else:
@@ -366,8 +367,8 @@ class WorkflowHandle:
         """
         pkg_meta = PackageMeta()
         pkg_meta.source_info = self.src
-        pkg_meta.build_type = self.build_type
-        pkg_meta.is_fat_pkg = self.is_fat_pkg
+        pkg_meta.build_type = self.build_info.build_type
+        pkg_meta.is_fat_pkg = self.build_info.fat_pkg
         pkg_meta.platform = self.platform_info
         pkg_meta.deps = self.deps
 
@@ -456,7 +457,7 @@ class WorkflowHandle:
         repo_deps_handle = RepoDepsHandle(
             self.settings_handle,
             self.platform_info,
-            self.build_type,
+            self.build_info.build_type,
         )
 
         if repo_deps_handle.search_all_deps(self.deps) is False:
@@ -481,7 +482,7 @@ class WorkflowHandle:
         repo_deps_handle = RepoDepsHandle(
             self.settings_handle,
             self.platform_info,
-            self.build_type,
+            self.build_info.build_type,
         )
 
         if repo_deps_handle.search_all_deps(self.test_deps) is False:
@@ -492,27 +493,26 @@ class WorkflowHandle:
             logging.error("failed download dependencies")
             return False
 
-    def prepare_build_meta(self):
+    def prepare_build_info(self):
         """
         prepare build meta
         """
-        build_meta = self.yml_obj.build
+        build_info_dict = self.yml_obj.build
 
-        # get fat_pkg
-        build_fat_pkg = build_meta.get("fat_pkg", False)
-        self.is_fat_pkg = self.get_bool(build_fat_pkg)
+        for k in build_info_dict.keys():
+            v = build_info_dict[k]
+            v = VarReplaceHandle.replace(v, self.all_var_dict)
+            if v is None:
+                errmsg = "failed get yml build.{}: {}".format(k, build_info_dict[k])
+                logging.error(errmsg)
+                raise Exception(errmsg)
+            build_info_dict[k] = v
 
-        # get build_type
-        build_type = build_meta.get("build_type", "")
-        build_type = VarReplaceHandle.replace(build_type, self.all_var_dict)
-        if build_type is None:
-            logging.error("failed get build_type")
-            return False
-        if len(build_type) == 0:
-            build_type = self.guess_build_type(self.all_var_dict)
-        if len(build_type) == 0:
-            build_type = "release"
-        self.build_type = build_type
+        if not "build_type" in build_info_dict:
+            build_info_dict["build_type"] = self.guess_build_type(self.all_var_dict)
+
+        self.build_info = BuildInfo()
+        self.build_info.load(build_info_dict)
 
         return True
 
@@ -595,27 +595,6 @@ class WorkflowHandle:
             build_type = all_vars[word]
             break
         return build_type
-
-    def get_bool(self, val):
-        """
-        is need ignore
-        """
-        if type(val) is str:
-            val = VarReplaceHandle.replace(val, self.all_var_dict)
-
-        if type(val) is bool:
-            return val
-        elif type(val) is int:
-            if val == 0:
-                return False
-            else:
-                return True
-        elif type(val) is str:
-            if val.lower() in ["true", "1", "yes"]:
-                return True
-            else:
-                return False
-        return False
 
     def output_vars(self):
         """
