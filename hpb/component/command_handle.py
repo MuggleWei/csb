@@ -91,9 +91,9 @@ class CommandHandle:
 
                 data = data.strip()
                 if filetype == "INFO":
-                    self._command_logger.info("STDOUT|{}".format(data))
+                    self._command_logger.info("{}".format(data))
                 else:
-                    self._command_logger.error("STDERR|{}".format(data))
+                    self._command_logger.error("{}".format(data))
 
         t = Thread(target=fanout, args=(infile, filetype))
         t.daemon = True
