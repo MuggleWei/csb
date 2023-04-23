@@ -9,6 +9,7 @@ class TestSettingsHandle(unittest.TestCase):
     def setUp(self):
         super().setUp()
         self._handle = SettingsHandle()
+        self._handle.clean()
 
     def test_log(self):
         self._handle.load("./etc/test_settings_handle/settings_log.xml")

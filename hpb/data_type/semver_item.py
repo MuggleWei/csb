@@ -1,18 +1,15 @@
-import typing
+class SemverItem:
+    def __init__(self):
+        self.major = 0
+        self.minor = 0
+        self.patch = 0
+        self.pre_release = ""
 
-
-class SemverHandle:
-    @classmethod
-    def parse(cls, tag) -> typing.Optional[typing.List]:
+    def load(self, tag):
         """
-        check tag is semver
-        semver format
-        e.g.
-            1.0.1, v1.0.1, 1.0.1-alpha
-
-        :param tag: version info
-        :return: list [major, minor, patch, pre_release]
+        load semver str
         """
+        tag = tag.strip()
         if tag.startswith("v"):
             tag = tag[1:]
         idx = tag.find("-")
@@ -24,50 +21,55 @@ class SemverHandle:
             pre_release = tag[idx + 1:]
 
         ver_infos = ver.split(".")
-        if len(ver_infos) != 3:
-            return None
+        if len(ver_infos) > 3:
+            return False
 
         semver = []
         for v in ver_infos:
             if not v.isdigit():
-                return None
+                return False
             semver.append(int(v))
-        semver.append(pre_release)
 
-        return semver
+        self.major = semver[0]
+        if len(semver) > 1:
+            self.minor = semver[1]
+        if len(semver) > 2:
+            self.patch = semver[2]
+        self.pre_release = pre_release
 
-    @classmethod
-    def compare(cls, v1, v2):
+        return True
+
+    def compare(self, other):
         """
         compare two semver
-        if v1 > v2: return 1
-        if v1 == v2: return 0
-        if v1 < v2: return -1
-        :param v1: result of SemverHandle.parse
-        :param v2: result of SemverHandle.parse
+        if self > other: return 1
+        if self == other: return 0
+        if self < other: return -1
         """
-        if v1[0] > v2[0]:
+        if self.major > other.major:
             return 1
-        elif v1[0] < v2[0]:
+        elif self.major < other.major:
             return -1
 
-        if v1[1] > v2[1]:
+        if self.minor > other.minor:
             return 1
-        elif v1[1] < v2[1]:
+        elif self.minor < other.minor:
             return -1
 
-        if v1[2] > v2[2]:
+        if self.patch > other.patch:
             return 1
-        elif v1[2] < v2[2]:
+        elif self.patch < other.patch:
             return -1
 
-        return cls.compare_pre_release(v1[3], v2[3])
+        return self._compare_pre_release(other)
 
-    @classmethod
-    def compare_pre_release(cls, pre1, pre2):
+    def _compare_pre_release(self, other):
         """
         compare pre release
         """
+        pre1 = self.pre_release
+        pre2 = other.pre_release
+
         if len(pre1) == 0 and len(pre2) != 0:
             return 1
         if len(pre1) != 0 and len(pre2) == 0:
@@ -75,8 +77,8 @@ class SemverHandle:
         if len(pre1) == 0 and len(pre2) == 0:
             return 0
 
-        pv1 = cls.split_pre_release(pre1)
-        pv2 = cls.split_pre_release(pre2)
+        pv1 = self._split_pre_release(pre1)
+        pv2 = self._split_pre_release(pre2)
 
         pre_release_dict = {
             "alpha": 0,
@@ -98,8 +100,7 @@ class SemverHandle:
 
         return 0
 
-    @classmethod
-    def split_pre_release(cls, pre):
+    def _split_pre_release(self, pre):
         """
         split pre-release into list[alpha, ver]
         e.g.

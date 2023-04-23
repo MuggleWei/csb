@@ -46,9 +46,6 @@ class WorkflowHandle:
         self.test_deps_dir = ""  # test dependencies directory
         self.output_dir = ""  # output directory
 
-        # settings handle
-        self.settings_handle = SettingsHandle()
-
         # workflow object
         self.yml_obj = WorkflowYaml()
 
@@ -156,10 +153,10 @@ class WorkflowHandle:
         init log
         """
         console_log_level = LogHandle.log_level(
-            self.settings_handle.log_console_level
+            SettingsHandle().log_console_level
         )
         file_log_level = LogHandle.log_level(
-            self.settings_handle.log_file_level
+            SettingsHandle().log_file_level
         )
         LogHandle.init_log(
             os.path.join(self.hpb_dir, "log", "build.log"),
@@ -414,7 +411,7 @@ class WorkflowHandle:
         if self.need_download_source(self.src):
             src_downloader = SourceDownloader()
             if src_downloader.download(
-                    self.src, self.settings_handle.source_path) is False:
+                    self.src, SettingsHandle().source_path) is False:
                 return False
             source_path = src_downloader.source_path
 
@@ -448,7 +445,6 @@ class WorkflowHandle:
                 dep[k] = VarReplaceHandle.replace(dep[k], self.all_var_dict)
 
         repo_deps_handle = RepoDepsHandle(
-            self.settings_handle,
             self.platform_info,
             self.build_info.build_type,
         )
@@ -473,7 +469,6 @@ class WorkflowHandle:
                 dep[k] = VarReplaceHandle.replace(dep[k], self.all_var_dict)
 
         repo_deps_handle = RepoDepsHandle(
-            self.settings_handle,
             self.platform_info,
             self.build_info.build_type,
         )
@@ -599,7 +594,6 @@ class WorkflowHandle:
             "task_name={}\n"
             "task_id={}\n"
             "working_dir={}\n"
-            "artifacts_search_dir={}\n"
             "params={}\n"
             "output_dir={}\n"
             "".format(
@@ -607,7 +601,6 @@ class WorkflowHandle:
                 self.task_name,
                 self.task_id,
                 self.working_dir,
-                self.settings_handle.pkg_search_repos,
                 self.input_param_dict,
                 self.output_dir,
             )

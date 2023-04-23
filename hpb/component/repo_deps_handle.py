@@ -4,8 +4,7 @@ import typing
 
 from hpb.command.downloader import Downloader, DownloaderConfig
 from hpb.command.searcher import Searcher, SearcherConfig, SearcherResult
-from hpb.component.semver_handle import SemverHandle
-from hpb.component.settings_handle import SettingsHandle
+from hpb.data_type.semver_item import SemverItem
 from hpb.data_type.platform_info import PlatformInfo
 
 
@@ -76,10 +75,8 @@ class RepoDepsHandle:
 
     def __init__(
             self,
-            settings_handle: SettingsHandle,
             platform_info: PlatformInfo,
             build_type: str):
-        self.settings_handle = settings_handle
         self.platform = platform_info
         self.build_type = build_type
 
@@ -112,11 +109,11 @@ class RepoDepsHandle:
         # comb same repo
         for k in self.search_result_dict.keys():
             maintainer, repo, tag = self._split_key(k)
-            semver = SemverHandle.parse(tag)
-            if semver is not None:
-                repo_id = "{}${}${}".format(maintainer, repo, semver[0])
+            semver = SemverItem()
+            if semver.load(tag) is True:
+                repo_id = "{}${}${}".format(maintainer, repo, semver.major)
                 if repo_id in repo_dict:
-                    if SemverHandle.compare(semver, repo_dict[repo_id]) > 0:
+                    if semver.compare(repo_dict[repo_id]) > 0:
                         repo_dict[repo_id] = tag
                 else:
                     repo_dict[repo_id] = tag

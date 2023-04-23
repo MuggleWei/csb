@@ -57,6 +57,9 @@ class SettingsHandle:
         """
         initialize settings handle
         """
+        self.clean()
+
+    def clean(self):
         self.log_console_level = ""
         self.log_file_level = ""
         self.db_path = ""
