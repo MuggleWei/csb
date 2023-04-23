@@ -3,9 +3,11 @@ import os
 import selectors
 import subprocess
 
+from hpb.utils.singleton import singleton
 from threading import Thread
 
 
+@singleton
 class CommandHandle:
     def __init__(self):
         self._command_logger = logging.getLogger("command")

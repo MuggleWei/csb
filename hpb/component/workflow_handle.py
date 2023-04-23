@@ -317,7 +317,7 @@ class WorkflowHandle:
             if real_command is None:
                 logging.error("failed replace variable in: {}".format(command))
                 return False
-            if self.command_handle.exec(command=real_command) is False:
+            if CommandHandle().exec(command=real_command) is False:
                 return False
         return True
 
@@ -412,7 +412,7 @@ class WorkflowHandle:
 
         self.src = self.get_yml_source(self.yml_obj.source, self.all_var_dict)
         if self.need_download_source(self.src):
-            src_downloader = SourceDownloader(self.command_handle)
+            src_downloader = SourceDownloader()
             if src_downloader.download(
                     self.src, self.settings_handle.source_path) is False:
                 return False
@@ -501,7 +501,7 @@ class WorkflowHandle:
                 raise Exception(errmsg)
             build_info_dict[k] = v
 
-        if not "build_type" in build_info_dict:
+        if "build_type" not in build_info_dict:
             build_info_dict["build_type"] = self.guess_build_type(self.all_var_dict)
 
         self.build_info = BuildInfo()
