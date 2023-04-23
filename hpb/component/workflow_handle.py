@@ -421,6 +421,9 @@ class WorkflowHandle:
         self.git_info.get_git_info(source_path)
         self.inner_var_dict_add_git(self.git_info)
 
+        if not self.need_download_source(self.src):
+            self.src.tag = self.inner_var_dict["GIT_REF"]
+
         # update all_var_dict
         for k, v in self.inner_var_dict.items():
             var_name = "{}_{}".format(APP_NAME.upper(), k)
