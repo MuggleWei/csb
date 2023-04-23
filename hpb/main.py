@@ -1,3 +1,4 @@
+import logging
 import sys
 
 from hpb.__version__ import __version__
@@ -7,6 +8,8 @@ from hpb.command.downloader import Downloader
 from hpb.command.packer import Packer
 from hpb.command.searcher import Searcher
 from hpb.command.uploader import Uploader
+from hpb.component.settings_handle import SettingsHandle
+from hpb.utils.log_handle import LogHandle
 
 
 def run_builder():
@@ -63,6 +66,14 @@ def run_dbsync():
         sys.exit(1)
 
 
+def init_log():
+    """
+    init log
+    """
+    log_level = LogHandle.log_level(SettingsHandle().log_console_level)
+    LogHandle.init_log(filename=None, console_level=log_level)
+
+
 def main():
     usage_str = "Usage: {} COMMAND [OPTIONS]\n" \
         "\n" \
@@ -87,6 +98,13 @@ def main():
         print("hpb {}".format(__version__))
         sys.exit(0)
 
+    # init settings
+    try:
+        SettingsHandle().init()
+    except Exception as e:
+        print("{}".format(str(e)))
+        sys.exit(1)
+
     command_dict = {
         "build": run_builder,
         "push": run_push,
@@ -98,10 +116,16 @@ def main():
 
     command = sys.argv[1]
     func = command_dict.get(command, None)
-    if func is not None:
-        func()
-    else:
-        print(usage_str)
+    try:
+        if func is not None:
+            if command != "build":
+                init_log()
+            func()
+        else:
+            print(usage_str)
+            sys.exit(1)
+    except Exception as e:
+        logging.exception("{}".format(e))
         sys.exit(1)
 
 

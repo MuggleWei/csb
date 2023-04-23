@@ -140,13 +140,6 @@ class WorkflowHandle:
 
         return True
 
-    def load_settings(self, input_settings_path: str):
-        """
-        load settings
-        :param input_settings_path: user input settings path
-        """
-        self.settings_handle = SettingsHandle.load_settings(input_settings_path)
-
     def load_yaml_file(self):
         """
         load config file

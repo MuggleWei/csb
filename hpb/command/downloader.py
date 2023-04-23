@@ -5,9 +5,7 @@ import shutil
 import sys
 import tarfile
 
-from hpb.component.settings_handle import SettingsHandle
 from hpb.data_type.constant_var import APP_NAME
-from hpb.utils.log_handle import LogHandle
 from hpb.utils.utils import Utils
 
 
@@ -42,12 +40,7 @@ class Downloader:
         """
         run package downloader
         """
-        try:
-            cfg = self._init(args=args)
-        except Exception as e:
-            print("{}".format(str(e)))
-            return False
-
+        cfg = self._init(args=args)
         return self.download(cfg=cfg)
 
     def _init(self, args):
@@ -63,13 +56,6 @@ class Downloader:
             cfg.repo_type = self._guess_type(cfg.path)
         if len(cfg.dest) == 0:
             cfg.dest = os.path.abspath(".")
-
-        self._settings_handle = SettingsHandle.load_settings("")
-        log_level = LogHandle.log_level(self._settings_handle.log_console_level)
-        LogHandle.init_log(
-            filename=None,
-            console_level=log_level,
-        )
 
         return cfg
 
@@ -90,7 +76,7 @@ class Downloader:
         if self.cfg.repo_type == "local":
             ret = self._download_local()
         else:
-            print("unregconize repot_type: {}".format(self.cfg.repo_type))
+            logging.error("unregconize repo_type: {}".format(self.cfg.repo_type))
             ret = False
 
         if ret is False:

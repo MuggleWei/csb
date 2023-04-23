@@ -1,4 +1,5 @@
 import getopt
+import logging
 import os
 import sys
 import typing
@@ -44,7 +45,6 @@ class Searcher:
             "  -n, --name string       [REQUIRED] repository name\n" \
             "  -v, --ver string        [OPTIONAL] package version\n" \
             "  -t, --build-type string [OPTIONAL] package build type, by default set release\n" \
-            "  -s, --settings string   [OPTIONAL] manual set settings.xml\n" \
             "    , --system string     [OPTIONAL] system string, e.g. linux, windows\n" \
             "  -d, --distr string      [OPTIONAL] distrubution string, e.g. ubuntu, arch, alpine, ubuntu-22.04, alpine-3.17\n" \
             "    , --machine string    [OPTIONAL] platform machine, e.g. x64_64\n" \
@@ -63,23 +63,15 @@ class Searcher:
 
         results: typing.List[SearcherResult] = self._search_candidate()
 
-        # for result in results:
-        #     if result.repo_type == "local":
-        #         print("--------")
-        #         print("package: {}".format(result.path))
-        #         print("meta file: {}".format(result.meta))
-
         self._draw(results)
 
-    def search(self, cfg: SearcherConfig, settings_handle) \
-            -> typing.List[SearcherResult]:
+    def search(self, cfg: SearcherConfig) -> typing.List[SearcherResult]:
         """
         search packages invoke in codes
         :param cfg: search config
         :param settings_handle: settings handle
         """
         self.cfg = cfg
-        self._settings_handle = settings_handle
 
         if len(self.cfg.maintainer) == 0:
             return []
@@ -93,11 +85,12 @@ class Searcher:
         search candidate target path
         """
         results = []
-        if len(self._settings_handle.pkg_search_repos) == 0:
-            print("WARNING! Artifacts search repo list is empty")
+        settings_handle = SettingsHandle()
+        if len(settings_handle.pkg_search_repos) == 0:
+            logging.warning("Artifacts search repo list is empty")
 
         result_dict = set()
-        for search_repo in self._settings_handle.pkg_search_repos:
+        for search_repo in settings_handle.pkg_search_repos:
             if search_repo.kind == "local":
                 local_target_results = self._search_candidate_local(search_repo)
                 for result in local_target_results:
@@ -106,10 +99,11 @@ class Searcher:
                     results.append(result)
                     result_dict.add(result.path)
             elif search_repo.kind == "remote":
-                print("WARNING! "
-                      "Artifacts search remote repo currently not support")
+                logging.warning(
+                    "Artifacts search remote repo currently not support")
             else:
-                print("invalid search repo kind: {}".format(search_repo.kind))
+                logging.warning(
+                    "invalid search repo kind: {}".format(search_repo.kind))
         return results
 
     def _search_candidate_local(self, repo: RepoConfig) \
@@ -167,11 +161,11 @@ class Searcher:
         """
         meta_file = os.path.join(pkg_dir, "{}.yml".format(APP_NAME))
         if not os.path.exists(meta_file):
-            print("Warning! failed find meta file in {}".format(pkg_dir))
+            logging.warning("failed find meta file in {}".format(pkg_dir))
             return None
         pkg_meta = PackageMeta()
         if pkg_meta.load_from_file(meta_file) is False:
-            print("Warning! failed load meta file: {}".format(meta_file))
+            logging.warning("failed load meta file: {}".format(meta_file))
             return None
         return pkg_meta
 
@@ -185,10 +179,10 @@ class Searcher:
             if self._is_pkg_file(f):
                 pkg_candidates.append(f)
         if len(pkg_candidates) == 0:
-            print("Warning! failed find package in {}".format(pkg_dir))
+            logging.warning("failed find package in {}".format(pkg_dir))
             return None
         if len(pkg_candidates) > 1:
-            print("Warning! multiple packages in {}".format(pkg_dir))
+            logging.warning("multiple packages in {}".format(pkg_dir))
             return None
         pkg_filepath = os.path.join(pkg_dir, pkg_candidates[0])
         return pkg_filepath
@@ -225,7 +219,7 @@ class Searcher:
         if len(tag_list) > 0:
             ptree(s, tree_dict)
         else:
-            print("Search results is empty")
+            logging.info("Search results is empty")
 
     def _init(self, args):
         """
@@ -236,17 +230,11 @@ class Searcher:
             return False
 
         if len(self.cfg.maintainer) == 0:
-            print("Error! field 'maintainer' missing\n\n{}".format(self._usage_str))
+            logging.error(
+                "field 'maintainer' missing\n\n{}".format(self._usage_str))
             return False
         if len(self.cfg.name) == 0:
-            print("Error! field 'name' missing\n\n{}".format(self._usage_str))
-            return False
-
-        try:
-            self._settings_handle = \
-                SettingsHandle.load_settings(self.cfg.settings_path)
-        except Exception as e:
-            print("ERROR! {}".format(str(e)))
+            logging.error("field 'name' missing\n\n{}".format(self._usage_str))
             return False
 
         return True
@@ -255,18 +243,13 @@ class Searcher:
         """
         get argument opts
         """
-        try:
-            opts, _ = getopt.getopt(
-                args, "hm:n:v:t:d:s:",
-                [
-                    "help", "maintainer=", "name=", "ver=",
-                    "build-type=", "system=", "distr=", "machine=",
-                    "settings="
-                ]
-            )
-        except Exception as e:
-            print("{}, exit...".format(str(e)))
-            sys.exit(1)
+        opts, _ = getopt.getopt(
+            args, "hm:n:v:t:d:",
+            [
+                "help", "maintainer=", "name=", "ver=",
+                "build-type=", "system=", "distr=", "machine=",
+            ]
+        )
         return opts
 
     def _parse_args(self, args):
@@ -294,7 +277,5 @@ class Searcher:
                 cfg.distr = arg
             elif opt in ("--machine"):
                 cfg.machine = arg
-            elif opt in ("-s", "--settings"):
-                cfg.settings_path = arg
 
         return cfg

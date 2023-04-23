@@ -4,6 +4,7 @@ import typing
 import xml.dom.minidom
 
 from hpb.data_type.constant_var import APP_NAME
+from hpb.utils.singleton import singleton
 from hpb.utils.utils import Utils
 
 
@@ -46,15 +47,27 @@ class RepoConfig:
         return ""
 
 
+@singleton
 class SettingsHandle:
     """
     settings file handle
     """
 
-    @classmethod
-    def load_settings(cls, user_settings=""):
+    def __init__(self):
         """
-        load settings
+        initialize settings handle
+        """
+        self.log_console_level = ""
+        self.log_file_level = ""
+        self.db_path = ""
+        self.source_path = ""
+        self.pkg_search_repos: typing.List[RepoConfig] = []
+        self.pkg_upload_repos: typing.List[RepoConfig] = []
+        self.build_if_not_exists = False
+
+    def init(self, user_settings=""):
+        """
+        init settings handle
         """
         default_settings_paths = []
         default_settings_paths.extend([
@@ -80,23 +93,9 @@ class SettingsHandle:
                 settings_filepath = filepath
 
         if len(settings_filepath) == 0:
-            raise Exception("Can't find settings.xml")
+            Exception("Can't find settings.xml")
 
-        settings_handle = SettingsHandle()
-        settings_handle.load(Utils.expand_path(settings_filepath))
-        return settings_handle
-
-    def __init__(self):
-        """
-        initialize settings handle
-        """
-        self.log_console_level = ""
-        self.log_file_level = ""
-        self.db_path = ""
-        self.source_path = ""
-        self.pkg_search_repos: typing.List[RepoConfig] = []
-        self.pkg_upload_repos: typing.List[RepoConfig] = []
-        self.build_if_not_exists = False
+        self.load(Utils.expand_path(settings_filepath))
 
     def load(self, filepath):
         """

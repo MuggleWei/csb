@@ -209,7 +209,7 @@ class RepoDepsHandle:
         search_cfg.machine = self.platform.machine
 
         searcher = Searcher()
-        search_results = searcher.search(search_cfg, self.settings_handle)
+        search_results = searcher.search(search_cfg)
         if len(search_results) == 0:
             return None
         elif len(search_results) == 1:

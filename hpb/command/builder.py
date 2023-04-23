@@ -67,8 +67,6 @@ class Builder:
         if self._workflow.set_input_args(cfg) is False:
             return False
 
-        self._workflow.load_settings(cfg.settings_path)
-
         return True
 
     def _parse_args(self, args):
@@ -76,17 +74,13 @@ class Builder:
         parse input arguments
         """
         cfg = BuilderConfig()
-        try:
-            opts, _ = getopt.getopt(
-                args, "hc:m:p:s:",
-                [
-                    "help", "config=", "mode=", "task-name=", "task-id=",
-                    "work-dir=", "param=", "settings="
-                ]
-            )
-        except Exception as e:
-            print("{}, exit...".format(str(e)))
-            sys.exit(1)
+        opts, _ = getopt.getopt(
+            args, "hc:m:p:s:",
+            [
+                "help", "config=", "mode=", "task-name=", "task-id=",
+                "work-dir=", "param=", "settings="
+            ]
+        )
 
         for opt, arg in opts:
             if opt in ("-h", "--help"):
