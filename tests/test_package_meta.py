@@ -15,6 +15,12 @@ class TestPackageMeta(unittest.TestCase):
             "build": {
                 "build_type": "release",
                 "fat_pkg": False,
+                "compiler": {
+                    "cc": "",
+                    "cc_ver": "",
+                    "cxx": "",
+                    "cxx_ver": "",
+                }
             },
             "platform": {
                 "system": "linux",
@@ -57,7 +63,7 @@ class TestPackageMeta(unittest.TestCase):
         pkg_meta = PackageMeta()
         pkg_meta.load_from_file("./pkg/test_package_meta/hpb.yml")
 
-        output_filepath = "./_hpb/test_package_meta/hpb.yml"
+        output_filepath = "./hpb/test_package_meta/hpb.yml"
         pkg_meta.dump(output_filepath)
         handle = YamlHandle()
         obj = handle.load(output_filepath)

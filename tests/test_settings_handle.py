@@ -29,7 +29,7 @@ class TestSettingsHandle(unittest.TestCase):
         )
 
     def test_packages(self):
-        self._handle.load("./etc/test_settings_handle/settings_art.xml")
+        self._handle.load("./etc/test_settings_handle/settings_package.xml")
 
         path1 = Utils.expand_path("~/.{}/packages".format(APP_NAME))
         path2 = Utils.expand_path(

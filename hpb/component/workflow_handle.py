@@ -502,6 +502,7 @@ class WorkflowHandle:
 
         self.build_info = BuildInfo()
         self.build_info.load(build_info_dict)
+        self.build_info.complement()
 
         return True
 

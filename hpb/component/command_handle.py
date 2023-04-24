@@ -4,6 +4,7 @@ import selectors
 import subprocess
 
 from threading import Thread
+import typing
 
 
 class CommandHandle:
@@ -56,6 +57,21 @@ class CommandHandle:
             p.terminate()
             return False
         return True
+
+    def exec_and_get_ret(
+            self, command, out_lines: typing.List, err_lines: typing.List):
+        """
+        exec command and return stdout, stderr
+        """
+        def cb_stdout(data):
+            out_lines.append(data.strip())
+
+        def cb_stderr(data):
+            err_lines.append(data.strip())
+
+        self._cb_stdout = cb_stdout
+        self._cb_stderr = cb_stderr
+        return self.exec(command)
 
     def _exec_subporcess(self, p):
         """

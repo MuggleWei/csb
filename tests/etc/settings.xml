@@ -3,7 +3,7 @@
 	<log console_level="info" file_level="debug" />
 
     <sources>
-        <path>./_hpb/sources</path>
+        <path>./hpb/sources</path>
     </sources>
 
     <packages>
@@ -11,7 +11,7 @@
 
             <repo>
                 <kind>local</kind>
-                <path>./_hpb/packages</path>
+                <path>./hpb/packages</path>
             </repo>
 
         </search>
@@ -19,7 +19,7 @@
         <upload>
             <repo>
                 <kind>local</kind>
-                <path>./_hpb/packages</path>
+                <path>./hpb/packages</path>
             </repo>
         </upload>
     </packages>
