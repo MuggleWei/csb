@@ -25,6 +25,6 @@ jobs:
       - name: extract
         run: >
           docker container create --name ${extract_name} ${img_name};
-          docker container cp ${extract_name}:/root/.hpb/artifacts ${HPB_OUTPUT_DIR};
+          docker container cp ${extract_name}:/root/.hpb/packages ${HPB_OUTPUT_DIR};
           docker container rm -f ${extract_name};
           docker rmi ${img_name}

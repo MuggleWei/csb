@@ -5,7 +5,7 @@ variables:
   - mugglecpp_tag: v1.0.5
 source:
   maintainer: mugglewei
-  name: example_build_info
+  name: hpb_example_build_info
 deps:
   - maintainer: mugglewei
     name: mugglecpp
@@ -32,4 +32,10 @@ jobs:
       - name: pack
         run: >
           cd ${HPB_TASK_DIR};
-          hpb pack --copy-to ${HPB_ROOT_DIR}/_artifacts;
+          hpb pack --copy-to ${HPB_ROOT_DIR}/_packages;
+  upload:
+    needs: [package]
+    steps:
+      - name: upload
+        run: >
+          hpb push;

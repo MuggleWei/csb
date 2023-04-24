@@ -33,7 +33,7 @@ class Downloader:
             "  -d, --dest string    [OPTIONAL] download destination\n" \
             "  -x, --extract string [OPTIONAL] extract files from packags\n" \
             "e.g.\n" \
-            "  {0} pull -p ~/.hpb/artifacts/google/googletest/v1.13.0-release-linux-arch-x86_64\n" \
+            "  {0} pull -p ~/.hpb/packages/google/googletest/v1.13.0-release-linux-arch-x86_64\n" \
             "".format(APP_NAME)
 
     def run(self, args):
@@ -89,7 +89,7 @@ class Downloader:
 
     def _extract(self, cfg):
         """
-        extract artifacts
+        extract packages
         """
         dest = Utils.expand_path(cfg.dest)
         if dest.endswith("tar.gz"):
@@ -108,7 +108,7 @@ class Downloader:
 
     def _download_local(self):
         """
-        download local artifacts
+        download local packages
         """
         self.cfg.path = Utils.expand_path(self.cfg.path)
         if os.path.isdir(self.cfg.path):

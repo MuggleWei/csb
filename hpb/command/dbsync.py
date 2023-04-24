@@ -12,7 +12,7 @@ class DbSyncConfig:
 
 class DbSync:
     """
-    sync local db and local artifacts directory
+    sync local db and local package directory
     """
 
     def __init__(self):

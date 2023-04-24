@@ -133,7 +133,7 @@ class Uploader:
             return False
 
         if len(SettingsHandle().pkg_upload_repos) == 0:
-            logging.error("'artifacts/upload' not be set in settings file")
+            logging.error("'packages/upload' not be set in settings file")
             return False
 
         return True

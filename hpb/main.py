@@ -50,7 +50,7 @@ def run_pull():
 
 def run_pack():
     """
-    pack artifacts
+    pack package
     """
     packer = Packer()
     if packer.run(sys.argv[2:]) is False:
@@ -59,7 +59,7 @@ def run_pack():
 
 def run_dbsync():
     """
-    sync local db and local artifacts upload directory
+    sync local db and local packages directory
     """
     db_sync = DbSync()
     if db_sync.run(sys.argv[2:]) is False:
@@ -82,8 +82,8 @@ def main():
         "  push     upload package\n" \
         "  search   search package\n" \
         "  pull     pull package\n" \
-        "  pack     pack artifacts\n" \
-        "  dbsync   sync local db and local artifacts dirctory\n" \
+        "  pack     pack package\n" \
+        "  dbsync   sync local db and local package dirctory\n" \
         "".format(sys.argv[0])
 
     if len(sys.argv) < 2:

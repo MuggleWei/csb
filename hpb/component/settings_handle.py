@@ -123,8 +123,8 @@ class SettingsHandle:
         nodes = root.getElementsByTagName("sources")
         self._load_sources(nodes)
 
-        nodes = root.getElementsByTagName("artifacts")
-        self._load_artifacts(nodes)
+        nodes = root.getElementsByTagName("packages")
+        self._load_packages(nodes)
 
     def _load_log(self, nodes):
         """
@@ -194,30 +194,30 @@ class SettingsHandle:
         val = node_source.firstChild.nodeValue
         self.source_path = Utils.expand_path(val)
 
-    def _load_artifacts(self, nodes):
+    def _load_packages(self, nodes):
         """
-        load artifacts search path
+        load packages search path
         """
         default_repo = RepoConfig()
         default_repo.kind = "local"
-        default_repo.path = "~/.{}/artifacts".format(APP_NAME)
+        default_repo.path = "~/.{}/packages".format(APP_NAME)
 
         if len(nodes) == 0:
-            print("WARNING! Can't find 'artifacts' in settings, use default")
+            print("WARNING! Can't find 'packages' in settings, use default")
             self.pkg_search_repos.append(default_repo)
             self.pkg_upload_repos.append(default_repo)
             return
 
         if len(nodes) > 1:
-            print("WARNING! Multiple 'artifacts' in settings, use first node")
+            print("WARNING! Multiple 'packages' in settings, use first node")
 
-        node_artifacts = nodes[0]
+        node_packages = nodes[0]
 
-        self.pkg_search_repos = self._get_repos(node_artifacts, "search")
+        self.pkg_search_repos = self._get_repos(node_packages, "search")
         if len(self.pkg_search_repos) == 0:
             self.pkg_search_repos.append(default_repo)
 
-        self.pkg_upload_repos = self._get_repos(node_artifacts, "upload")
+        self.pkg_upload_repos = self._get_repos(node_packages, "upload")
         if len(self.pkg_upload_repos) == 0:
             self.pkg_upload_repos.append(default_repo)
 

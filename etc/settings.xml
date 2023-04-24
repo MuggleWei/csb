@@ -23,9 +23,9 @@
     </sources>
 
     <!--
-    search/upload artifacts location
+    search/upload packages location
     -->
-    <artifacts>
+    <packages>
         <!--
     	search package location
         -->
@@ -44,12 +44,12 @@
 
             <repo>
                 <kind>local</kind>
-                <path>~/.hpb/artifacts</path>
+                <path>~/.hpb/packages</path>
             </repo>
 
             <repo>
                 <kind>local</kind>
-                <path>~/.local/share/hpb/artifacts</path>
+                <path>~/.local/share/hpb/packages</path>
             </repo>
 
             <!--<repo>-->
@@ -68,11 +68,11 @@
 
             <repo>
                 <kind>local</kind>
-                <path>~/.hpb/artifacts</path>
+                <path>~/.hpb/packages</path>
             </repo>
 
         </upload>
-    </artifacts>
+    </packages>
 
     <!--
     build source if package not exists

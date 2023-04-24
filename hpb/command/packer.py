@@ -20,15 +20,15 @@ class PackerConfig:
 
 class Packer:
     """
-    artifacts packer
+    packer
     """
 
     def __init__(self):
         self._usage_str = "Usage: {0} pack [OPTIONS]\n" \
             "\n" \
             "Options: \n" \
-            "  -o, --copy-to string [OPTIONAL] copy generated artifacts to destination directory\n" \
-            "    , --move-to string [OPTIONAL] move generated artifacts to destination directory, if it's be set, --copy-to will be ignored\n" \
+            "  -o, --copy-to string [OPTIONAL] copy generated packages to destination directory\n" \
+            "    , --move-to string [OPTIONAL] move generated packages to destination directory, if it's be set, --copy-to will be ignored\n" \
             "  -c, --config string  [OPTIONAL] pkg.yml whick builder generated, if not be set, search in current working dir\n" \
             "".format(APP_NAME)
 

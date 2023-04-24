@@ -205,7 +205,7 @@ jobs:
           echo "mission completed";
 ```
 这里特地在书写顺序上调换了 `build` 和 `package` 的位置, 但是注意, 在 `package` 当中, 有一行 `needs: [build]`, 这说明了 `package` 任务依赖于 `build` 的完成.  
-现在让我们运行: `hpb build -c deps.yml -o ./_artifacts`  
+现在让我们运行: `hpb build -c deps.yml -o ./_packages`  
 可以看到如下的输出
 ```
 2023-04-07 23:31:21,127|root|INFO|builder.py:129 - run job: build
@@ -226,7 +226,7 @@ mission completed
 hello.sh
 2023-04-07 23:31:21,178|root|INFO|builder.py:168 - run command: mv hello.tar.gz ${HPB_OUTPUT_DIR}
 ```
-通过上面日志, 我们看到 `run job: build` 确实先于 `run job: package` 被执行. 在上面的命令中, 我么们还指定了 `./_artifacts` 为输出目录, 因此, 你可以在 `./_artifacts` 当中看到构建的结果 `hello.tar.gz`
+通过上面日志, 我们看到 `run job: build` 确实先于 `run job: package` 被执行. 在上面的命令中, 我么们还指定了 `./_packages` 为输出目录, 因此, 你可以在 `./_packages` 当中看到构建的结果 `hello.tar.gz`
 
 ### hpb build - workflow的结构
 到现在为止, 我们已经看到了 `hpb build` 所使用的 `yaml` 大致的模样了. 如果你使用过 github action 亦或是 gitlab ci 应该就很容易理解这种类型的文件结构.  
@@ -235,7 +235,7 @@ hello.sh
 	* name: workflow 的名称
 	* variables: 用于在配置文件中自定义变量
 	* source: 指定源码信息
-	* artifacts: 指定制品信息
+	* packages: 指定制品信息
 	* jobs: workflow 要执行的任务列表, 包含了一系列的 job
 * 每个 job 的名称可以随意取, 但不要重复, job 包含了以下属性
 	* needs: 本任务所依赖的任务列表
@@ -284,8 +284,8 @@ jobs:
           tar -czvf ${pkg_name}.tar.gz ./*;
           mv ${pkg_name}.tar.gz ${HPB_OUTPUT_DIR};
 ```
-执行命令: `hpb build -c googletest.yml -p GIT_TAG=v1.13.0 -p BUILD_TYPE=release -o ./_artifacts`  
-成功结束之后, 我们便可以在 `./_artifacts` 目录当中看到 `googletest-v1.13.0-release.tar.gz`
+执行命令: `hpb build -c googletest.yml -p GIT_TAG=v1.13.0 -p BUILD_TYPE=release -o ./_packages`  
+成功结束之后, 我们便可以在 `./_packages` 目录当中看到 `googletest-v1.13.0-release.tar.gz`
 
 ## 更多
 如果想要更深入的了解 `hpb` 作为 CI 的本地执行器, 可以参考文档 [作为 CI 执行器使用](./as_ci_executor.md)  

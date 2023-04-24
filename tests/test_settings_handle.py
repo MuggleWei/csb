@@ -28,20 +28,20 @@ class TestSettingsHandle(unittest.TestCase):
             Utils.expand_path("~/helloworld/sources")
         )
 
-    def test_artifacts(self):
+    def test_packages(self):
         self._handle.load("./etc/test_settings_handle/settings_art.xml")
 
-        path1 = Utils.expand_path("~/.{}/artifacts".format(APP_NAME))
+        path1 = Utils.expand_path("~/.{}/packages".format(APP_NAME))
         path2 = Utils.expand_path(
-            "~/.local/share/{}/artifacts".format(APP_NAME))
+            "~/.local/share/{}/packages".format(APP_NAME))
         self.assertEqual(len(self._handle.pkg_search_repos), 2)
         self.assertEqual(self._handle.pkg_search_repos[0].kind, "local")
         self.assertEqual(path1, self._handle.pkg_search_repos[0].path)
         self.assertEqual(self._handle.pkg_search_repos[1].kind, "local")
         self.assertEqual(path2, self._handle.pkg_search_repos[1].path)
 
-        path1 = "/var/local/hpb/artifacts"
-        path2 = Utils.expand_path("~/.{}/artifacts".format(APP_NAME))
+        path1 = "/var/local/hpb/packages"
+        path2 = Utils.expand_path("~/.{}/packages".format(APP_NAME))
         self.assertEqual(len(self._handle.pkg_upload_repos), 2)
         self.assertEqual(self._handle.pkg_upload_repos[0].kind, "local")
         self.assertEqual(path1, self._handle.pkg_upload_repos[0].path)
