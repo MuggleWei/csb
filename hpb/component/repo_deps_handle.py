@@ -247,8 +247,6 @@ class RepoDepsHandle:
                 score += 2
             if meta.build_info.fat_pkg is True:
                 score += 2
-            if meta.platform.libc == self.platform.libc:
-                score += 2
 
             meta_build_type = meta.build_info.build_type.lower()
             build_type = self.build_info.build_type.lower()

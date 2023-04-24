@@ -12,6 +12,14 @@ class TestPackageMeta(unittest.TestCase):
             "name": "hpb",
             "maintainer": "mugglewei",
             "tag": "1.0.0",
+            "platform": {
+                "system": "linux",
+                "release": "6.2.9-arch1-1",
+                "version": "#1 SMP PREEMPT_DYNAMIC Thu, 30 Mar 2023 14:51:14 +0000",
+                "machine": "x86_64",
+                "distr_id": "arch",
+                "distr_ver": "",
+            },
             "build": {
                 "build_type": "release",
                 "fat_pkg": False,
@@ -21,16 +29,6 @@ class TestPackageMeta(unittest.TestCase):
                     "cxx": "",
                     "cxx_ver": "",
                 }
-            },
-            "platform": {
-                "system": "linux",
-                "release": "6.2.9-arch1-1",
-                "version": "#1 SMP PREEMPT_DYNAMIC Thu, 30 Mar 2023 14:51:14 +0000",
-                "machine": "x86_64",
-                "distr_id": "arch",
-                "distr_ver": "",
-                "libc_id": "glibc",
-                "libc_ver": "2.37"
             },
             "deps": []
         }
@@ -89,8 +87,6 @@ class TestPackageMeta(unittest.TestCase):
         self.assertEqual(meta_platform.machine, obj_platform["machine"])
         self.assertEqual(meta_platform.distr_id, obj_platform["distr_id"])
         self.assertEqual(meta_platform.distr_ver, obj_platform["distr_ver"])
-        self.assertEqual(meta_platform.libc_id, obj_platform["libc_id"])
-        self.assertEqual(meta_platform.libc_ver, obj_platform["libc_ver"])
 
     def assert_dict_eq(self, obj1, obj2):
         for k, v in obj1.items():

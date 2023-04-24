@@ -43,8 +43,8 @@ class PackageMeta:
             ("name", self.source_info.name),
             ("maintainer", self.source_info.maintainer),
             ("tag", self.source_info.tag),
-            ("build", self.build_info.get_ordered_dict()),
             ("platform", self.platform.get_ordered_dict()),
+            ("build", self.build_info.get_ordered_dict()),
             ("deps", self.deps),
         ])
 

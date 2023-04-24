@@ -10,6 +10,4 @@ platform:
   machine: x86_64
   distr_id: arch
   distr_ver: ''
-  libc_id: glibc
-  libc_ver: 2.37
 deps: []

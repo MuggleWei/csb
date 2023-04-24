@@ -560,7 +560,6 @@ class WorkflowHandle:
         self.inner_var_dict["PLATFORM_VERSION"] = platform_info.version
         self.inner_var_dict["PLATFORM_MACHINE"] = platform_info.machine
         self.inner_var_dict["PLATFORM_DISTR"] = platform_info.distr
-        self.inner_var_dict["PLATFORM_LIBC"] = platform_info.libc
 
     def inner_var_dict_add_git(self, git_info: GitInfo):
         self.inner_var_dict["GIT_REF"] = git_info.ref
