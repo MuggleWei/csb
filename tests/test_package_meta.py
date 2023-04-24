@@ -12,8 +12,10 @@ class TestPackageMeta(unittest.TestCase):
             "name": "hpb",
             "maintainer": "mugglewei",
             "tag": "1.0.0",
-            "build_type": "release",
-            "is_fat_pkg": False,
+            "build": {
+                "build_type": "release",
+                "fat_pkg": False,
+            },
             "platform": {
                 "system": "linux",
                 "release": "6.2.9-arch1-1",
@@ -68,8 +70,10 @@ class TestPackageMeta(unittest.TestCase):
         self.assertEqual(src_info.maintainer, self._obj["maintainer"])
         self.assertEqual(src_info.tag, self._obj["tag"])
 
-        self.assertEqual(pkg_meta.build_type, self._obj["build_type"])
-        self.assertEqual(pkg_meta.is_fat_pkg, self._obj["is_fat_pkg"])
+        meta_build = pkg_meta.build_info
+        obj_build = self._obj["build"]
+        self.assertEqual(meta_build.build_type, obj_build["build_type"])
+        self.assertEqual(meta_build.fat_pkg, obj_build["fat_pkg"])
 
         meta_platform = pkg_meta.platform
         obj_platform = self._obj["platform"]

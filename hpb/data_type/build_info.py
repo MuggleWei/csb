@@ -30,5 +30,5 @@ class BuildInfo:
         """
         load from object
         """
-        self.build_type = obj.get("build_type", "release")
+        self.build_type = obj.get("build_type", "")
         self.fat_pkg = obj.get("fat_pkg", False)

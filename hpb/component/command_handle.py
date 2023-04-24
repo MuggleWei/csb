@@ -3,14 +3,19 @@ import os
 import selectors
 import subprocess
 
-from hpb.utils.singleton import singleton
 from threading import Thread
 
 
-@singleton
 class CommandHandle:
-    def __init__(self):
+    def __init__(self, cb_stdout=None, cb_stderr=None):
+        """
+        init command handle
+        :param cb_stdout: stdout callback function
+        :param cb_stderr: stderr callback function
+        """
         self._command_logger = logging.getLogger("command")
+        self._cb_stdout = cb_stdout
+        self._cb_stderr = cb_stderr
 
     def exec(self, command):
         """
@@ -92,8 +97,12 @@ class CommandHandle:
                 data = data.strip()
                 if filetype == "INFO":
                     self._command_logger.info("{}".format(data))
+                    if self._cb_stdout is not None:
+                        self._cb_stdout(data)
                 else:
                     self._command_logger.error("{}".format(data))
+                    if self._cb_stderr is not None:
+                        self._cb_stderr(data)
 
         t = Thread(target=fanout, args=(infile, filetype))
         t.daemon = True

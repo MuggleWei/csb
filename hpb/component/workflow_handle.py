@@ -49,9 +49,6 @@ class WorkflowHandle:
         # workflow object
         self.yml_obj = WorkflowYaml()
 
-        # command handle
-        self.command_handle = CommandHandle()
-
         self.platform_info = PlatformInfo()
         self.git_info = GitInfo()
 
@@ -63,7 +60,7 @@ class WorkflowHandle:
         # source
         self.src = SourceInfo()
 
-        # extra meta
+        # build info
         self.build_info = BuildInfo()
 
         # deps
@@ -357,8 +354,7 @@ class WorkflowHandle:
         """
         pkg_meta = PackageMeta()
         pkg_meta.source_info = self.src
-        pkg_meta.build_type = self.build_info.build_type
-        pkg_meta.is_fat_pkg = self.build_info.fat_pkg
+        pkg_meta.build_info = self.build_info
         pkg_meta.platform = self.platform_info
         pkg_meta.deps = self.deps
 
@@ -449,7 +445,7 @@ class WorkflowHandle:
 
         repo_deps_handle = RepoDepsHandle(
             self.platform_info,
-            self.build_info.build_type,
+            self.build_info,
         )
 
         if repo_deps_handle.search_all_deps(self.deps) is False:
@@ -473,7 +469,7 @@ class WorkflowHandle:
 
         repo_deps_handle = RepoDepsHandle(
             self.platform_info,
-            self.build_info.build_type,
+            self.build_info,
         )
 
         if repo_deps_handle.search_all_deps(self.test_deps) is False:

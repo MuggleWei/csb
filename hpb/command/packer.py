@@ -99,7 +99,7 @@ class Packer:
         """
         handle fat package
         """
-        if not self.pkg_meta.is_fat_pkg:
+        if not self.pkg_meta.build_info.fat_pkg:
             return
 
         if not os.path.exists(self.deps_dir):

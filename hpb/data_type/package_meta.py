@@ -4,6 +4,7 @@ import os
 
 from typing import OrderedDict
 from hpb.component.yaml_handle import YamlHandle
+from hpb.data_type.build_info import BuildInfo
 from hpb.data_type.platform_info import PlatformInfo
 from hpb.data_type.source_info import SourceInfo
 
@@ -24,8 +25,7 @@ class PackageMeta:
         init package meta
         """
         self.source_info: SourceInfo = SourceInfo()
-        self.build_type = ""
-        self.is_fat_pkg = False
+        self.build_info: BuildInfo = BuildInfo()
         self.platform: PlatformInfo = PlatformInfo()
         self.deps = []
 
@@ -43,8 +43,7 @@ class PackageMeta:
             ("name", self.source_info.name),
             ("maintainer", self.source_info.maintainer),
             ("tag", self.source_info.tag),
-            ("build_type", self.build_type),
-            ("is_fat_pkg", self.is_fat_pkg),
+            ("build", self.build_info.get_ordered_dict()),
             ("platform", self.platform.get_ordered_dict()),
             ("deps", self.deps),
         ])
@@ -54,8 +53,8 @@ class PackageMeta:
         load from object
         """
         self.source_info.load(obj)
-        self.build_type = obj.get("build_type", "")
-        self.is_fat_pkg = obj.get("is_fat_pkg", False)
+        build_obj = obj.get("build", {})
+        self.build_info.load(build_obj)
         platform_obj = obj.get("platform", {})
         self.platform.load(platform_obj)
         self.deps = obj.get("deps", [])
@@ -88,7 +87,7 @@ class PackageMeta:
         """
         return "{}-{}-{}-{}-{}".format(
             self.source_info.tag,
-            self.build_type,
+            self.build_info.build_type,
             self.platform.system,
             self.platform.distr,
             self.platform.machine,
@@ -101,8 +100,8 @@ class PackageMeta:
         filename = "{}".format(self.source_info.name)
         if self.source_info.tag != "":
             filename += "-{}".format(self.source_info.tag)
-        if self.build_type != "":
-            filename += "-{}".format(self.build_type)
+        if self.build_info.build_type != "":
+            filename += "-{}".format(self.build_info.build_type)
         if self.platform.system != "":
             filename += "-{}".format(self.platform.system)
         if self.platform.machine != "":
@@ -128,7 +127,7 @@ class PackageMeta:
         :param build_type: build type
         """
         build_type = build_type.lower()
-        meta_build_type = self.build_type.lower()
+        meta_build_type = self.build_info.build_type.lower()
         if len(build_type) == 0:
             return MetaMatch.ignore
         if len(meta_build_type) == 0:

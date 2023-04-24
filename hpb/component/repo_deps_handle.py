@@ -4,6 +4,7 @@ import typing
 
 from hpb.command.downloader import Downloader, DownloaderConfig
 from hpb.command.searcher import Searcher, SearcherConfig, SearcherResult
+from hpb.data_type.build_info import BuildInfo
 from hpb.data_type.semver_item import SemverItem
 from hpb.data_type.platform_info import PlatformInfo
 
@@ -76,9 +77,9 @@ class RepoDepsHandle:
     def __init__(
             self,
             platform_info: PlatformInfo,
-            build_type: str):
+            build_info: BuildInfo):
         self.platform = platform_info
-        self.build_type = build_type
+        self.build_info = build_info
 
         self.deps: typing.List[DepItem] = []
         self.search_result_dict = {}
@@ -149,7 +150,7 @@ class RepoDepsHandle:
             return False
 
         self.search_result_dict[k] = result
-        if result.meta.is_fat_pkg:
+        if result.meta.build_info.fat_pkg:
             return True
 
         for sub_dep in result.meta.deps:
@@ -244,13 +245,16 @@ class RepoDepsHandle:
                 score += 10
             if meta.platform.distr == self.platform.distr:
                 score += 2
-            if meta.is_fat_pkg is True:
+            if meta.build_info.fat_pkg is True:
                 score += 2
             if meta.platform.libc == self.platform.libc:
                 score += 2
-            if meta.build_type.lower() == self.build_type.lower():
+
+            meta_build_type = meta.build_info.build_type.lower()
+            build_type = self.build_info.build_type.lower()
+            if meta_build_type == build_type:
                 score += 2
-            elif meta.build_type.lower() == "release":
+            elif meta.build_info.build_type.lower() == "release":
                 score += 1
             result_score_dict[result] = score
         return result_score_dict
