@@ -490,13 +490,15 @@ class WorkflowHandle:
             v = build_info_dict[k]
             v = VarReplaceHandle.replace(v, self.all_var_dict)
             if v is None:
-                errmsg = "failed get yml build.{}: {}".format(k, build_info_dict[k])
+                errmsg = "failed get yml build.{}: {}".format(
+                    k, build_info_dict[k])
                 logging.error(errmsg)
                 raise Exception(errmsg)
             build_info_dict[k] = v
 
         if "build_type" not in build_info_dict:
-            build_info_dict["build_type"] = self.guess_build_type(self.all_var_dict)
+            build_info_dict["build_type"] = self.guess_build_type(
+                self.all_var_dict)
 
         self.build_info = BuildInfo()
         self.build_info.load(build_info_dict)

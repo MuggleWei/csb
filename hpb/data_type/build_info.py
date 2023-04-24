@@ -1,6 +1,8 @@
 import json
 from typing import OrderedDict
 
+from hpb.utils.utils import Utils
+
 
 class BuildInfo:
     """
@@ -31,4 +33,6 @@ class BuildInfo:
         load from object
         """
         self.build_type = obj.get("build_type", "")
+
         self.fat_pkg = obj.get("fat_pkg", False)
+        self.fat_pkg = Utils.get_boolean(self.fat_pkg)
