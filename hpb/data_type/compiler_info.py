@@ -65,30 +65,18 @@ class CompilerInfo:
         return self._load_local_gcc_like(cc="musl-gcc", cxx="musl-g++")
 
     def _load_local_gcc_like(self, cc, cxx):
-        output_lines = self._get_infos("{} -dumpversion".format(cc))
-        if output_lines is None:
+        # c compiler
+        outs, errs = CommandHandle().call("{} -dumpversion".format(cc))
+        if len(errs) > 0:
             return False
         self.compiler_c = cc
-        self.compiler_c_ver = output_lines[0]
+        self.compiler_c_ver = outs[0]
 
-        output_lines = self._get_infos("{} -dumpversion".format(cxx))
-        if output_lines is None:
+        # cpp compiler
+        outs, errs = CommandHandle().call("{} -dumpversion".format(cxx))
+        if len(errs) > 0:
             return False
         self.compiler_cpp = cxx
-        self.compiler_cpp_ver = output_lines[0]
+        self.compiler_cpp_ver = outs[0]
 
         return True
-
-    def _get_infos(self, command):
-        """
-        get command return message
-        """
-        out_lines = []
-        err_lines = []
-
-        command_handle = CommandHandle()
-        command_handle.exec_and_get_ret(command, out_lines, err_lines)
-        if len(err_lines) > 0:
-            return None
-
-        return out_lines

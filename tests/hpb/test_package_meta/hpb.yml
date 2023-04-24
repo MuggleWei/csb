@@ -16,4 +16,7 @@ build:
     cc_ver: ''
     cxx: ''
     cxx_ver: ''
+  link:
+    libc: ''
+    libc_ver: ''
 deps: []

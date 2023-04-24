@@ -5,6 +5,7 @@ import platform
 
 from typing import OrderedDict
 from hpb.data_type.compiler_info import CompilerInfo
+from hpb.data_type.link_info import LinkInfo
 from hpb.utils.utils import Utils
 
 
@@ -17,6 +18,7 @@ class BuildInfo:
         self.build_type = ""
         self.fat_pkg = False
         self.compiler_info = CompilerInfo()
+        self.link_info = LinkInfo()
 
     def __str__(self) -> str:
         return json.dumps(self.get_ordered_dict(), indent=2)
@@ -32,6 +34,7 @@ class BuildInfo:
             ("build_type", self.build_type),
             ("fat_pkg", self.fat_pkg),
             ("compiler", self.compiler_info.get_ordered_dict()),
+            ("link", self.link_info.get_ordered_dict()),
         ])
 
     def load(self, obj):
@@ -44,6 +47,7 @@ class BuildInfo:
         self.fat_pkg = Utils.get_boolean(self.fat_pkg)
 
         self.compiler_info.load(obj.get("compiler", {}))
+        self.link_info.load(obj.get("link", {}))
 
     def complement(self):
         """
@@ -61,7 +65,10 @@ class BuildInfo:
         if curr_sys == "windows":
             pass
         else:
-            return self._complement_compiler_unix_like()
+            if len(self.compiler_info.compiler_c) == 0:
+                self._complement_compiler_unix_like()
+            if len(self.link_info.libc) == 0:
+                self._complement_link_unix_like()
 
     def _complement_compiler_unix_like(self):
         """
@@ -77,3 +84,9 @@ class BuildInfo:
             if self.compiler_info.load_local_clang() is True:
                 return True
         return False
+
+    def _complement_link_unix_like(self):
+        """
+        complement unix-like link information
+        """
+        self.link_info.load_local_libc()

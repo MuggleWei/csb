@@ -28,6 +28,10 @@ class TestPackageMeta(unittest.TestCase):
                     "cc_ver": "",
                     "cxx": "",
                     "cxx_ver": "",
+                },
+                "link": {
+                    "libc": "",
+                    "libc_ver": "",
                 }
             },
             "deps": []

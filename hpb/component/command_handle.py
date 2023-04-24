@@ -73,6 +73,18 @@ class CommandHandle:
         self._cb_stderr = cb_stderr
         return self.exec(command)
 
+    def call(self, command):
+        """
+        exec command, return output lines and err lines
+        """
+        out_lines = []
+        err_lines = []
+
+        command_handle = CommandHandle()
+        command_handle.exec_and_get_ret(command, out_lines, err_lines)
+
+        return out_lines, err_lines
+
     def _exec_subporcess(self, p):
         """
         exec subprocess
