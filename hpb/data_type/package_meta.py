@@ -48,6 +48,50 @@ class PackageMeta:
             ("deps", self.deps),
         ])
 
+    def get_desc(self):
+        """
+        get desc string
+        """
+        desc_list = []
+        # desc_list.append("maintainer={}".format(self.source_info.maintainer))
+        # desc_list.append("name={}".format(self.source_info.name))
+        # desc_list.append("tag={}".format(self.source_info.tag))
+        desc_list.append("system={}".format(self.platform.system))
+        desc_list.append("machine={}".format(self.platform.machine))
+        if self.platform.system == "linux":
+            distr = ""
+            if len(self.platform.distr_id) > 0:
+                distr += self.platform.distr_id
+            if len(self.platform.distr_ver) > 0:
+                distr += "-{}".format(self.platform.distr_ver)
+            desc_list.append("dist={}".format(distr))
+        desc_list.append("build_type={}".format(self.build_info.build_type))
+        desc_list.append("fat_pkg={}".format(self.build_info.fat_pkg))
+        if self.platform.system != "windows":
+            cc = ""
+            if len(self.build_info.compiler_info.compiler_c) > 0:
+                cc += self.build_info.compiler_info.compiler_c
+            if len(self.build_info.compiler_info.compiler_c_ver) > 0:
+                cc += "-{}".format(self.build_info.compiler_info.compiler_c_ver)
+            desc_list.append("cc={}".format(cc))
+
+            cxx = ""
+            if len(self.build_info.compiler_info.compiler_cpp) > 0:
+                cxx += self.build_info.compiler_info.compiler_cpp
+            if len(self.build_info.compiler_info.compiler_cpp_ver) > 0:
+                cxx += "-{}".format(
+                    self.build_info.compiler_info.compiler_cpp_ver)
+            desc_list.append("cxx={}".format(cxx))
+
+            libc = ""
+            if len(self.build_info.link_info.libc) > 0:
+                libc += self.build_info.link_info.libc
+            if len(self.build_info.link_info.libc_ver) > 0:
+                libc += "-{}".format(self.build_info.link_info.libc_ver)
+            desc_list.append("libc={}".format(libc))
+
+        return ", ".join(desc_list)
+
     def load(self, obj):
         """
         load from object

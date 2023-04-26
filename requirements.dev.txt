@@ -1,5 +1,6 @@
 pyyaml==6.0
 distro==1.8.0
+rich==13.3.4
 
 pynvim==0.4.3
 pyinstaller==5.9.0

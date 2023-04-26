@@ -5,6 +5,7 @@ from hpb.data_type.package_meta import PackageMeta
 
 class PackageInfo:
     def __init__(self):
+        self.repo_type = ""  # local or remote
         self.path = ""
         self.meta = PackageMeta()
 

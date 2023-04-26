@@ -75,7 +75,7 @@ class MapperPkg:
 
         if len(cond_list) > 0:
             cond_str = " AND ".join(cond_list)
-            sqlstr = self.qry_sqlstr + "WHERE {}".format(cond_str)
+            sqlstr = self.qry_sqlstr + " WHERE {}".format(cond_str)
         else:
             sqlstr = self.qry_sqlstr
 
@@ -92,6 +92,65 @@ class MapperPkg:
             infos.append(info)
 
         return infos
+
+    def query_tags(self, conn, qry: PackageInfo) -> typing.List[str]:
+        """
+        query versions
+        """
+        src_info = qry.meta.source_info
+        sqlstr = \
+            "SELECT tag from {} " \
+            "WHERE maintainer='{}' AND name='{}' " \
+            "GROUP BY maintainer, name".format(
+                self.table_name, src_info.maintainer, src_info.name
+            )
+
+        tags = []
+        cursor = conn.cursor()
+        cursor.execute(sqlstr)
+        for row in cursor:
+            tags.append(row[0])
+        return tags
+
+    def query_maintainer_repos(
+            self, conn, qry: PackageInfo) -> typing.List[str]:
+        """
+        query maintainer's repositories
+        """
+        src_info = qry.meta.source_info
+        sqlstr = \
+            "SELECT name from {} " \
+            "WHERE maintainer='{}' " \
+            "GROUP BY name".format(
+                self.table_name, src_info.maintainer
+            )
+
+        repos = []
+        cursor = conn.cursor()
+        cursor.execute(sqlstr)
+        for row in cursor:
+            repos.append(row[0])
+        return repos
+
+    def query_repos(
+            self, conn, qry: PackageInfo) -> typing.List[str]:
+        """
+        query maintainer's repositories
+        """
+        src_info = qry.meta.source_info
+        sqlstr = \
+            "SELECT maintainer from {} " \
+            "WHERE name='{}' " \
+            "GROUP BY maintainer".format(
+                self.table_name, src_info.name
+            )
+
+        maintainers = []
+        cursor = conn.cursor()
+        cursor.execute(sqlstr)
+        for row in cursor:
+            maintainers.append(row[0])
+        return maintainers
 
     def insert(self, conn, pkg_infos: typing.List[PackageInfo]):
         """

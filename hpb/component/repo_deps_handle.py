@@ -3,7 +3,7 @@ import logging
 import typing
 
 from hpb.command.downloader import Downloader, DownloaderConfig
-from hpb.command.searcher import Searcher, SearcherConfig, SearcherResult
+from hpb.command.searcher import Searcher, SearcherConfig, PackageInfo
 from hpb.data_type.build_info import BuildInfo
 from hpb.data_type.semver_item import SemverItem
 from hpb.data_type.platform_info import PlatformInfo
@@ -129,7 +129,7 @@ class RepoDepsHandle:
         for repo_id, tag in repo_dict.items():
             maintainer, repo, _ = repo_id.split("$")
             key = self._gen_key(maintainer, repo, tag)
-            result: SearcherResult = self.search_result_dict[key]
+            result: PackageInfo = self.search_result_dict[key]
             if self._download_dep(result, download_dir) is False:
                 logging.error("failed download: \n{}".format(result.path))
                 return False
@@ -164,7 +164,7 @@ class RepoDepsHandle:
 
     def _download_dep(
             self,
-            search_result: SearcherResult,
+            search_result: PackageInfo,
             download_dir):
         """
         download deps
@@ -195,7 +195,7 @@ class RepoDepsHandle:
         """
         return k.split("$")
 
-    def _search(self, dep: DepItem) -> typing.Optional[SearcherResult]:
+    def _search(self, dep: DepItem) -> typing.Optional[PackageInfo]:
         """
         search dependency
         """
@@ -225,7 +225,7 @@ class RepoDepsHandle:
                 ]
                 return score_list[0][0]
 
-    def _rank_search_result(self, search_result: typing.List[SearcherResult]):
+    def _rank_search_result(self, search_result: typing.List[PackageInfo]):
         """
         rank search result
         """
