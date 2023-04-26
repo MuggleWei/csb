@@ -6,6 +6,7 @@ from typing import OrderedDict
 from hpb.component.yaml_handle import YamlHandle
 from hpb.data_type.build_info import BuildInfo
 from hpb.data_type.platform_info import PlatformInfo
+from hpb.data_type.semver_item import SemverItem
 from hpb.data_type.source_info import SourceInfo
 
 
@@ -125,12 +126,33 @@ class PackageMeta:
         yaml_handle = YamlHandle()
         yaml_handle.write(filepath, obj)
 
+    def gen_pkg_dirpath(self):
+        """
+        generate package directory path
+        """
+        dirpath = os.path.join(
+            self.source_info.maintainer, self.source_info.name)
+        semver = SemverItem()
+        if semver.load(self.source_info.tag) is False:
+            v = self.source_info.tag.split("_")
+            if len(v) == 2:
+                branch = v[0]
+                commit_id = v[1]
+                dirpath = os.path.join(dirpath, branch, commit_id)
+            else:
+                dirpath = os.path.join(dirpath, self.source_info.tag)
+        else:
+            dirpath = os.path.join(dirpath, self.source_info.tag)
+
+        dirname = self.gen_pkg_dirname()
+
+        return os.path.join(dirpath, dirname)
+
     def gen_pkg_dirname(self):
         """
         generate package dir name
         """
-        return "{}-{}-{}-{}-{}".format(
-            self.source_info.tag,
+        return "{}-{}-{}-{}".format(
             self.build_info.build_type,
             self.platform.system,
             self.platform.distr,

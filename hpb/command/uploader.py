@@ -58,19 +58,17 @@ class Uploader:
 
         for output_repo in SettingsHandle().pkg_upload_repos:
             if output_repo.kind == "local":
-                dir_name = self.pkg_meta.gen_pkg_dirname()
-                art_output_dir = os.path.join(
+                dirpath = self.pkg_meta.gen_pkg_dirpath()
+                dirpath = os.path.join(
                     output_repo.path,
-                    self.pkg_meta.source_info.maintainer,
-                    self.pkg_meta.source_info.name,
-                    dir_name,
+                    dirpath
                 )
-                if os.path.exists(art_output_dir):
-                    shutil.rmtree(art_output_dir)
+                if os.path.exists(dirpath):
+                    shutil.rmtree(dirpath)
 
                 logging.info(
-                    "push {} -> {}".format(self.pkg_dir, art_output_dir))
-                shutil.copytree(self.pkg_dir, art_output_dir)
+                    "push {} -> {}".format(self.pkg_dir, dirpath))
+                shutil.copytree(self.pkg_dir, dirpath)
             else:
                 logging.warning(
                     "Artifacts push to remote repo currently not support")
