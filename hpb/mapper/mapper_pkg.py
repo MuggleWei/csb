@@ -1,3 +1,4 @@
+import functools
 import json
 import logging
 import sqlite3
@@ -5,6 +6,7 @@ import time
 import typing
 
 from hpb.data_type.package_info import PackageInfo
+from hpb.data_type.semver_item import SemverItem
 from hpb.utils.utils import Utils
 
 
@@ -77,7 +79,26 @@ class MapperPkg:
             info.repo_type = "local"
             infos.append(info)
 
+        infos.sort(key=lambda x: x.ts, reverse=True)
+
         return infos
+
+    def _compare_tag(self, x, y):
+        """
+        sort tag key
+        """
+        semver_x = SemverItem()
+        ret_x = semver_x.load(x)
+        semver_y = SemverItem()
+        ret_y = semver_y.load(y)
+        if ret_x is True and ret_y is False:
+            return 1
+        elif ret_x is False and ret_y is False:
+            return -1
+        elif ret_x is False and ret_y is False:
+            return 0
+
+        return semver_x.compare(semver_y)
 
     def query_tags(self, conn, qry: PackageInfo) -> typing.List[str]:
         """
@@ -96,6 +117,7 @@ class MapperPkg:
         cursor.execute(sqlstr)
         for row in cursor:
             tags.append(row[0])
+        tags.sort(key=functools.cmp_to_key(self._compare_tag), reverse=True)
         return tags
 
     def query_maintainer_repos(
