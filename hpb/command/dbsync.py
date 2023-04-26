@@ -1,5 +1,4 @@
 import getopt
-import json
 import logging
 import os
 import sys
@@ -72,38 +71,21 @@ class DbSync:
         """
         logging.info("# start add new package info to db")
         dirpath_set = set()
-        db_pkg_meta_dict = {}
         for pkg_info in db_pkg_infos:
             dirpath_set.add(pkg_info.path)
-            s = json.dumps(pkg_info.meta.get_ordered_dict())
-            hash_key = hash(s)
-            if hash_key in db_pkg_meta_dict:
-                logging.warning("hash collision: {} and {}".format(
-                    pkg_info.path, db_pkg_meta_dict[hash_key]
-                ))
-            db_pkg_meta_dict[hash_key] = pkg_info
 
         new_pkg_infos: typing.List[PackageInfo] = []
         for pkg_info in local_pkg_infos:
             if pkg_info.path in dirpath_set:
                 continue
-
-            s = json.dumps(pkg_info.meta.get_ordered_dict())
-            hash_key = hash(s)
-            if hash_key in db_pkg_meta_dict:
-                logging.warning(
-                    "path not in db but meta already exists: {}".format(
-                        pkg_info.path
-                    ))
-                continue
-
             logging.info("find new package in path: {}".format(pkg_info.path))
             new_pkg_infos.append(pkg_info)
 
-        db_path = SettingsHandle().db_path
-        with DBHandle(db_path, isolation_level="EXCLUSIVE") as db_handle:
-            mapper_pkg = MapperPkg()
-            mapper_pkg.insert(db_handle.conn, new_pkg_infos)
+        if len(new_pkg_infos) > 0:
+            db_path = SettingsHandle().db_path
+            with DBHandle(db_path, isolation_level="EXCLUSIVE") as db_handle:
+                mapper_pkg = MapperPkg()
+                mapper_pkg.insert(db_handle.conn, new_pkg_infos)
 
         logging.info("# completed add new package info to db")
 

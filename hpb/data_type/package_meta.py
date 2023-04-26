@@ -54,9 +54,9 @@ class PackageMeta:
         get desc string
         """
         desc_list = []
-        # desc_list.append("maintainer={}".format(self.source_info.maintainer))
-        # desc_list.append("name={}".format(self.source_info.name))
-        # desc_list.append("tag={}".format(self.source_info.tag))
+        desc_list.append("maintainer={}".format(self.source_info.maintainer))
+        desc_list.append("name={}".format(self.source_info.name))
+        desc_list.append("tag={}".format(self.source_info.tag))
         desc_list.append("system={}".format(self.platform.system))
         desc_list.append("machine={}".format(self.platform.machine))
         if self.platform.system == "linux":

@@ -1,6 +1,9 @@
 import json
 import logging
+import sqlite3
+import time
 import typing
+
 from hpb.data_type.package_info import PackageInfo
 from hpb.utils.utils import Utils
 
@@ -15,10 +18,7 @@ class MapperPkg:
         self.qry_sqlstr = \
             "SELECT " \
             "dirpath, maintainer, name, tag, " \
-            "sys, sys_release, sys_ver, machine, " \
-            "distr_id, distr_ver, build_type, fat_pkg, " \
-            "cc, cc_ver, cxx, cxx_ver, " \
-            "libc, libc_ver " \
+            "hash_val, update_ts " \
             "from {} ".format(self.table_name)
 
     def create_table(self, conn):
@@ -31,25 +31,10 @@ class MapperPkg:
             "maintainer TEXT NOT NULL," \
             "name TEXT NOT NULL," \
             "tag TEXT NOT NULL," \
-            "sys TEXT NOT NULL, " \
-            "sys_release TEXT NOT NULL, " \
-            "sys_ver TEXT NOT NULL, " \
-            "machine TEXT NOT NULL, " \
-            "distr_id TEXT NOT NULL, " \
-            "distr_ver TEXT NOT NULL, " \
-            "build_type TEXT NOT NULL," \
-            "fat_pkg BOOLEAN NOT NULL," \
-            "cc TEXT," \
-            "cc_ver TEXT," \
-            "cxx TEXT," \
-            "cxx_ver TEXT," \
-            "libc TEXT," \
-            "libc_ver TEXT," \
-            "update_time int)".format(self.table_name)
-        cursor.execute(sqlstr)
-
-        sqlstr = "CREATE INDEX IF NOT EXISTS idx_repo ON {} (maintainer, name, tag)".format(
-            self.table_name)
+            "hash_val TEXT NOT NULL, " \
+            "update_ts INT NOT NULL, " \
+            "PRIMARY KEY(maintainer, name, tag, hash_val) " \
+            ")".format(self.table_name)
         cursor.execute(sqlstr)
 
         sqlstr = "CREATE INDEX IF NOT EXISTS idx_path ON {} (dirpath)".format(
@@ -62,8 +47,6 @@ class MapperPkg:
         query package infos
         """
         src_info = qry.meta.source_info
-        build_info = qry.meta.build_info
-        plt_info = qry.meta.platform
 
         cond_list = []
         if len(qry.path) != 0:
@@ -74,16 +57,6 @@ class MapperPkg:
             cond_list.append("name='{}'".format(src_info.name))
         if len(src_info.tag) != 0:
             cond_list.append("tag='{}'".format(src_info.tag))
-
-        if len(build_info.build_type) != 0:
-            cond_list.append("build_type='{}'".format(build_info.build_type))
-
-        if len(plt_info.system) != 0:
-            cond_list.append("sys='{}'".format(plt_info.system))
-        if len(plt_info.distr_id) != 0:
-            cond_list.append("distr_id='{}'".format(plt_info.distr_id))
-        if len(plt_info.machine) != 0:
-            cond_list.append("machine='{}'".format(plt_info.machine))
 
         if len(cond_list) > 0:
             cond_str = " AND ".join(cond_list)
@@ -172,15 +145,9 @@ class MapperPkg:
         sqlstr = \
             "INSERT INTO {} (" \
             "dirpath, maintainer, name, tag, " \
-            "sys, sys_release, sys_ver, machine, " \
-            "distr_id, distr_ver, build_type, fat_pkg, " \
-            "cc, cc_ver, cxx, cxx_ver, " \
-            "libc, libc_ver " \
+            "hash_val, update_ts" \
             ") " \
             "VALUES (" \
-            "?, ?, ?, ?, " \
-            "?, ?, ?, ?, " \
-            "?, ?, ?, ?, " \
             "?, ?, ?, ?, " \
             "?, ?" \
             ")" \
@@ -192,9 +159,22 @@ class MapperPkg:
             rows.append(row)
 
         cursor = conn.cursor()
-        cursor.executemany(sqlstr, rows)
+        # insert one by one for see which one insert error
+        # cursor.executemany(sqlstr, rows)
+        rowcnt = 0
+        errcnt = 0
+        for row in rows:
+            try:
+                logging.info("insert row: {}".format(row))
+                cursor.execute(sqlstr, row)
+            except sqlite3.IntegrityError as e:
+                logging.error("sqlite error: {}".format(e.args[0]))
+                errcnt += 1
+                continue
+            rowcnt += cursor.rowcount
 
-        logging.info("insert affect row count: {}".format(cursor.rowcount))
+        logging.info("insert total affect row count: {}".format(rowcnt))
+        logging.info("error insert row count: {}".format(errcnt))
         conn.commit()
 
     def remove_by_dirpath(self, conn, dirpath):
@@ -229,41 +209,12 @@ class MapperPkg:
         idx += 1
         info.meta.source_info.tag = row[idx]
 
-        # platform
+        # hash value
         idx += 1
-        info.meta.platform.system = row[idx]
-        idx += 1
-        info.meta.platform.release = row[idx]
-        idx += 1
-        info.meta.platform.version = row[idx]
-        idx += 1
-        info.meta.platform.machine = row[idx]
-        idx += 1
-        info.meta.platform.distr_id = row[idx]
-        idx += 1
-        info.meta.platform.distr_ver = row[idx]
 
-        # build
+        # update ts
         idx += 1
-        info.meta.build_info.build_type = row[idx]
-        idx += 1
-        info.meta.build_info.fat_pkg = row[idx]
-
-        # build.compiler
-        idx += 1
-        info.meta.build_info.compiler_info.compiler_c = row[idx]
-        idx += 1
-        info.meta.build_info.compiler_info.compiler_c_ver = row[idx]
-        idx += 1
-        info.meta.build_info.compiler_info.compiler_cpp = row[idx]
-        idx += 1
-        info.meta.build_info.compiler_info.compiler_cpp_ver = row[idx]
-
-        # build.link
-        idx += 1
-        info.meta.build_info.link_info.libc = row[idx]
-        idx += 1
-        info.meta.build_info.link_info.libc_ver = row[idx]
+        info.ts = row[idx]
 
         return info
 
@@ -272,15 +223,7 @@ class MapperPkg:
         serialize
         """
         source = pkg_info.meta.source_info
-        plt = pkg_info.meta.platform
-        build = pkg_info.meta.build_info
-        compiler = build.compiler_info
-        link = build.link_info
         return (
             pkg_info.path, source.maintainer, source.name, source.tag,
-            plt.system, plt.release, plt.version, plt.machine,
-            plt.distr_id, plt.distr_ver, build.build_type, build.fat_pkg,
-            compiler.compiler_c, compiler.compiler_c_ver,
-            compiler.compiler_cpp, compiler.compiler_cpp_ver,
-            link.libc, link.libc_ver
+            pkg_info.hash_val(), int(time.time())
         )
