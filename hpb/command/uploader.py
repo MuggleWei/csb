@@ -3,11 +3,14 @@ import logging
 import os
 import shutil
 import sys
+from hpb.component.db_handle import DBHandle
 
 from hpb.component.settings_handle import SettingsHandle
 from hpb.component.yaml_handle import YamlHandle
 from hpb.data_type.constant_var import APP_NAME
+from hpb.data_type.package_info import PackageInfo
 from hpb.data_type.package_meta import PackageMeta
+from hpb.mapper.mapper_pkg import MapperPkg
 from hpb.utils.utils import Utils
 
 
@@ -69,6 +72,15 @@ class Uploader:
                 logging.info(
                     "push {} -> {}".format(self.pkg_dir, dirpath))
                 shutil.copytree(self.pkg_dir, dirpath)
+
+                pkg_info = PackageInfo()
+                pkg_info.path = dirpath
+                pkg_info.meta = self.pkg_meta
+                db_path = SettingsHandle().db_path
+                with DBHandle(db_path, isolation_level="EXCLUSIVE") as \
+                        db_handle:
+                    mapper_pkg = MapperPkg()
+                    mapper_pkg.insert(db_handle.conn, [pkg_info])
             else:
                 logging.warning(
                     "Artifacts push to remote repo currently not support")

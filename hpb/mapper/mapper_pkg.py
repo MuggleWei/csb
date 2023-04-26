@@ -223,7 +223,8 @@ class MapperPkg:
         serialize
         """
         source = pkg_info.meta.source_info
+        tag = source.get_tag_id()[0]
         return (
-            pkg_info.path, source.maintainer, source.name, source.tag,
+            pkg_info.path, source.maintainer, source.name, tag,
             pkg_info.hash_val(), int(time.time())
         )

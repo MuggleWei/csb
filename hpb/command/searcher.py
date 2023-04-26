@@ -1,3 +1,4 @@
+import datetime
 import getopt
 import logging
 import os
@@ -125,7 +126,12 @@ class Searcher:
         tree = Tree(root_name)
 
         for pkg_info in results:
-            node = "{}\n({})\n".format(pkg_info.path, pkg_info.meta.get_desc())
+            dt = datetime.datetime.utcfromtimestamp(pkg_info.ts)
+            node = "{}\n({})\n[{}]\n".format(
+                pkg_info.path,
+                pkg_info.meta.get_desc(),
+                dt.strftime("%Y-%m-%dT%H:%M:%S")
+            )
             tree.add(node)
 
         if len(results) == 0:
