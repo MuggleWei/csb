@@ -15,7 +15,7 @@ class MapperPkg:
         self.qry_sqlstr = \
             "SELECT " \
             "dirpath, maintainer, name, tag, " \
-            "sys, sys_release, sys_ver, machine_arch, " \
+            "sys, sys_release, sys_ver, machine, " \
             "distr_id, distr_ver, build_type, fat_pkg, " \
             "cc, cc_ver, cxx, cxx_ver, " \
             "libc, libc_ver " \
@@ -34,7 +34,7 @@ class MapperPkg:
             "sys TEXT NOT NULL, " \
             "sys_release TEXT NOT NULL, " \
             "sys_ver TEXT NOT NULL, " \
-            "machine_arch TEXT NOT NULL, " \
+            "machine TEXT NOT NULL, " \
             "distr_id TEXT NOT NULL, " \
             "distr_ver TEXT NOT NULL, " \
             "build_type TEXT NOT NULL," \
@@ -62,6 +62,8 @@ class MapperPkg:
         query package infos
         """
         src_info = qry.meta.source_info
+        build_info = qry.meta.build_info
+        plt_info = qry.meta.platform
 
         cond_list = []
         if len(qry.path) != 0:
@@ -72,6 +74,16 @@ class MapperPkg:
             cond_list.append("name='{}'".format(src_info.name))
         if len(src_info.tag) != 0:
             cond_list.append("tag='{}'".format(src_info.tag))
+
+        if len(build_info.build_type) != 0:
+            cond_list.append("build_type='{}'".format(build_info.build_type))
+
+        if len(plt_info.system) != 0:
+            cond_list.append("sys='{}'".format(plt_info.system))
+        if len(plt_info.distr_id) != 0:
+            cond_list.append("distr_id='{}'".format(plt_info.distr_id))
+        if len(plt_info.machine) != 0:
+            cond_list.append("machine='{}'".format(plt_info.machine))
 
         if len(cond_list) > 0:
             cond_str = " AND ".join(cond_list)
@@ -89,6 +101,7 @@ class MapperPkg:
             if Utils.compare_db_cond(info_dict, qry_dict) is False:
                 logging.info("ignore: {}".format(json.dumps(info.path)))
                 continue
+            info.repo_type = "local"
             infos.append(info)
 
         return infos
@@ -159,7 +172,7 @@ class MapperPkg:
         sqlstr = \
             "INSERT INTO {} (" \
             "dirpath, maintainer, name, tag, " \
-            "sys, sys_release, sys_ver, machine_arch, " \
+            "sys, sys_release, sys_ver, machine, " \
             "distr_id, distr_ver, build_type, fat_pkg, " \
             "cc, cc_ver, cxx, cxx_ver, " \
             "libc, libc_ver " \

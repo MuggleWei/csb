@@ -48,7 +48,7 @@ class Searcher:
             "There are 4 mode for search\n" \
             "1. list packages: maintainer + name + ver\n" \
             "e.g.\n" \
-            "  {0} search --maintainer google --name googletest --ver v1.13.0\n" \
+            "  {0} search -m google -n googletest -v v1.13.0\n" \
             "  google/googletest@v1.13.0\n" \
             "  │\n" \
             "  ├──── ~/.hpb/packages/google/googletest/v1.13.0-debug-linux-arch-x86_64\n" \
@@ -60,7 +60,7 @@ class Searcher:
             "\n" \
             "2. list versions: maintainer + name\n" \
             "e.g.\n" \
-            "  {0} search --maintainer google --name googletest\n" \
+            "  {0} search -m google -n googletest\n" \
             "  google/googletest\n" \
             "  ├──── v1.13.0\n" \
             "  ├──── v1.12.0\n" \
@@ -68,7 +68,7 @@ class Searcher:
             "\n" \
             "3. list maintainer's repositories: maintainer\n" \
             "e.g.\n" \
-            "  {0} search --maintainer google\n" \
+            "  {0} search -m google\n" \
             "  google\n" \
             "  ├──── brotli\n" \
             "  ├──── googletest\n" \
@@ -76,6 +76,7 @@ class Searcher:
             "  ......\n" \
             "\n" \
             "4. list repositories: name\n" \
+            "  {0} search -n googletest\n" \
             "e.g.\n" \
             "  googletest\n" \
             "  ├──── google/googletest\n" \
@@ -235,6 +236,10 @@ class Searcher:
         qry.meta.source_info.maintainer = self.cfg.maintainer
         qry.meta.source_info.name = self.cfg.name
         qry.meta.source_info.tag = self.cfg.tag
+        qry.meta.build_info.build_type = self.cfg.build_type
+        qry.meta.platform.system = self.cfg.system_name
+        qry.meta.platform.distr_id = self.cfg.distr
+        qry.meta.platform.machine = self.cfg.machine
         db_path = SettingsHandle().db_path
         with DBHandle(db_path, isolation_level="EXCLUSIVE") as db_handle:
             mapper_pkg = MapperPkg()
