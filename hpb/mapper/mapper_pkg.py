@@ -114,7 +114,7 @@ class MapperPkg:
         sqlstr = \
             "SELECT tag from {} " \
             "WHERE maintainer='{}' AND name='{}' " \
-            "GROUP BY maintainer, name".format(
+            "GROUP BY tag".format(
                 self.table_name, src_info.maintainer, src_info.name
             )
 

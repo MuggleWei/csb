@@ -95,7 +95,8 @@ class Downloader:
         if dest.endswith("tar.gz"):
             dest = os.path.dirname(dest)
 
-        filename = os.path.basename(cfg.path)
+        pkg_filepath = self._get_pkg_filepath(cfg.path)
+        filename = os.path.basename(pkg_filepath)
 
         origin_dir = os.path.abspath(os.curdir)
         os.chdir(dest)
@@ -110,22 +111,7 @@ class Downloader:
         """
         download local packages
         """
-        self.cfg.path = Utils.expand_path(self.cfg.path)
-        if os.path.isdir(self.cfg.path):
-            files = os.listdir(self.cfg.path)
-            candidates = []
-            for f in files:
-                if f.endswith("tar.gz"):
-                    candidates.append(f)
-            if len(candidates) == 0:
-                logging.error("failed find package in {}".format(self.cfg.path))
-                return False
-            if len(candidates) > 1:
-                logging.error("multiple package in {}".format(self.cfg.path))
-                return False
-            pkg_filepath = os.path.join(self.cfg.path, candidates[0])
-        else:
-            pkg_filepath = self.cfg.path
+        pkg_filepath = self._get_pkg_filepath(self.cfg.path)
 
         dest = Utils.expand_path(self.cfg.dest)
         if dest.endswith("tar.gz"):
@@ -139,6 +125,30 @@ class Downloader:
         shutil.copy(pkg_filepath, dest)
 
         return True
+
+    def _get_pkg_filepath(self, pkg_path) -> str:
+        """
+        get real package filepath
+        """
+        pkg_path = Utils.expand_path(pkg_path)
+        if os.path.isdir(pkg_path):
+            files = os.listdir(pkg_path)
+            candidates = []
+            for f in files:
+                if f.endswith("tar.gz"):
+                    candidates.append(f)
+            if len(candidates) == 0:
+                errmsg = "failed find package in {}".format(pkg_path)
+                logging.error(errmsg)
+                raise Exception(errmsg)
+            if len(candidates) > 1:
+                errmsg = "multiple package in {}".format(pkg_path)
+                logging.error(errmsg)
+                raise Exception(errmsg)
+            pkg_filepath = os.path.join(self.cfg.path, candidates[0])
+        else:
+            pkg_filepath = self.cfg.path
+        return pkg_filepath
 
     def _parse_args(self, args):
         """

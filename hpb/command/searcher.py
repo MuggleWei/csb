@@ -236,20 +236,53 @@ class Searcher:
         qry.meta.source_info.maintainer = self.cfg.maintainer
         qry.meta.source_info.name = self.cfg.name
         qry.meta.source_info.tag = self.cfg.tag
-        qry.meta.build_info.build_type = self.cfg.build_type
-        qry.meta.platform.system = self.cfg.system_name
-        qry.meta.platform.distr_id = self.cfg.distr
-        qry.meta.platform.machine = self.cfg.machine
         db_path = SettingsHandle().db_path
         with DBHandle(db_path, isolation_level="EXCLUSIVE") as db_handle:
             mapper_pkg = MapperPkg()
             curr_results = mapper_pkg.query(db_handle.conn, qry)
             results.extend(curr_results)
+        for result in results:
+            pkg_meta_filepath = os.path.join(result.path, "hpb.yml")
+            pkg_meta = PackageMeta()
+            pkg_meta.load_from_file(pkg_meta_filepath)
+            if self._filter_pkg_meta(qry.meta, pkg_meta) is False:
+                continue
+            result.meta = pkg_meta
 
         # search remote
         # TODO:
 
         return results
+
+    def _filter_pkg_meta(self, qry_meta: PackageMeta, pkg_meta: PackageMeta):
+        """
+        filter package meta
+        """
+        if len(qry_meta.build_info.build_type) > 0:
+            qry_build_type = qry_meta.build_info.build_type.lower()
+            pkg_build_type = pkg_meta.build_info.build_type.lower()
+            if qry_build_type != pkg_build_type:
+                return False
+
+        if len(qry_meta.platform.system) > 0:
+            qry_system = qry_meta.platform.system.lower()
+            pkg_system = pkg_meta.platform.system.lower()
+            if qry_system != pkg_system:
+                return False
+
+        if len(qry_meta.platform.distr_id) > 0:
+            qry_distr_id = qry_meta.platform.system.lower()
+            pkg_distr_id = pkg_meta.platform.distr_id.lower()
+            if qry_distr_id != pkg_distr_id:
+                return False
+
+        if len(qry_meta.platform.machine) > 0:
+            qry_machine = qry_meta.platform.system.lower()
+            pkg_machine = pkg_meta.platform.machine.lower()
+            if qry_machine != pkg_machine:
+                return False
+
+        return True
 
     def _search_candidate_local(self, repo: RepoConfig) \
             -> typing.List[PackageInfo]:
