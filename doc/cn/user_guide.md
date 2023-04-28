@@ -1,7 +1,8 @@
 - [HPB 使用指南](#hpb-使用指南)
   - [概览](#概览)
     - [示例01: Hello World](#示例01-hello-world)
-    - [示例02: var](#示例02-var)
+    - [示例02: inner variables](#示例02-inner-variables)
+- [TODO:](#todo)
 
 # HPB 使用指南
 在开始阅读本指南时, 请先确认 `hpb` 已正确安装, 如果尚未安装, 可以跳转至 [安装](../../README_cn.md#安装) 文档查看  
@@ -39,7 +40,7 @@ jobs:
       - run: gcc hello.c -o hello
 ```
 
-当前目录结果如上所示, 仅有一个 `hello.c` 和 `build.yml`. 这个例子十分简单, 而且并不通用(比如在 Windows 下, 用户没有安装 MinGW 之类的工具, 这个命令是执行不了的), 在开始运行之前, 让我们先看一下 `build.yml`  
+当前目录结果如上所示, 仅有一个 `hello.c` 和 `build.yml`. 这个例子十分简单, 而且并不通用(比如在 Windows 下, 如果用户没有安装 MinGW 之类的工具, 这个命令是执行不了的), 在开始运行之前, 让我们先看一下 `build.yml`  
 * 第 1 行: `name: hello` 指定了 yaml 的名称
 * 第 2 行: `jobs` 是 `hpb` 任务的开始, 它的子节点是一系列的任务
 * 第 3 行: `build` 是单个任务的名称, `hpb` 当中任务名称并没有限制, 你可以让任务叫做 `build`, `package`, `upload`, 也可以叫做 `foo`, `bar` 或 `baz`, 但是能表达任务所进行的工作显然是更好的
@@ -51,4 +52,36 @@ jobs:
 
 现在, 让我们进入目录并执行命令 `hpb build -c`, 可以看到当前生成了一个名为 hello 的可执行文件(没有 gcc 命令的环境会执行失败)
 
-### 示例02: var
+### 示例02: inner variables
+现在让我们来扩展一下上一小节的示例, 使用 CMake 或 meson 来生成工程
+[example02](../../examples/example02)
+```
+example02
+├── src
+│   └── hello.c
+├── CMakeLists.txt
+│── cmake_build.yml
+│── meson.build
+└── meson_build.yml
+```
+
+[cmake_build.yml](../../examples/example02/cmake_build.yml)
+```yaml {.line-numbers}
+...
+- run: >
+    cmake \
+      -S ${HPB_SOURCE_PATH} \
+      -B ${HPB_BUILD_DIR} \
+      -DCMAKE_BUILD_TYPE=release;
+    cmake --build ${HPB_BUILD_DIR} --config release;
+```
+
+[meson_build.yml](../../examples/example02/meson_build.yml)
+```yaml {.line-numbers}
+...
+- run: >
+    meson setup ${HPB_BUILD_DIR};
+    meson compile -C ${HPB_BUILD_DIR};
+```
+
+# TODO:
