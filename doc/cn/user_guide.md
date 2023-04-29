@@ -3,13 +3,15 @@
     - [示例01: Hello World](#示例01-hello-world)
     - [示例02: built-in variables](#示例02-built-in-variables)
       - [示例解析](#示例解析)
+    - [示例03: variables](#示例03-variables)
+      - [示例解析](#示例解析-1)
   - [附录1-内建变量列表](#附录1-内建变量列表)
 
 # HPB 使用指南
 在开始阅读本指南时, 请先确认 `hpb` 已正确安装, 如果尚未安装, 可以跳转至 [安装](../../README_cn.md#安装) 文档查看  
 
 ## 概览
-本使用指南是一个实操型指南, 通过从一个简单的例子开始, 一步一步的扩展为一个较为复杂的工程. 所用的示例都可以在 [examples](../../examples/) 目录中找到  
+本指南是一个实操型指南, 通过从一个简单的例子开始, 一步一步的扩展为一个较为复杂的工程. 所用的示例都可以在 [examples](../../examples/) 目录中找到  
 
 ### 示例01: Hello World
 不能免俗的, 让我们从一个打印 `hello world` 的程序开始吧.  
@@ -41,7 +43,7 @@ jobs:
       - run: gcc hello.c -o hello
 ```
 
-当前目录结果如上所示, 仅有一个 `hello.c` 和 `build.yml`. 这个例子十分简单, 而且并不通用(比如在 Windows 下, 如果用户没有安装 MinGW 之类的工具, 这个命令是执行不了的), 在开始运行之前, 让我们先看一下 `build.yml`  
+当前目录结果如上所示, 仅有 `hello.c` 和 `build.yml`. 这个例子十分简单, 而且并不通用(比如在 Windows 下, 如果用户没有安装 MinGW 之类的工具, 这个命令是执行不了的), 在开始运行之前, 让我们先看一下 `build.yml`  
 * 第 1 行: `name: hello` 指定了 yaml 的名称
 * 第 2 行: `jobs` 是 `hpb` 任务的开始, 它的子节点是一系列的任务
 * 第 3 行: `build` 是单个任务的名称, `hpb` 当中任务名称并没有限制, 你可以让任务叫做 `build`, `package`, `upload`, 也可以叫做 `foo`, `bar` 或 `baz`, 但是能表达任务所进行的工作显然是更好的
@@ -71,7 +73,7 @@ example02
 
 这次, 我们调整了一下目录结构, 将 `hello.c` 放进了 src 当中, 增加了一个 `CMakeLists.txt` 文件, 接着我们更改一下 `build.yml`  
 
-[build.yml](../../examples/example02/cmake_build.yml)
+[build.yml](../../examples/example02_cmake/build.yml)
 ```yaml {.line-numbers}
 ...
 - run: >
@@ -105,7 +107,7 @@ example02
 
 这次, 我们调整了一下目录结构, 将 `hello.c` 放进了 src 当中, 增加了一个 `meson.build` 文件, 接着我们更改一下 `build.yml`  
 
-[build.yml](../../examples/example02/build.yml)
+[build.yml](../../examples/example02_meson/build.yml)
 ```yaml {.line-numbers}
 ...
 - run: >
@@ -130,6 +132,61 @@ example02
 **注意: 在 `hpb` 当中, 所有的变量均以 `${xxx}` 的形式来指定, `$xxx` 和 `$(xxx)` 在 `hpb` 中并不是一个变量, 它们会被认为是普通的字符串**  
 
 除了这里展示几个变量之外, `hpb` 还有许多内建变量, 它们均以 `HPB_` 开头, 具体内建变量列表详见: [附录1-内建变量列表](#附录1-内建变量列表)  
+
+### 示例03: variables
+截至目前, 通过 CMake/Meson, 我们的 `hello, world` 已经可以运行在各个平台上了, 但是有一个问题: 我们在配置文件中, 直接将 build_type 设置为了 release, 这实在太不灵活了, 让我们继续改进上面的 `build.yml` 文件  
+
+<div>
+<details>
+<summary>Example03 CMake</summary>
+
+[build.yml](../../examples/example03_cmake/build.yml)
+```yaml {.line-numbers}
+name: hello
+variables:
+  - build_type: release
+jobs:
+  build:
+    steps:
+      - run: >
+          cmake \
+            -S ${HPB_SOURCE_PATH} \
+            -B ${HPB_BUILD_DIR} \
+            -DCMAKE_INSTALL_PREFIX=${HPB_OUTPUT_DIR}
+            -DCMAKE_BUILD_TYPE=${build_type};
+          cmake --build ${HPB_BUILD_DIR} --config ${build_type};
+          cmake --build ${HPB_BUILD_DIR} --config ${build_type} --target install;
+```
+ 
+</detail>
+</div>
+
+<div>
+<details>
+<summary>Example03 Meson</summary>
+
+[build.yml](../../examples/example03_cmake/build.yml)
+```yaml {.line-numbers}
+name: hello
+variables:
+  - build_type: release
+jobs:
+  build:
+    steps:
+      - run: >
+          meson setup ${HPB_BUILD_DIR} \
+            --prefix ${HPB_OUTPUT_DIR} \
+            --buildtype ${build_type};
+          meson compile -C ${HPB_BUILD_DIR};
+          meson install -C ${HPB_BUILD_DIR};
+```
+ 
+</detail>
+</div>
+
+#### 示例解析
+在此示例中, 我们添加了 `variables`, 它的子节点为变量列表. 当前将 `build_type` 的默认值设置为 `release`. 当我们没有额外提供任何选项时, 它的值将保持配置文件中的默认值.  
+现在进入对应的目录, 运行 `hpb build -c build.yml -p build_type=debug`, 将编译 `debug` 版本. 我们通过 `build -p build_type=debug` 覆盖了文件中 `build_type` 的默认值
 
 ## 附录1-内建变量列表
 | 名称 | 描述 |

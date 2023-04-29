@@ -1,4 +1,4 @@
-name: inner_var
+name: hello
 jobs:
   build:
     steps:
