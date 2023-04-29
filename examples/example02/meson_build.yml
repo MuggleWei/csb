@@ -1,7 +1,0 @@
-name: inner_var
-jobs:
-  build:
-    steps:
-      - run: >
-          meson setup ${HPB_BUILD_DIR};
-          meson compile -C ${HPB_BUILD_DIR};

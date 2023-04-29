@@ -1,0 +1,10 @@
+name: inner_var
+jobs:
+  build:
+    steps:
+      - run: >
+          meson setup ${HPB_BUILD_DIR} \
+            --prefix ${HPB_OUTPUT_DIR} \
+            --buildtype release;
+          meson compile -C ${HPB_BUILD_DIR};
+          meson install -C ${HPB_BUILD_DIR};
