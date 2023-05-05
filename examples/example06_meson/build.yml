@@ -1,10 +1,15 @@
 name: hello
 variables:
   - build_type: release
+source:
+  name: hello
+  maintainer: mugglewei
 deps:
-  - name: zlib
-    maintainer: madler
-    tag: v1.2.13
+  - name: foo
+    maintainer: mugglewei
+    tag: v1.0.0
+build:
+  fat_pkg: true
 jobs:
   build:
     steps:
@@ -15,3 +20,8 @@ jobs:
             --buildtype ${build_type};
           meson compile -C ${HPB_BUILD_DIR};
           meson install -C ${HPB_BUILD_DIR};
+  package:
+    steps:
+      - run: >
+          cd ${HPB_TASK_DIR};
+          hpb pack --copy-to ${HPB_ROOT_DIR}/_packages/;

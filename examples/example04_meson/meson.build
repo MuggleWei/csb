@@ -1,4 +1,4 @@
-project('built_in_var', 'c')
+project('hello', 'c')
 
 zdep = dependency('zlib')
 executable('hello', 'src/hello.c', dependencies: zdep, install : true)

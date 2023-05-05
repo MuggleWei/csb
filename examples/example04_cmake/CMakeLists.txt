@@ -1,5 +1,5 @@
 cmake_minimum_required (VERSION 3.13.5)
-project(built_in_var)
+project(hello)
 
 include(${CMAKE_CURRENT_LIST_DIR}/../cmake/common.cmake)
 

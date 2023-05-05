@@ -299,6 +299,70 @@ zlib
 
 此时回到示例目录中, 执行 `hpb build -c build.yml`, 便能成功生成程序
 
+### 示例05: 构建自己的包
+在上一小节当中, 我们已经在程序中添加了包的依赖, 使用 zlib 用于压缩/解压一个文件. 本节, 让我们将上一小节的函数放到自己的库当中, 当需要再次使用时, 我们只需依赖自己的包即可.  
+
+1. 将 [example05](../../examples/example05_cmake) 拷贝至任意文件夹并重命名为 foo
+2. 进入 foo, 执行
+```
+git init
+git add .
+git commit -m "init foo"
+git tag v1.0.0
+hpb build -c build.yml
+```
+3. 查看 foo 是否正确的被上传至了本地包管理库中
+```
+# 搜索名为 foo 的库
+hpb search -n foo
+```
+
+```
+# 搜索名为 foo, 维护者为 mugglewei 的库
+hpb search -n foo -m mugglewei
+```
+
+```
+# 搜索名为 foo, 维护者为 mugglewei 并且 tag 信息为 v1.0.0 的库
+hpb search -n foo -m mugglewei -v v1.0.0
+```
+
+#### 示例解析
+[build.yml](../../examples/example05_cmake/build.yml)
+```
+name: foo
+variables:
+  - build_type: release
+source:
+  name: foo
+  maintainer: mugglewei
+deps:
+  - name: zlib
+    maintainer: madler
+    tag: v1.2.13
+jobs:
+  build:
+    steps:
+      - run: >
+        ......
+  package:
+    steps:
+      - run: >
+          cd ${HPB_TASK_DIR};
+          hpb pack;
+  upload:
+    steps:
+      - run: >
+          hpb push;
+```
+* 当前的 `hpb` 配置文件中, 在根节点中增加了一个 `source` 节点, 表明了当前包的名称以及维护者.
+* 在 foo 目录中执行了 `git tag v1.0.0`, `hpb` 默认会读取目录的 git 信息, 来作为包的 tag
+* 在配置文件中, `jobs` 节点下增加了 `package` 和 `upload` 步骤, 用于打包和上传包至配置文件指定的包管理库中
+
+### 示例06: Fat 包
+我们已经在上一小节生成并上传了 foo 包, 现在让我们来使用它  
+TODO:
+
 ## 附录1-内建变量列表
 | 名称 | 描述 |
 | ---- | ---- |
