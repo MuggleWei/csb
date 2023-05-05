@@ -6,7 +6,7 @@ jobs:
           cmake \
             -S ${HPB_SOURCE_PATH} \
             -B ${HPB_BUILD_DIR} \
-            -DCMAKE_INSTALL_PREFIX=${HPB_OUTPUT_DIR}
+            -DCMAKE_INSTALL_PREFIX=${HPB_OUTPUT_DIR} \
             -DCMAKE_BUILD_TYPE=release;
           cmake --build ${HPB_BUILD_DIR} --config release;
           cmake --build ${HPB_BUILD_DIR} --config release --target install;

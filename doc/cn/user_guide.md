@@ -188,6 +188,117 @@ jobs:
 在此示例中, 我们添加了 `variables`, 它的子节点为变量列表. 当前将 `build_type` 的默认值设置为 `release`. 当我们没有额外提供任何选项时, 它的值将保持配置文件中的默认值.  
 现在进入对应的目录, 运行 `hpb build -c build.yml -p build_type=debug`, 将编译 `debug` 版本. 我们通过 `build -p build_type=debug` 覆盖了文件中 `build_type` 的默认值
 
+### 示例04: 依赖包
+本节继续扩展我们的工程, 实现一个依赖 zlib 库, 用于压缩/解压单个文件的程序   
+[hello.c](../../examples/example04_cmake/src/hello.c)
+```c {.line-numbers}
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include "zlib.h"
+
+int compress_one_file(const char *input_filepath, const char *output_filepath)
+{
+	......
+}
+
+int decompress_one_file(const char *input_filepath, const char *output_filepath)
+{
+	......
+}
+
+int main(int argc, char *argv[])
+{
+	if (argc < 4) {
+		fprintf(stderr,
+			"Usage: %s <c|d> <in> <out>\n"
+			"e.g\n"
+			"\t%s c hello.c hello.c.gz\n",
+			argv[0], argv[0]);
+		exit(EXIT_FAILURE);
+	}
+
+	if (strcmp(argv[1], "c") == 0) {
+		compress_one_file(argv[2], argv[3]);
+	} else if (strcmp(argv[1], "d") == 0) {
+		decompress_one_file(argv[2], argv[3]);
+	} else {
+		fprintf(stderr, "Unrecognized compress/decompress flag: %s\n",
+			argv[1]);
+		exit(EXIT_FAILURE);
+	}
+
+	return 0;
+}
+```
+这个程序很简单, 通过第 2 个输入参数来判断是压缩或解压. 其中 `compress_one_file` 和 `decompress_one_file` 使用 zlib 实现压缩/解压文件的功能.  
+接着我们更改 `hpb` 的配置文件, 增加对 zlib 的依赖  
+
+```yaml {.line-numbers}
+name: hello
+variables:
+  - build_type: release
+deps:
+  - name: zlib
+    maintainer: madler
+    tag: v1.2.13
+jobs:
+  ......
+```
+`deps` 是依赖项目列表, 其中每一个依赖都由 `name`, `maintainer` 和 `tag` 这三个字段唯一确定  
+
+接着根据所使用的构建工具, 添加包搜索路径
+<div>
+<details>
+<summary>Example04 CMake</summary>
+
+[build.yml](../../examples/example04_cmake/build.yml)
+```yaml {.line-numbers}
+......
+jobs:
+  build:
+    steps:
+      - run: >
+          cmake \
+            -S ${HPB_SOURCE_PATH} \
+            -B ${HPB_BUILD_DIR} \
+            -DCMAKE_PREFIX_PATH=${HPB_DEPS_DIR} \
+            -DCMAKE_INSTALL_PREFIX=${HPB_OUTPUT_DIR} \
+            -DCMAKE_BUILD_TYPE=${build_type};
+          cmake --build ${HPB_BUILD_DIR} --config ${build_type};
+          cmake --build ${HPB_BUILD_DIR} --config ${build_type} --target install;
+```
+ 
+</detail>
+</div>
+
+此时在示例目录中运行 `hpb build -c build.yml`, 会看到错误提示:  
+> failed find dep:  
+> {  
+> &nbsp;&nbsp;&nbsp;&nbsp;"maintainer": "madler",  
+> &nbsp;&nbsp;&nbsp;&nbsp;"name": "zlib",  
+> &nbsp;&nbsp;&nbsp;&nbsp;"tag": "v1.2.13"  
+> }  
+> failed search dependencies
+
+这是因为在默认情况下, 当前配置文件并没有配置远程包管理库, 而本地包管理库中也没有 zlib. 所以当前有两个选择
+* 本地生成 zlib 包, 并上传至本地包管理库当中
+* 配置有 zlib 的远程包管理库 (暂未实现)
+
+让我们先选择使用第一种方法: 生成本地 zlib 包.  
+`hpb` 默认会安装一些较为常见的包编译的配置文件, 可以直接生成 zlib 包并上传至本地包管理库中
+```
+hpb build -m task -c ~/.hpb/share/modules/zlib/zlib.yml
+```
+在任意目录执行上述命令, 成功执行后, zlib 包将会被上传至本地包管理库当中. 执行 `hpb search -n zlib` 来查看 zlib 包是否成功被上传至本地包管理库当中
+```
+zlib
+└── madler/zlib
+```
+
+此时回到示例目录中, 执行 `hpb build -c build.yml`, 便能成功生成程序
+
 ## 附录1-内建变量列表
 | 名称 | 描述 |
 | ---- | ---- |
