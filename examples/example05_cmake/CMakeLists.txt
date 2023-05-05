@@ -85,7 +85,8 @@ add_library(foo ${FOO_LIB_TYPE}
 	${foo_src_c}
 	${foo_src_h}
 	${foo_gen_h})
-target_include_directories(foo PUBLIC 
+target_include_directories(foo PUBLIC
+	$<BUILD_INTERFACE:${ZLIB_INCLUDE_DIRS}>
 	$<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}>
 	$<BUILD_INTERFACE:${foo_gen_dir}>
 	$<INSTALL_INTERFACE:include>)

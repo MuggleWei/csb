@@ -5,6 +5,10 @@
       - [示例解析](#示例解析)
     - [示例03: variables](#示例03-variables)
       - [示例解析](#示例解析-1)
+    - [示例04: 依赖包](#示例04-依赖包)
+    - [示例05: 构建自己的包](#示例05-构建自己的包)
+      - [示例解析](#示例解析-2)
+    - [示例06: Fat 包](#示例06-fat-包)
   - [附录1-内建变量列表](#附录1-内建变量列表)
 
 # HPB 使用指南
@@ -315,14 +319,10 @@ hpb build -c build.yml
 ```
 # 搜索名为 foo 的库
 hpb search -n foo
-```
 
-```
 # 搜索名为 foo, 维护者为 mugglewei 的库
 hpb search -n foo -m mugglewei
-```
 
-```
 # 搜索名为 foo, 维护者为 mugglewei 并且 tag 信息为 v1.0.0 的库
 hpb search -n foo -m mugglewei -v v1.0.0
 ```
@@ -346,11 +346,13 @@ jobs:
       - run: >
         ......
   package:
+    needs: [build]
     steps:
       - run: >
           cd ${HPB_TASK_DIR};
           hpb pack;
   upload:
+    needs: [package]
     steps:
       - run: >
           hpb push;
@@ -358,6 +360,7 @@ jobs:
 * 当前的 `hpb` 配置文件中, 在根节点中增加了一个 `source` 节点, 表明了当前包的名称以及维护者.
 * 在 foo 目录中执行了 `git tag v1.0.0`, `hpb` 默认会读取目录的 git 信息, 来作为包的 tag
 * 在配置文件中, `jobs` 节点下增加了 `package` 和 `upload` 步骤, 用于打包和上传包至配置文件指定的包管理库中
+* 在 `package` 和 `upload` 步骤中, 有 `needs` 节点, 它声明了此任务的依赖任务
 
 ### 示例06: Fat 包
 我们已经在上一小节生成并上传了 foo 包, 现在让我们来使用它  

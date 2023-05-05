@@ -112,6 +112,7 @@ class Downloader:
         download local packages
         """
         pkg_filepath = self._get_pkg_filepath(self.cfg.path)
+        pkg_filepath = Utils.expand_path(pkg_filepath)
 
         dest = Utils.expand_path(self.cfg.dest)
         if dest.endswith("tar.gz"):

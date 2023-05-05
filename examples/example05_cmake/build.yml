@@ -22,11 +22,13 @@ jobs:
           cmake --build ${HPB_BUILD_DIR} --config ${build_type};
           cmake --build ${HPB_BUILD_DIR} --config ${build_type} --target install;
   package:
+    needs: [build]
     steps:
       - run: >
           cd ${HPB_TASK_DIR};
           hpb pack;
   upload:
+    needs: [package]
     steps:
       - run: >
           hpb push;
