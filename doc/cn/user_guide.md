@@ -363,8 +363,102 @@ jobs:
 * 在 `package` 和 `upload` 步骤中, 有 `needs` 节点, 它声明了此任务的依赖任务
 
 ### 示例06: Fat 包
-我们已经在上一小节生成并上传了 foo 包, 现在让我们来使用它  
-TODO:
+上一小节生成并上传了 foo 包, 现在让我们来使用它  
+
+<div>
+<details>
+<summary>Example06 CMake</summary>
+
+[build.yml](../../examples/example06_cmake/build.yml)
+```yaml {.line-numbers}
+name: hello
+variables:
+  - build_type: release
+source:
+  name: hello
+  maintainer: mugglewei
+deps:
+  - name: foo
+    maintainer: mugglewei
+    tag: v1.0.0
+jobs:
+  build:
+    steps:
+      - run: >
+          cmake \
+            -S ${HPB_SOURCE_PATH} \
+            -B ${HPB_BUILD_DIR} \
+            -DCMAKE_PREFIX_PATH=${HPB_DEPS_DIR} \
+            -DCMAKE_INSTALL_PREFIX=${HPB_OUTPUT_DIR} \
+            -DCMAKE_BUILD_TYPE=${build_type};
+          cmake --build ${HPB_BUILD_DIR} --config ${build_type};
+          cmake --build ${HPB_BUILD_DIR} --config ${build_type} --target install;
+  package:
+    needs: [build]
+    steps:
+      - run: >
+          cd ${HPB_TASK_DIR};
+          hpb pack --copy-to ${HPB_ROOT_DIR}/_packages/;
+```
+ 
+</detail>
+</div>
+
+<div>
+<details>
+<summary>Example06 Meson</summary>
+
+[build.yml](../../examples/example06_meson/build.yml)
+```yaml {.line-numbers}
+name: hello
+variables:
+  - build_type: release
+source:
+  name: hello
+  maintainer: mugglewei
+deps:
+  - name: foo
+    maintainer: mugglewei
+    tag: v1.0.0
+jobs:
+  build:
+    steps:
+      - run: >
+          meson setup ${HPB_BUILD_DIR} \
+            --pkg-config-path ${HPB_DEPS_DIR}/lib/pkgconfig \
+            --prefix ${HPB_OUTPUT_DIR} \
+            --buildtype ${build_type};
+          meson compile -C ${HPB_BUILD_DIR};
+          meson install -C ${HPB_BUILD_DIR};
+  package:
+    needs: [build]
+    steps:
+      - run: >
+          cd ${HPB_TASK_DIR};
+          hpb pack --copy-to ${HPB_ROOT_DIR}/_packages/;
+```
+ 
+</detail>
+</div>
+
+在示例 06 中, 只需要添加依赖项 foo, 构建之后便会自动下载依赖的依赖. 本节并未将生成的包上传至本地包管理库中, 而是在 `hpb pack` 中, 将其拷贝至了示例目录的 `_packages` 文件夹中. 现在进入 `_packages` 目录, 解压 tar.gz 包, 将会发现其中只有 bin 目录, 这符合包的预期.  
+但是如果你想要部署一个服务, 也许你希望得到一个 Fat 包(包中包含了其所有的依赖). 我们只需要稍微修改一下 yaml 文件即可.  
+```
+......
+source:
+  name: hello
+  maintainer: mugglewei
+deps:
+  - name: foo
+    maintainer: mugglewei
+    tag: v1.0.0
+build:
+  fat_pkg: true
+jobs:
+  build:
+......
+```
+在 yaml 文件中, 增加一个 `build` 节点, 并设置其子节点的 `fat_pkg` 为 `true`, 那么在打包时, 会自动将依赖及依赖的依赖全部打入包中
 
 ## 附录1-内建变量列表
 | 名称 | 描述 |

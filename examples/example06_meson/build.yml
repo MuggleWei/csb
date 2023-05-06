@@ -21,6 +21,7 @@ jobs:
           meson compile -C ${HPB_BUILD_DIR};
           meson install -C ${HPB_BUILD_DIR};
   package:
+    needs: [build]
     steps:
       - run: >
           cd ${HPB_TASK_DIR};
