@@ -1,0 +1,34 @@
+name: foo
+variables:
+  - build_type: release
+source:
+  name: foo
+  maintainer: mugglewei
+deps:
+  - name: zlib
+    maintainer: madler
+    tag: v1.2.13
+jobs:
+  build:
+    steps:
+      - run: >
+          cmake \
+            -S ${HPB_SOURCE_PATH} \
+            -B ${HPB_BUILD_DIR} \
+            -DCMAKE_PREFIX_PATH=${HPB_DEPS_DIR} \
+            -DCMAKE_INSTALL_PREFIX=${HPB_OUTPUT_DIR} \
+            -DBUILD_SHARED_LIBS=ON \
+            -DCMAKE_BUILD_TYPE=${build_type};
+          cmake --build ${HPB_BUILD_DIR} --config ${build_type};
+          cmake --build ${HPB_BUILD_DIR} --config ${build_type} --target install;
+  package:
+    needs: [build]
+    steps:
+      - run: >
+          cd ${HPB_TASK_DIR};
+          hpb pack;
+  upload:
+    needs: [package]
+    steps:
+      - run: >
+          hpb push;

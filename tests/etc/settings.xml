@@ -3,15 +3,15 @@
 	<log console_level="info" file_level="debug" />
 
     <sources>
-        <path>./_hpb/sources</path>
+        <path>./hpb/sources</path>
     </sources>
 
-    <artifacts>
+    <packages>
         <search>
 
             <repo>
                 <kind>local</kind>
-                <path>./_hpb/artifacts</path>
+                <path>./hpb/packages</path>
             </repo>
 
         </search>
@@ -19,10 +19,10 @@
         <upload>
             <repo>
                 <kind>local</kind>
-                <path>./_hpb/artifacts</path>
+                <path>./hpb/packages</path>
             </repo>
         </upload>
-    </artifacts>
+    </packages>
 
 </HPB>
 

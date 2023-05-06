@@ -3,9 +3,9 @@ import logging
 import typing
 
 from hpb.command.downloader import Downloader, DownloaderConfig
-from hpb.command.searcher import Searcher, SearcherConfig, SearcherResult
-from hpb.component.semver_handle import SemverHandle
-from hpb.component.settings_handle import SettingsHandle
+from hpb.command.searcher import Searcher, SearcherConfig, PackageInfo
+from hpb.data_type.build_info import BuildInfo
+from hpb.data_type.semver_item import SemverItem
 from hpb.data_type.platform_info import PlatformInfo
 
 
@@ -76,12 +76,10 @@ class RepoDepsHandle:
 
     def __init__(
             self,
-            settings_handle: SettingsHandle,
             platform_info: PlatformInfo,
-            build_type: str):
-        self.settings_handle = settings_handle
+            build_info: BuildInfo):
         self.platform = platform_info
-        self.build_type = build_type
+        self.build_info = build_info
 
         self.deps: typing.List[DepItem] = []
         self.search_result_dict = {}
@@ -112,11 +110,11 @@ class RepoDepsHandle:
         # comb same repo
         for k in self.search_result_dict.keys():
             maintainer, repo, tag = self._split_key(k)
-            semver = SemverHandle.parse(tag)
-            if semver is not None:
-                repo_id = "{}${}${}".format(maintainer, repo, semver[0])
+            semver = SemverItem()
+            if semver.load(tag) is True:
+                repo_id = "{}${}${}".format(maintainer, repo, semver.major)
                 if repo_id in repo_dict:
-                    if SemverHandle.compare(semver, repo_dict[repo_id]) > 0:
+                    if semver.compare(repo_dict[repo_id]) > 0:
                         repo_dict[repo_id] = tag
                 else:
                     repo_dict[repo_id] = tag
@@ -131,7 +129,7 @@ class RepoDepsHandle:
         for repo_id, tag in repo_dict.items():
             maintainer, repo, _ = repo_id.split("$")
             key = self._gen_key(maintainer, repo, tag)
-            result: SearcherResult = self.search_result_dict[key]
+            result: PackageInfo = self.search_result_dict[key]
             if self._download_dep(result, download_dir) is False:
                 logging.error("failed download: \n{}".format(result.path))
                 return False
@@ -152,7 +150,7 @@ class RepoDepsHandle:
             return False
 
         self.search_result_dict[k] = result
-        if result.meta.is_fat_pkg:
+        if result.meta.build_info.fat_pkg:
             return True
 
         for sub_dep in result.meta.deps:
@@ -166,7 +164,7 @@ class RepoDepsHandle:
 
     def _download_dep(
             self,
-            search_result: SearcherResult,
+            search_result: PackageInfo,
             download_dir):
         """
         download deps
@@ -197,7 +195,7 @@ class RepoDepsHandle:
         """
         return k.split("$")
 
-    def _search(self, dep: DepItem) -> typing.Optional[SearcherResult]:
+    def _search(self, dep: DepItem) -> typing.Optional[PackageInfo]:
         """
         search dependency
         """
@@ -209,7 +207,7 @@ class RepoDepsHandle:
         search_cfg.machine = self.platform.machine
 
         searcher = Searcher()
-        search_results = searcher.search(search_cfg, self.settings_handle)
+        search_results = searcher.search(search_cfg)
         if len(search_results) == 0:
             return None
         elif len(search_results) == 1:
@@ -227,7 +225,7 @@ class RepoDepsHandle:
                 ]
                 return score_list[0][0]
 
-    def _rank_search_result(self, search_result: typing.List[SearcherResult]):
+    def _rank_search_result(self, search_result: typing.List[PackageInfo]):
         """
         rank search result
         """
@@ -247,13 +245,14 @@ class RepoDepsHandle:
                 score += 10
             if meta.platform.distr == self.platform.distr:
                 score += 2
-            if meta.is_fat_pkg is True:
+            if meta.build_info.fat_pkg is True:
                 score += 2
-            if meta.platform.libc == self.platform.libc:
+
+            meta_build_type = meta.build_info.build_type.lower()
+            build_type = self.build_info.build_type.lower()
+            if meta_build_type == build_type:
                 score += 2
-            if meta.build_type.lower() == self.build_type.lower():
-                score += 2
-            elif meta.build_type.lower() == "release":
+            elif meta.build_info.build_type.lower() == "release":
                 score += 1
             result_score_dict[result] = score
         return result_score_dict

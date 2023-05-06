@@ -28,10 +28,17 @@ hpb = "hpb.main:main"
 
 [tool.setuptools]
 include-package-data = true
+packages = ["hpb"]
 
 [tool.setuptools.dynamic]
 dependencies = {file = ["requirements.txt"]}
 version = {attr = "hpb.__version__.__version__"}
 
-[tool.setuptools.packages.find]
-include = ["hpb"]
+#[tool.setuptools.packages.find]
+#include = [
+#    "hpb",
+#    "hpb.command",
+#    "hpb.component",
+#    "hpb.data_type",
+#    "hpb.utils",
+#]

@@ -5,9 +5,7 @@ import shutil
 import sys
 import tarfile
 
-from hpb.component.settings_handle import SettingsHandle
 from hpb.data_type.constant_var import APP_NAME
-from hpb.utils.log_handle import LogHandle
 from hpb.utils.utils import Utils
 
 
@@ -35,19 +33,14 @@ class Downloader:
             "  -d, --dest string    [OPTIONAL] download destination\n" \
             "  -x, --extract string [OPTIONAL] extract files from packags\n" \
             "e.g.\n" \
-            "  {0} pull -p ~/.hpb/artifacts/google/googletest/v1.13.0-release-linux-arch-x86_64\n" \
+            "  {0} pull -p ~/.hpb/packages/google/googletest/v1.13.0-release-linux-arch-x86_64\n" \
             "".format(APP_NAME)
 
     def run(self, args):
         """
         run package downloader
         """
-        try:
-            cfg = self._init(args=args)
-        except Exception as e:
-            print("{}".format(str(e)))
-            return False
-
+        cfg = self._init(args=args)
         return self.download(cfg=cfg)
 
     def _init(self, args):
@@ -63,13 +56,6 @@ class Downloader:
             cfg.repo_type = self._guess_type(cfg.path)
         if len(cfg.dest) == 0:
             cfg.dest = os.path.abspath(".")
-
-        self._settings_handle = SettingsHandle.load_settings("")
-        log_level = LogHandle.log_level(self._settings_handle.log_console_level)
-        LogHandle.init_log(
-            filename=None,
-            console_level=log_level,
-        )
 
         return cfg
 
@@ -90,7 +76,7 @@ class Downloader:
         if self.cfg.repo_type == "local":
             ret = self._download_local()
         else:
-            print("unregconize repot_type: {}".format(self.cfg.repo_type))
+            logging.error("unregconize repo_type: {}".format(self.cfg.repo_type))
             ret = False
 
         if ret is False:
@@ -103,13 +89,14 @@ class Downloader:
 
     def _extract(self, cfg):
         """
-        extract artifacts
+        extract packages
         """
         dest = Utils.expand_path(cfg.dest)
         if dest.endswith("tar.gz"):
             dest = os.path.dirname(dest)
 
-        filename = os.path.basename(cfg.path)
+        pkg_filepath = self._get_pkg_filepath(cfg.path)
+        filename = os.path.basename(pkg_filepath)
 
         origin_dir = os.path.abspath(os.curdir)
         os.chdir(dest)
@@ -122,24 +109,10 @@ class Downloader:
 
     def _download_local(self):
         """
-        download local artifacts
+        download local packages
         """
-        self.cfg.path = Utils.expand_path(self.cfg.path)
-        if os.path.isdir(self.cfg.path):
-            files = os.listdir(self.cfg.path)
-            candidates = []
-            for f in files:
-                if f.endswith("tar.gz"):
-                    candidates.append(f)
-            if len(candidates) == 0:
-                logging.error("failed find package in {}".format(self.cfg.path))
-                return False
-            if len(candidates) > 1:
-                logging.error("multiple package in {}".format(self.cfg.path))
-                return False
-            pkg_filepath = os.path.join(self.cfg.path, candidates[0])
-        else:
-            pkg_filepath = self.cfg.path
+        pkg_filepath = self._get_pkg_filepath(self.cfg.path)
+        pkg_filepath = Utils.expand_path(pkg_filepath)
 
         dest = Utils.expand_path(self.cfg.dest)
         if dest.endswith("tar.gz"):
@@ -153,6 +126,30 @@ class Downloader:
         shutil.copy(pkg_filepath, dest)
 
         return True
+
+    def _get_pkg_filepath(self, pkg_path) -> str:
+        """
+        get real package filepath
+        """
+        pkg_path = Utils.expand_path(pkg_path)
+        if os.path.isdir(pkg_path):
+            files = os.listdir(pkg_path)
+            candidates = []
+            for f in files:
+                if f.endswith("tar.gz"):
+                    candidates.append(f)
+            if len(candidates) == 0:
+                errmsg = "failed find package in {}".format(pkg_path)
+                logging.error(errmsg)
+                raise Exception(errmsg)
+            if len(candidates) > 1:
+                errmsg = "multiple package in {}".format(pkg_path)
+                logging.error(errmsg)
+                raise Exception(errmsg)
+            pkg_filepath = os.path.join(self.cfg.path, candidates[0])
+        else:
+            pkg_filepath = self.cfg.path
+        return pkg_filepath
 
     def _parse_args(self, args):
         """

@@ -16,8 +16,6 @@ class TestPlatformInfo(unittest.TestCase):
             "machine": "x86_64",
             "distr_id": "arch",
             "distr_ver": "",
-            "libc_id": "glibc",
-            "libc_ver": "2.37"
         }
 
     def test_load(self):
@@ -76,7 +74,6 @@ class TestPlatformInfo(unittest.TestCase):
     def test_field_libc(self):
         platform_info = PlatformInfo()
         platform_info.load(obj=self._obj)
-        self.assertEqual(platform_info.libc, "glibc-2.37")
 
     def assert_platform_info_eq(self, platform_info: PlatformInfo):
         self.assertEqual(platform_info.system, self._obj["system"])
@@ -85,8 +82,6 @@ class TestPlatformInfo(unittest.TestCase):
         self.assertEqual(platform_info.machine, self._obj["machine"])
         self.assertEqual(platform_info.distr_id, self._obj["distr_id"])
         self.assertEqual(platform_info.distr_ver, self._obj["distr_ver"])
-        self.assertEqual(platform_info.libc_id, self._obj["libc_id"])
-        self.assertEqual(platform_info.libc_ver, self._obj["libc_ver"])
 
 
 if __name__ == "__main__":

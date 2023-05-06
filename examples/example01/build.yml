@@ -1,0 +1,5 @@
+name: hello
+jobs:
+  build:
+    steps:
+      - run: gcc hello.c -o hello

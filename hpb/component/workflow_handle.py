@@ -11,6 +11,7 @@ from hpb.component.settings_handle import SettingsHandle
 from hpb.component.source_downloader import SourceDownloader
 from hpb.component.var_replace_handle import VarReplaceHandle
 from hpb.component.yaml_handle import YamlHandle
+from hpb.data_type.build_info import BuildInfo
 from hpb.data_type.builder_config import BuilderConfig
 from hpb.data_type.constant_var import APP_NAME
 from hpb.data_type.git_info import GitInfo
@@ -20,6 +21,7 @@ from hpb.data_type.source_info import SourceInfo
 from hpb.data_type.workflow_yml import WorkflowYaml
 from hpb.utils.kahn_algo import KahnAlgo
 from hpb.utils.log_handle import LogHandle
+from hpb.utils.utils import Utils
 
 
 class WorkflowHandle:
@@ -44,14 +46,8 @@ class WorkflowHandle:
         self.test_deps_dir = ""  # test dependencies directory
         self.output_dir = ""  # output directory
 
-        # settings handle
-        self.settings_handle = SettingsHandle()
-
         # workflow object
         self.yml_obj = WorkflowYaml()
-
-        # command handle
-        self.command_handle = CommandHandle()
 
         self.platform_info = PlatformInfo()
         self.git_info = GitInfo()
@@ -64,9 +60,8 @@ class WorkflowHandle:
         # source
         self.src = SourceInfo()
 
-        # extra meta
-        self.is_fat_pkg = False
-        self.build_type = ""
+        # build info
+        self.build_info = BuildInfo()
 
         # deps
         self.deps = []
@@ -139,13 +134,6 @@ class WorkflowHandle:
 
         return True
 
-    def load_settings(self, input_settings_path: str):
-        """
-        load settings
-        :param input_settings_path: user input settings path
-        """
-        self.settings_handle = SettingsHandle.load_settings(input_settings_path)
-
     def load_yaml_file(self):
         """
         load config file
@@ -162,10 +150,10 @@ class WorkflowHandle:
         init log
         """
         console_log_level = LogHandle.log_level(
-            self.settings_handle.log_console_level
+            SettingsHandle().log_console_level
         )
         file_log_level = LogHandle.log_level(
-            self.settings_handle.log_file_level
+            SettingsHandle().log_file_level
         )
         LogHandle.init_log(
             os.path.join(self.hpb_dir, "log", "build.log"),
@@ -240,7 +228,7 @@ class WorkflowHandle:
 
         self.output_vars()
 
-        if self.prepare_build_meta() is False:
+        if self.prepare_build_info() is False:
             return False
 
         if self.prepare_deps() is False:
@@ -293,7 +281,7 @@ class WorkflowHandle:
             step = steps[i]
             step_name = step.get("name", "")
             ignore_value = step.get("ignore", False)
-            if self.get_bool(ignore_value):
+            if Utils.get_boolean(ignore_value, self.all_var_dict):
                 logging.debug("ignore step[{}]: {}".format(i, step_name))
                 continue
             else:
@@ -323,7 +311,7 @@ class WorkflowHandle:
             if real_command is None:
                 logging.error("failed replace variable in: {}".format(command))
                 return False
-            if self.command_handle.exec(command=real_command) is False:
+            if CommandHandle().exec(command=real_command) is False:
                 return False
         return True
 
@@ -366,8 +354,7 @@ class WorkflowHandle:
         """
         pkg_meta = PackageMeta()
         pkg_meta.source_info = self.src
-        pkg_meta.build_type = self.build_type
-        pkg_meta.is_fat_pkg = self.is_fat_pkg
+        pkg_meta.build_info = self.build_info
         pkg_meta.platform = self.platform_info
         pkg_meta.deps = self.deps
 
@@ -418,9 +405,9 @@ class WorkflowHandle:
 
         self.src = self.get_yml_source(self.yml_obj.source, self.all_var_dict)
         if self.need_download_source(self.src):
-            src_downloader = SourceDownloader(self.command_handle)
+            src_downloader = SourceDownloader()
             if src_downloader.download(
-                    self.src, self.settings_handle.source_path) is False:
+                    self.src, SettingsHandle().source_path) is False:
                 return False
             source_path = src_downloader.source_path
 
@@ -429,6 +416,9 @@ class WorkflowHandle:
         # set git info
         self.git_info.get_git_info(source_path)
         self.inner_var_dict_add_git(self.git_info)
+
+        if not self.need_download_source(self.src):
+            self.src.tag = self.inner_var_dict["GIT_REF"]
 
         # update all_var_dict
         for k, v in self.inner_var_dict.items():
@@ -454,9 +444,8 @@ class WorkflowHandle:
                 dep[k] = VarReplaceHandle.replace(dep[k], self.all_var_dict)
 
         repo_deps_handle = RepoDepsHandle(
-            self.settings_handle,
             self.platform_info,
-            self.build_type,
+            self.build_info,
         )
 
         if repo_deps_handle.search_all_deps(self.deps) is False:
@@ -479,9 +468,8 @@ class WorkflowHandle:
                 dep[k] = VarReplaceHandle.replace(dep[k], self.all_var_dict)
 
         repo_deps_handle = RepoDepsHandle(
-            self.settings_handle,
             self.platform_info,
-            self.build_type,
+            self.build_info,
         )
 
         if repo_deps_handle.search_all_deps(self.test_deps) is False:
@@ -492,27 +480,29 @@ class WorkflowHandle:
             logging.error("failed download dependencies")
             return False
 
-    def prepare_build_meta(self):
+    def prepare_build_info(self):
         """
         prepare build meta
         """
-        build_meta = self.yml_obj.build
+        build_info_dict = self.yml_obj.build
 
-        # get fat_pkg
-        build_fat_pkg = build_meta.get("fat_pkg", False)
-        self.is_fat_pkg = self.get_bool(build_fat_pkg)
+        for k in build_info_dict.keys():
+            v = build_info_dict[k]
+            v = VarReplaceHandle.replace(v, self.all_var_dict)
+            if v is None:
+                errmsg = "failed get yml build.{}: {}".format(
+                    k, build_info_dict[k])
+                logging.error(errmsg)
+                raise Exception(errmsg)
+            build_info_dict[k] = v
 
-        # get build_type
-        build_type = build_meta.get("build_type", "")
-        build_type = VarReplaceHandle.replace(build_type, self.all_var_dict)
-        if build_type is None:
-            logging.error("failed get build_type")
-            return False
-        if len(build_type) == 0:
-            build_type = self.guess_build_type(self.all_var_dict)
-        if len(build_type) == 0:
-            build_type = "release"
-        self.build_type = build_type
+        if "build_type" not in build_info_dict:
+            build_info_dict["build_type"] = self.guess_build_type(
+                self.all_var_dict)
+
+        self.build_info = BuildInfo()
+        self.build_info.load(build_info_dict)
+        self.build_info.complement()
 
         return True
 
@@ -570,7 +560,6 @@ class WorkflowHandle:
         self.inner_var_dict["PLATFORM_VERSION"] = platform_info.version
         self.inner_var_dict["PLATFORM_MACHINE"] = platform_info.machine
         self.inner_var_dict["PLATFORM_DISTR"] = platform_info.distr
-        self.inner_var_dict["PLATFORM_LIBC"] = platform_info.libc
 
     def inner_var_dict_add_git(self, git_info: GitInfo):
         self.inner_var_dict["GIT_REF"] = git_info.ref
@@ -596,27 +585,6 @@ class WorkflowHandle:
             break
         return build_type
 
-    def get_bool(self, val):
-        """
-        is need ignore
-        """
-        if type(val) is str:
-            val = VarReplaceHandle.replace(val, self.all_var_dict)
-
-        if type(val) is bool:
-            return val
-        elif type(val) is int:
-            if val == 0:
-                return False
-            else:
-                return True
-        elif type(val) is str:
-            if val.lower() in ["true", "1", "yes"]:
-                return True
-            else:
-                return False
-        return False
-
     def output_vars(self):
         """
         output arguments
@@ -627,7 +595,6 @@ class WorkflowHandle:
             "task_name={}\n"
             "task_id={}\n"
             "working_dir={}\n"
-            "artifacts_search_dir={}\n"
             "params={}\n"
             "output_dir={}\n"
             "".format(
@@ -635,7 +602,6 @@ class WorkflowHandle:
                 self.task_name,
                 self.task_id,
                 self.working_dir,
-                self.settings_handle.pkg_search_repos,
                 self.input_param_dict,
                 self.output_dir,
             )

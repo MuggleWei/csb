@@ -1,150 +1,466 @@
 - [HPB 使用指南](#hpb-使用指南)
-  - [hpb build](#hpb-build)
-    - [hpb build - 使用](#hpb-build---使用)
-    - [hpb build - hello world](#hpb-build---hello-world)
-    - [hpb build - 变量赋值](#hpb-build---变量赋值)
-    - [hpb build - 变量值覆盖](#hpb-build---变量值覆盖)
-    - [hpb build - 内建变量](#hpb-build---内建变量)
-    - [hpb build - 多任务依赖](#hpb-build---多任务依赖)
-    - [hpb build - workflow的结构](#hpb-build---workflow的结构)
-    - [hpb build - 现实中的例子](#hpb-build---现实中的例子)
-  - [更多](#更多)
-
+  - [概览](#概览)
+    - [示例01: Hello World](#示例01-hello-world)
+    - [示例02: built-in variables](#示例02-built-in-variables)
+      - [示例解析](#示例解析)
+    - [示例03: variables](#示例03-variables)
+      - [示例解析](#示例解析-1)
+    - [示例04: 依赖包](#示例04-依赖包)
+    - [示例05: 构建自己的包](#示例05-构建自己的包)
+      - [示例解析](#示例解析-2)
+    - [示例06: Fat 包](#示例06-fat-包)
+  - [附录1-内建变量列表](#附录1-内建变量列表)
 
 # HPB 使用指南
 在开始阅读本指南时, 请先确认 `hpb` 已正确安装, 如果尚未安装, 可以跳转至 [安装](../../README_cn.md#安装) 文档查看  
 
-## hpb build
+## 概览
+本指南是一个实操型指南, 通过从一个简单的例子开始, 一步一步的扩展为一个较为复杂的工程. 所用的示例都可以在 [examples](../../examples/) 目录中找到  
 
-### hpb build - 使用
-通过 `hpb build -h` 可以查看 `build` 的子命令参数
-```
-  -c, --config string     [REQUIRED] build config file
-  -m, --mode string       [OPTIONAL] dev or task, use dev by default
-    , --task-name string  [OPTIONAL] build task name, if empty, use config file without suffix as task-name
-    , --task-id string    [OPTIONAL] build task id, if empty, set 'yyyymmddHHMMSSxxxx' as task-id
-    , --work-dir string   [OPTIONAL] working directory(by default, use current working directory)
-  -p, --param list        [OPTIONAL] build parameters, e.g. --params foo=123 -p bar=456
-  -s, --settings string   [OPTIONAL] manual set settings.xml
-```
-* -c, --config: 用于指定构建使用的 yaml 文件
-* -m, --mode: 指定当前的构建模式, 当前可选模式为 dev 或 task, 默认情况为 dev.  
-  * 不同的模式本质是相同的, 只是生成的目录结构有所区别
-  * 当使用 dev 模式时, 生成的 `hpb` 目录结构会全部在 `build/_hpb` 目录下
-  * 当使用 task 模式时, 会为每次构建生成不同的目录
-* --task-name: 指定本次构建的任务名称, 如果没有指定, 将会使用配置文件去掉后缀名作为任务名称. **此参数仅在 task 模式下生效**
-* --task-id: 指定本次构建的任务 id, 当没有设定时,使用当前时间的 `yyyymmddHHMMSSxxxx` 格式作为任务 id. 如果调用者想要自己指定 id, 我们建议调用者确保相同的任务名称下, 任务 id 应该是唯一的. **此参数仅在 task 模式下生效**
-* --work-dir: 指定本次任务的工作目录, 默认情况下是当前的工作目录
-* -p, --param: 设置构建参数
-* -s, --settings: 额外指定配置文件
+### 示例01: Hello World
+不能免俗的, 让我们从一个打印 `hello world` 的程序开始吧.  
 
-### hpb build - hello world
-看了上面的命令 `help` 之后, 是否觉得有些抽象呢？ 不用担心，让我们通过一个简单的例子来展示 `hpb build` 的使用  
-例1: [example01_hello/hello.yml](../../examples/example01_hello/hello.yml)
+[example01](../../examples/example01)
 ```
+example01
+├── build.yml
+└── hello.c
+```
+
+hello.c
+```c {.line-numbers}
+#include <stdio.h>
+
+int main()
+{
+    printf("hello, world\n");
+    return 0;
+}
+```
+
+build.yml
+```yaml {.line-numbers}
 name: hello
 jobs:
-  job1:
+  build:
     steps:
-      - name: step1
-        run: >
-          echo "hello, world";
+      - run: gcc hello.c -o hello
 ```
-此时，在此文件的目录下运行: `hpb build -c hello.yml`, 会在屏幕上看到屏幕上打印出了一些日志
-```
-2023-04-18 23:49:56,340|root|INFO|builder.py:44 - hpb builder run task hello.20230418-234956-331565
-2023-04-18 23:49:56,448|root|INFO|workflow_handle.py:264 - run job: job1
-2023-04-18 23:49:56,449|root|INFO|workflow_handle.py:309 - run command: echo "hello, world"
-COMMAND|echo "hello, world"
-REAL_COMMAND|echo "hello, world"
-STDOUT|"hello, world"
-```
-* 第 1 行代表开始运行名为 `hello.20230418-233339-791253` 的任务
-* 第 2 行 `run job: job1` 表示开始运行任务 `job1`
-* 第 3 行 `run command: echo "hello, world"` 则代表了要运行的命令
-* 第 4, 5 行代表真实的执行了命令
-* 最后一行 `STDOUT` 表示此行为命令的输出结果 `"hello, world"`
 
-此时, 当前目录下还会生成一个 `build/_hpb` 目录, 现在暂时无须了解它的内容, 之后我们将会再此遇见它  
+当前目录结果如上所示, 仅有 `hello.c` 和 `build.yml`. 这个例子十分简单, 而且并不通用(比如在 Windows 下, 如果用户没有安装 MinGW 之类的工具, 这个命令是执行不了的), 在开始运行之前, 让我们先看一下 `build.yml`  
+* 第 1 行: `name: hello` 指定了 yaml 的名称
+* 第 2 行: `jobs` 是 `hpb` 任务的开始, 它的子节点是一系列的任务
+* 第 3 行: `build` 是单个任务的名称, `hpb` 当中任务名称并没有限制, 你可以让任务叫做 `build`, `package`, `upload`, 也可以叫做 `foo`, `bar` 或 `baz`, 但是能表达任务所进行的工作显然是更好的
+* 第 4 行: `steps` 表示从这里开始, 是此任务的步骤, 它的子节点们应该是列表
+* 第 5 行: `- run: gcc hello.c -o hello`
+  * 这里要注意, 本行开头的第一个字符为 `-`, 表示它是 yaml 列表中的一个元素
+  * 这个 `run` 表示要执行的命令
+  * `gcc hello.c -o hello` 执行生成任务, 生成名为 hello 的可执行文件
 
-### hpb build - 变量赋值
-上一小节我们运行了一个简单的例子, 它仅仅执行一个输出 "hello world" 的命令, 现在让我们来使用变量, 输出一些不同的内容
-例2: [example02_var/var.yml](../../examples/example02_var/var.yml)
+现在, 让我们进入目录并执行命令 `hpb build -c`, 可以看到当前生成了一个名为 hello 的可执行文件(没有 gcc 命令的环境会执行失败)
+
+### 示例02: built-in variables
+现在让我们来扩展一下上一小节的示例, 为了让我们的程序可以在任何平台上运行, 这次我们使用 CMake 或 meson 来生成工程, 你可以在两者之中挑选一个你熟悉的工具继续进行  
+
+<div>
+<details>
+<summary>Example02 CMake</summary>
+
+[example02_cmake](../../examples/example02_cmake)
 ```
-name: echo
+example02
+├── src
+│   └── hello.c
+├── CMakeLists.txt
+└── build.yml
+```
+
+这次, 我们调整了一下目录结构, 将 `hello.c` 放进了 src 当中, 增加了一个 `CMakeLists.txt` 文件, 接着我们更改一下 `build.yml`  
+
+[build.yml](../../examples/example02_cmake/build.yml)
+```yaml {.line-numbers}
+...
+- run: >
+    cmake \
+      -S ${HPB_SOURCE_PATH} \
+      -B ${HPB_BUILD_DIR} \
+      -DCMAKE_INSTALL_PREFIX=${HPB_OUTPUT_DIR}
+      -DCMAKE_BUILD_TYPE=release;
+    cmake --build ${HPB_BUILD_DIR} --config release;
+    cmake --build ${HPB_BUILD_DIR} --config release --target install;
+```
+
+现在进入 [example02_cmake](../../examples/example02_cmake) 运行 `hpb build -c build.yml`, 编译结束之后, 可以在 `example02_cmake/build/_hpb/output/bin/` 中看到我们生成的结果 `hello`
+
+ 
+</detail>
+</div>
+
+<div>
+<details>
+<summary>Example02 Meson</summary>
+
+[example02_meson](../../examples/example02_meson)
+```
+example02
+├── src
+│   └── hello.c
+│── meson.build
+└── meson_build.yml
+```
+
+这次, 我们调整了一下目录结构, 将 `hello.c` 放进了 src 当中, 增加了一个 `meson.build` 文件, 接着我们更改一下 `build.yml`  
+
+[build.yml](../../examples/example02_meson/build.yml)
+```yaml {.line-numbers}
+...
+- run: >
+    meson setup ${HPB_BUILD_DIR} \
+      --prefix ${HPB_OUTPUT_DIR} \
+      --buildtype release;
+    meson compile -C ${HPB_BUILD_DIR};
+    meson install -C ${HPB_BUILD_DIR};
+```
+
+现在进入 [example02_meson](../../examples/example02_meson) 运行 `hpb build -c build.yml`, 编译结束之后, 可以在 `example02_meson/build/_hpb/output/bin/` 中看到我们生成的结果 `hello`
+ 
+</detail>
+</div>
+  
+#### 示例解析
+在这个示例中, 使用 CMake/Meson 构建时, 指定目录过程中使用了 `${HPB_SOURCE_PATH}`, `${HPB_BUILD_DIR}` 和 `${HPB_OUTPUT_DIR}` 变量, 它们都是 `hpb` 的内建变量  
+* `${HPB_SOURCE_PATH}`: 代表项目所在路径, 在本例是当前的工作目录 (之后还会看到, 可以通过配置源码信息, 使得 `${HPB_SOURCE_PATH}` 不为当前工作目录)
+* `${HPB_BUILD_DIR}`: 推荐使用的编译路径, 默认会为用户自动生成 (当然用户也可以自己指定目录, 但是之后会了解到, `hpb build` 有两种模式, 使用 `${HPB_BUILD_DIR}` 是更加方便的做法)
+* `HPB_OUTPUT_DIR`: 编译后本地输出路径, 强烈推荐将 `CMAKE_INSTALL_PREFIX` 设置为此路径(而不是直接安装到系统/用户目录当中), 方便之后的打包操作
+
+**注意: 在 `hpb` 当中, 所有的变量均以 `${xxx}` 的形式来指定, `$xxx` 和 `$(xxx)` 在 `hpb` 中并不是一个变量, 它们会被认为是普通的字符串**  
+
+除了这里展示几个变量之外, `hpb` 还有许多内建变量, 它们均以 `HPB_` 开头, 具体内建变量列表详见: [附录1-内建变量列表](#附录1-内建变量列表)  
+
+### 示例03: variables
+截至目前, 通过 CMake/Meson, 我们的 `hello, world` 已经可以运行在各个平台上了, 但是有一个问题: 我们在配置文件中, 直接将 build_type 设置为了 release, 这实在太不灵活了, 让我们继续改进上面的 `build.yml` 文件  
+
+<div>
+<details>
+<summary>Example03 CMake</summary>
+
+[build.yml](../../examples/example03_cmake/build.yml)
+```yaml {.line-numbers}
+name: hello
 variables:
-  - foo: foo
+  - build_type: release
 jobs:
-  job1:
+  build:
     steps:
-      - name: step1
-        run: >
-          echo "${foo}";
-          echo "${bar}";
+      - run: >
+          cmake \
+            -S ${HPB_SOURCE_PATH} \
+            -B ${HPB_BUILD_DIR} \
+            -DCMAKE_INSTALL_PREFIX=${HPB_OUTPUT_DIR}
+            -DCMAKE_BUILD_TYPE=${build_type};
+          cmake --build ${HPB_BUILD_DIR} --config ${build_type};
+          cmake --build ${HPB_BUILD_DIR} --config ${build_type} --target install;
 ```
-我们在文件中增加了 `varables` 分节, 并定义了变量 `foo`, 将其值设置为 `foo`. 此时, 我们进入目录并运行 `hpb build -c var.yml` 将会看到错误日志
+ 
+</detail>
+</div>
+
+<div>
+<details>
+<summary>Example03 Meson</summary>
+
+[build.yml](../../examples/example03_cmake/build.yml)
+```yaml {.line-numbers}
+name: hello
+variables:
+  - build_type: release
+jobs:
+  build:
+    steps:
+      - run: >
+          meson setup ${HPB_BUILD_DIR} \
+            --prefix ${HPB_OUTPUT_DIR} \
+            --buildtype ${build_type};
+          meson compile -C ${HPB_BUILD_DIR};
+          meson install -C ${HPB_BUILD_DIR};
+```
+ 
+</detail>
+</div>
+
+#### 示例解析
+在此示例中, 我们添加了 `variables`, 它的子节点为变量列表. 当前将 `build_type` 的默认值设置为 `release`. 当我们没有额外提供任何选项时, 它的值将保持配置文件中的默认值.  
+现在进入对应的目录, 运行 `hpb build -c build.yml -p build_type=debug`, 将编译 `debug` 版本. 我们通过 `build -p build_type=debug` 覆盖了文件中 `build_type` 的默认值
+
+### 示例04: 依赖包
+本节继续扩展我们的工程, 实现一个依赖 zlib 库, 用于压缩/解压单个文件的程序   
+[hello.c](../../examples/example04_cmake/src/hello.c)
+```c {.line-numbers}
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include "zlib.h"
+
+int compress_one_file(const char *input_filepath, const char *output_filepath)
+{
+	......
+}
+
+int decompress_one_file(const char *input_filepath, const char *output_filepath)
+{
+	......
+}
+
+int main(int argc, char *argv[])
+{
+	if (argc < 4) {
+		fprintf(stderr,
+			"Usage: %s <c|d> <in> <out>\n"
+			"e.g\n"
+			"\t%s c hello.c hello.c.gz\n",
+			argv[0], argv[0]);
+		exit(EXIT_FAILURE);
+	}
+
+	if (strcmp(argv[1], "c") == 0) {
+		compress_one_file(argv[2], argv[3]);
+	} else if (strcmp(argv[1], "d") == 0) {
+		decompress_one_file(argv[2], argv[3]);
+	} else {
+		fprintf(stderr, "Unrecognized compress/decompress flag: %s\n",
+			argv[1]);
+		exit(EXIT_FAILURE);
+	}
+
+	return 0;
+}
+```
+这个程序很简单, 通过第 2 个输入参数来判断是压缩或解压. 其中 `compress_one_file` 和 `decompress_one_file` 使用 zlib 实现压缩/解压文件的功能.  
+接着我们更改 `hpb` 的配置文件, 增加对 zlib 的依赖  
+
+```yaml {.line-numbers}
+name: hello
+variables:
+  - build_type: release
+deps:
+  - name: zlib
+    maintainer: madler
+    tag: v1.2.13
+jobs:
+  ......
+```
+`deps` 是依赖项目列表, 其中每一个依赖都由 `name`, `maintainer` 和 `tag` 这三个字段唯一确定  
+
+接着根据所使用的构建工具, 添加包搜索路径
+<div>
+<details>
+<summary>Example04 CMake</summary>
+
+[build.yml](../../examples/example04_cmake/build.yml)
+```yaml {.line-numbers}
+......
+jobs:
+  build:
+    steps:
+      - run: >
+          cmake \
+            -S ${HPB_SOURCE_PATH} \
+            -B ${HPB_BUILD_DIR} \
+            -DCMAKE_PREFIX_PATH=${HPB_DEPS_DIR} \
+            -DCMAKE_INSTALL_PREFIX=${HPB_OUTPUT_DIR} \
+            -DCMAKE_BUILD_TYPE=${build_type};
+          cmake --build ${HPB_BUILD_DIR} --config ${build_type};
+          cmake --build ${HPB_BUILD_DIR} --config ${build_type} --target install;
+```
+ 
+</detail>
+</div>
+
+此时在示例目录中运行 `hpb build -c build.yml`, 会看到错误提示:  
+> failed find dep:  
+> {  
+> &nbsp;&nbsp;&nbsp;&nbsp;"maintainer": "madler",  
+> &nbsp;&nbsp;&nbsp;&nbsp;"name": "zlib",  
+> &nbsp;&nbsp;&nbsp;&nbsp;"tag": "v1.2.13"  
+> }  
+> failed search dependencies
+
+这是因为在默认情况下, 当前配置文件并没有配置远程包管理库, 而本地包管理库中也没有 zlib. 所以当前有两个选择
+* 本地生成 zlib 包, 并上传至本地包管理库当中
+* 配置有 zlib 的远程包管理库 (暂未实现)
+
+让我们先选择使用第一种方法: 生成本地 zlib 包.  
+`hpb` 默认会安装一些较为常见的包编译的配置文件, 可以直接生成 zlib 包并上传至本地包管理库中
+```
+hpb build -m task -c ~/.hpb/share/modules/zlib/zlib.yml
+```
+在任意目录执行上述命令, 成功执行后, zlib 包将会被上传至本地包管理库当中. 执行 `hpb search -n zlib` 来查看 zlib 包是否成功被上传至本地包管理库当中
+```
+zlib
+└── madler/zlib
+```
+
+此时回到示例目录中, 执行 `hpb build -c build.yml`, 便能成功生成程序
+
+### 示例05: 构建自己的包
+在上一小节当中, 我们已经在程序中添加了包的依赖, 使用 zlib 用于压缩/解压一个文件. 本节, 让我们将上一小节的函数放到自己的库当中, 当需要再次使用时, 我们只需依赖自己的包即可.  
+
+1. 将 [example05](../../examples/example05_cmake) 拷贝至任意文件夹并重命名为 foo
+2. 进入 foo, 执行
+```
+git init
+git add .
+git commit -m "init foo"
+git tag v1.0.0
+hpb build -c build.yml
+```
+3. 查看 foo 是否正确的被上传至了本地包管理库中
+```
+# 搜索名为 foo 的库
+hpb search -n foo
+
+# 搜索名为 foo, 维护者为 mugglewei 的库
+hpb search -n foo -m mugglewei
+
+# 搜索名为 foo, 维护者为 mugglewei 并且 tag 信息为 v1.0.0 的库
+hpb search -n foo -m mugglewei -v v1.0.0
+```
+
+#### 示例解析
+[build.yml](../../examples/example05_cmake/build.yml)
+```
+name: foo
+variables:
+  - build_type: release
+source:
+  name: foo
+  maintainer: mugglewei
+deps:
+  - name: zlib
+    maintainer: madler
+    tag: v1.2.13
+jobs:
+  build:
+    steps:
+      - run: >
+        ......
+  package:
+    needs: [build]
+    steps:
+      - run: >
+          cd ${HPB_TASK_DIR};
+          hpb pack;
+  upload:
+    needs: [package]
+    steps:
+      - run: >
+          hpb push;
+```
+* 当前的 `hpb` 配置文件中, 在根节点中增加了一个 `source` 节点, 表明了当前包的名称以及维护者.
+* 在 foo 目录中执行了 `git tag v1.0.0`, `hpb` 默认会读取目录的 git 信息, 来作为包的 tag
+* 在配置文件中, `jobs` 节点下增加了 `package` 和 `upload` 步骤, 用于打包和上传包至配置文件指定的包管理库中
+* 在 `package` 和 `upload` 步骤中, 有 `needs` 节点, 它声明了此任务的依赖任务
+
+### 示例06: Fat 包
+上一小节生成并上传了 foo 包, 现在让我们来使用它  
+
+<div>
+<details>
+<summary>Example06 CMake</summary>
+
+[build.yml](../../examples/example06_cmake/build.yml)
+```yaml {.line-numbers}
+name: hello
+variables:
+  - build_type: release
+source:
+  name: hello
+  maintainer: mugglewei
+deps:
+  - name: foo
+    maintainer: mugglewei
+    tag: v1.0.0
+jobs:
+  build:
+    steps:
+      - run: >
+          cmake \
+            -S ${HPB_SOURCE_PATH} \
+            -B ${HPB_BUILD_DIR} \
+            -DCMAKE_PREFIX_PATH=${HPB_DEPS_DIR} \
+            -DCMAKE_INSTALL_PREFIX=${HPB_OUTPUT_DIR} \
+            -DCMAKE_BUILD_TYPE=${build_type};
+          cmake --build ${HPB_BUILD_DIR} --config ${build_type};
+          cmake --build ${HPB_BUILD_DIR} --config ${build_type} --target install;
+  package:
+    needs: [build]
+    steps:
+      - run: >
+          cd ${HPB_TASK_DIR};
+          hpb pack --copy-to ${HPB_ROOT_DIR}/_packages/;
+```
+ 
+</detail>
+</div>
+
+<div>
+<details>
+<summary>Example06 Meson</summary>
+
+[build.yml](../../examples/example06_meson/build.yml)
+```yaml {.line-numbers}
+name: hello
+variables:
+  - build_type: release
+source:
+  name: hello
+  maintainer: mugglewei
+deps:
+  - name: foo
+    maintainer: mugglewei
+    tag: v1.0.0
+jobs:
+  build:
+    steps:
+      - run: >
+          meson setup ${HPB_BUILD_DIR} \
+            --pkg-config-path ${HPB_DEPS_DIR}/lib/pkgconfig \
+            --prefix ${HPB_OUTPUT_DIR} \
+            --buildtype ${build_type};
+          meson compile -C ${HPB_BUILD_DIR};
+          meson install -C ${HPB_BUILD_DIR};
+  package:
+    needs: [build]
+    steps:
+      - run: >
+          cd ${HPB_TASK_DIR};
+          hpb pack --copy-to ${HPB_ROOT_DIR}/_packages/;
+```
+ 
+</detail>
+</div>
+
+在示例 06 中, 只需要添加依赖项 foo, 构建之后便会自动下载依赖的依赖. 本节并未将生成的包上传至本地包管理库中, 而是在 `hpb pack` 中, 将其拷贝至了示例目录的 `_packages` 文件夹中. 现在进入 `_packages` 目录, 解压 tar.gz 包, 将会发现其中只有 bin 目录, 这符合包的预期.  
+但是如果你想要部署一个服务, 也许你希望得到一个 Fat 包(包中包含了其所有的依赖). 我们只需要稍微修改一下 yaml 文件即可.  
 ```
 ......
-2023-04-18 23:50:30,037|root|INFO|workflow_handle.py:309 - run command: echo "${bar}"
-COMMAND|echo "${bar}"
-2023-04-18 23:50:30,039|root|ERROR|workflow_handle.py:313 - failed replace variable in: echo "${bar}"
-```
-这是由于我们使用了变量 `${bar}`, 当却没有给 `bar` 变量赋过值. 我们可以像对待变量 `foo` 一样, 通过在 `variables` 当中增加对 `bar` 的赋值从而修复此错误.  
-除此之外, 还可以直接通过命令传参来实现: `hpb build -c echo.yml -p bar="hello bar"`. 此时将会得到类似下面的输出
-```
-2023-04-18 23:51:20,480|root|INFO|workflow_handle.py:264 - run job: job1
-2023-04-18 23:51:20,481|root|INFO|workflow_handle.py:309 - run command: echo "${foo}"
-COMMAND|echo "${foo}"
-REAL_COMMAND|echo "foo"
-STDOUT|"foo"
-2023-04-18 23:51:20,494|root|INFO|workflow_handle.py:309 - run command: echo "${bar}"
-COMMAND|echo "${bar}"
-REAL_COMMAND|echo "hello bar"
-STDOUT|"hello bar"
-```
-
-**需要注意的是**: 在 `hpb` 当中, 变量只支持使用 `${xxx}` 来表示变量, 而 `$(xxx)` 和 `$xxx` 都并不会被 `hpb` 在使用中作为变量
-
-### hpb build - 变量值覆盖
-当同时在配置文件的 `variables` 分节以及命令行输入中定义了相同的变量, 则命令行的输入的值将会覆盖 `varaibles` 当中的赋值.  
-`hpb build -c echo.yml -p foo="hello foo" -p bar="hello bar"`  
-```
-2023-04-18 23:53:06,250|root|INFO|workflow_handle.py:309 - run command: echo "${foo}"
-COMMAND|echo "${foo}"
-REAL_COMMAND|echo "hello foo"
-STDOUT|"hello foo"
-2023-04-18 23:53:06,270|root|INFO|workflow_handle.py:309 - run command: echo "${bar}"
-COMMAND|echo "${bar}"
-REAL_COMMAND|echo "hello bar"
-STDOUT|"hello bar"
-```
-
-### hpb build - 内建变量
-除了用户定义的变量之外, 还有一些 `hpb` 内建的变量  
-例3: [examples/example03_inner_val](../../examples/example03_inner_var/inner_var.yml)
-```
-name: inner_var
-variables:
-  - curdir:
-      default: "$(pwd)"
-      windows: "%cd%"
+source:
+  name: hello
+  maintainer: mugglewei
+deps:
+  - name: foo
+    maintainer: mugglewei
+    tag: v1.0.0
+build:
+  fat_pkg: true
 jobs:
-  job1:
-    steps:
-      - name: step1
-        run: >
-          echo "${HPB_ROOT_DIR}";
-          echo ${curdir};
-          cd "${HPB_TASK_DIR}";
-          echo ${curdir};
+  build:
+......
 ```
-运行 `hpb build -c inner_var.yml`, 我们将可以看到被打印出的目录信息, 这个配置文件中有两点值得关注
-1. 变量 `curdir` 的值并没有直接设置, 而是根据系统的不同而不同
-   * `default` 表示当没有精确匹配的系统时, 将 `curdir` 设置为 `"$(pwd)"`
-   * `windows` 表示当系统为 `windows` 时, 将 `curdir` 设置为 `"%cd%"`
-2. 可以看到 `HPB_ROOT_DIR` 和 `HPB_TASK_DIR`, 它们是 `hpb` 的内建变量, 在 `hpb` 脚本当中, 内建变量全部以 `HPB_` 打头, 所以用户在使用过程中, 尽量避免 `HPB_` 开头的变量, 以防冲突
+在 yaml 文件中, 增加一个 `build` 节点, 并设置其子节点的 `fat_pkg` 为 `true`, 那么在打包时, 会自动将依赖及依赖的依赖全部打入包中
 
-除了上面看到的两个内建变量, 还有许多内建变量, 具体的见下表
+## 附录1-内建变量列表
 | 名称 | 描述 |
 | ---- | ---- |
 | HPB_ROOT_DIR | workflow 初始的工作目录 |
@@ -170,123 +486,3 @@ jobs:
 | HPB_GIT_TAG | source 所在目录的 git tag |
 | HPB_GIT_COMMIT_ID | source 所在目录的 git commit id |
 | HPB_GIT_BRANCH | source 所在目录的 git branch 名称 |
-
-如果用户愿意, 也可以通过命令行入参强行覆盖内建变量的值  
-
-### hpb build - 多任务依赖
-TODO:
-到目前为止, 我们已经运行了一些很简单的例子, 它们仅仅包含了一个 `job`, 而这个 `job` 当中只有一个 `step`. 现在让我们稍微扩展一下, 假设我们有两个 `job`, 分别名为 `build` 和 `package`, 而 `package` 依赖于 `build`  
-下面是一个名为 `deps.yml` 的文件
-```
-name: deps
-variables:
-  - foo: hello foo
-jobs:
-  package:
-    needs: [build]
-    steps:
-      -name: package
-        run: >
-          tar -czvf hello.tar.gz hello.sh;
-          mv hello.tar.gz ${HPB_OUTPUT_DIR};
-  build:
-    steps:
-      - name: prepare
-        run: >
-          cd ${HPB_TASK_DIR};
-          echo "Downloading source code";
-      - name: build
-        run: >
-          echo "start compile";
-          echo "compiling ...";
-          echo "#!/bin/bash" >> hello.sh;
-          echo "echo ${foo}" >> hello.sh;
-          chmod u+x hello.sh;
-          echo "mission completed";
-```
-这里特地在书写顺序上调换了 `build` 和 `package` 的位置, 但是注意, 在 `package` 当中, 有一行 `needs: [build]`, 这说明了 `package` 任务依赖于 `build` 的完成.  
-现在让我们运行: `hpb build -c deps.yml -o ./_artifacts`  
-可以看到如下的输出
-```
-2023-04-07 23:31:21,127|root|INFO|builder.py:129 - run job: build
-2023-04-07 23:31:21,128|root|INFO|builder.py:168 - run command: cd ${HPB_TASK_DIR}
-2023-04-07 23:31:21,128|root|INFO|builder.py:168 - run command: echo "Downloading source code"
-Downloading source code
-2023-04-07 23:31:21,133|root|INFO|builder.py:168 - run command: echo "start compile"
-start compile
-2023-04-07 23:31:21,139|root|INFO|builder.py:168 - run command: echo "compiling ..."
-compiling ...
-2023-04-07 23:31:21,145|root|INFO|builder.py:168 - run command: echo "#!/bin/bash" >> hello.sh
-2023-04-07 23:31:21,150|root|INFO|builder.py:168 - run command: echo "echo ${foo}" >> hello.sh
-2023-04-07 23:31:21,155|root|INFO|builder.py:168 - run command: chmod u+x hello.sh
-2023-04-07 23:31:21,161|root|INFO|builder.py:168 - run command: echo "mission completed"
-mission completed
-2023-04-07 23:31:21,165|root|INFO|builder.py:129 - run job: package
-2023-04-07 23:31:21,166|root|INFO|builder.py:168 - run command: tar -czvf hello.tar.gz hello.sh
-hello.sh
-2023-04-07 23:31:21,178|root|INFO|builder.py:168 - run command: mv hello.tar.gz ${HPB_OUTPUT_DIR}
-```
-通过上面日志, 我们看到 `run job: build` 确实先于 `run job: package` 被执行. 在上面的命令中, 我么们还指定了 `./_artifacts` 为输出目录, 因此, 你可以在 `./_artifacts` 当中看到构建的结果 `hello.tar.gz`
-
-### hpb build - workflow的结构
-到现在为止, 我们已经看到了 `hpb build` 所使用的 `yaml` 大致的模样了. 如果你使用过 github action 亦或是 gitlab ci 应该就很容易理解这种类型的文件结构.  
-对于 hpb 来说, 层级关系是 `workflow > job > step > action`  
-* 每个配置文件包含一个 workflow, 它有下面几个属性
-	* name: workflow 的名称
-	* variables: 用于在配置文件中自定义变量
-	* source: 指定源码信息
-	* artifacts: 指定制品信息
-	* jobs: workflow 要执行的任务列表, 包含了一系列的 job
-* 每个 job 的名称可以随意取, 但不要重复, job 包含了以下属性
-	* needs: 本任务所依赖的任务列表
-	* steps: 本任务要执行的步骤, 包含了一系列的 step
-* 每个 step 代表了一个步骤, 包括了以下属性
-	* name: 本步骤的名称
-	* run: 本步骤要执行的 action
-* 每个 action 代表了一个命令
-
-### hpb build - 现实中的例子
-下面我们使用 `hpb`, 来执行一下 `googletest` 的构建
-```
-name: googletest
-variables:
-  - GIT_TAG: v1.13.0
-  - BUILD_TYPE: release
-  - git_url: https://github.com/google/googletest.git
-  - pkg_name: googletest-${GIT_TAG}-${BUILD_TYPE}
-jobs:
-  prepare:
-    steps:
-      - name: prepare
-        run: >
-          cd ${HPB_TASK_DIR};
-          git clone --depth=1 --branch=${GIT_TAG} ${git_url};
-  build:
-    needs: [prepare]
-    steps:
-      - name: build
-        run: >
-          cd googletest;
-          mkdir -p build;
-          mkdir -p usr;
-          cmake \
-            -S . -B build \
-            -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
-            -DBUILD_SHARED_LIBS=ON \
-            -DCMAKE_INSTALL_PREFIX=./usr;
-          cmake --build ./build --target install;
-  package:
-    needs: [build]
-    steps:
-      - name: package
-        run: >
-          cd ${HPB_TASK_DIR}/googletest/usr;
-          tar -czvf ${pkg_name}.tar.gz ./*;
-          mv ${pkg_name}.tar.gz ${HPB_OUTPUT_DIR};
-```
-执行命令: `hpb build -c googletest.yml -p GIT_TAG=v1.13.0 -p BUILD_TYPE=release -o ./_artifacts`  
-成功结束之后, 我们便可以在 `./_artifacts` 目录当中看到 `googletest-v1.13.0-release.tar.gz`
-
-## 更多
-如果想要更深入的了解 `hpb` 作为 CI 的本地执行器, 可以参考文档 [作为 CI 执行器使用](./as_ci_executor.md)  
-如果想要将 `hpb` 作为管理本地代码和库文件的辅助工具, 那么可以参考文档 [本地库管理](./local_lib_manager.md)

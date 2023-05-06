@@ -8,7 +8,7 @@ from hpb.utils.utils import Utils
 class TestWorkflowHandle(unittest.TestCase):
     def setUp(self):
         super().setUp()
-        self.working_dir = "./_hpb/test_workflow_handle"
+        self.working_dir = "./hpb/test_workflow_handle"
         self.working_dir = Utils.expand_path(self.working_dir)
         if os.path.exists(self.working_dir):
             shutil.rmtree(self.working_dir)

@@ -6,8 +6,7 @@ from hpb.data_type.source_info import SourceInfo
 
 
 class SourceDownloader:
-    def __init__(self, command_handle: CommandHandle):
-        self.command_handle = command_handle
+    def __init__(self):
         self.source_path = ""
 
     def download(self, src_info: SourceInfo, source_root: str):
@@ -66,7 +65,7 @@ class SourceDownloader:
                 self.source_path
             )
             logging.info("run command: {}".format(command))
-            return self.command_handle.exec(command=command)
+            return CommandHandle().exec(command=command)
         else:
             self.source_path = os.path.join(
                 source_root,
@@ -80,7 +79,7 @@ class SourceDownloader:
                 self.source_path
             )
             logging.info("run command: {}".format(command))
-            ret = self.command_handle.exec(command=command)
+            ret = CommandHandle().exec(command=command)
             if ret is False:
                 return ret
             return self._checkout_src_tag(self.source_path, src_info.tag)
@@ -94,7 +93,7 @@ class SourceDownloader:
         logging.info("change dir to: {}".format(os.path.abspath(os.curdir)))
         command = "git checkout {}".format(tag)
         logging.info("run command: {}".format(command))
-        ret = self.command_handle.exec(command=command)
+        ret = CommandHandle().exec(command=command)
         os.chdir(origin_dir)
         logging.info("restore dir to: {}".format(os.path.abspath(os.curdir)))
         return ret

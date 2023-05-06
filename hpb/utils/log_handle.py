@@ -2,6 +2,7 @@ import logging
 import logging.handlers
 import os
 
+
 class ConsoleColorFormatter(logging.Formatter):
 
     def __init__(self, formatter):
@@ -68,7 +69,7 @@ class LogHandle(object):
         """
         console formatter
         """
-        return ConsoleColorFormatter("%(levelname)s - %(message)s")
+        return ConsoleColorFormatter("%(message)s")
 
     @staticmethod
     def get_file_formatter():

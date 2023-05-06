@@ -12,8 +12,6 @@ class TestPackageMeta(unittest.TestCase):
             "name": "hpb",
             "maintainer": "mugglewei",
             "tag": "1.0.0",
-            "build_type": "release",
-            "is_fat_pkg": False,
             "platform": {
                 "system": "linux",
                 "release": "6.2.9-arch1-1",
@@ -21,8 +19,20 @@ class TestPackageMeta(unittest.TestCase):
                 "machine": "x86_64",
                 "distr_id": "arch",
                 "distr_ver": "",
-                "libc_id": "glibc",
-                "libc_ver": "2.37"
+            },
+            "build": {
+                "build_type": "release",
+                "fat_pkg": False,
+                "compiler": {
+                    "cc": "",
+                    "cc_ver": "",
+                    "cxx": "",
+                    "cxx_ver": "",
+                },
+                "link": {
+                    "libc": "",
+                    "libc_ver": "",
+                }
             },
             "deps": []
         }
@@ -55,7 +65,7 @@ class TestPackageMeta(unittest.TestCase):
         pkg_meta = PackageMeta()
         pkg_meta.load_from_file("./pkg/test_package_meta/hpb.yml")
 
-        output_filepath = "./_hpb/test_package_meta/hpb.yml"
+        output_filepath = "./hpb/test_package_meta/hpb.yml"
         pkg_meta.dump(output_filepath)
         handle = YamlHandle()
         obj = handle.load(output_filepath)
@@ -68,8 +78,10 @@ class TestPackageMeta(unittest.TestCase):
         self.assertEqual(src_info.maintainer, self._obj["maintainer"])
         self.assertEqual(src_info.tag, self._obj["tag"])
 
-        self.assertEqual(pkg_meta.build_type, self._obj["build_type"])
-        self.assertEqual(pkg_meta.is_fat_pkg, self._obj["is_fat_pkg"])
+        meta_build = pkg_meta.build_info
+        obj_build = self._obj["build"]
+        self.assertEqual(meta_build.build_type, obj_build["build_type"])
+        self.assertEqual(meta_build.fat_pkg, obj_build["fat_pkg"])
 
         meta_platform = pkg_meta.platform
         obj_platform = self._obj["platform"]
@@ -79,8 +91,6 @@ class TestPackageMeta(unittest.TestCase):
         self.assertEqual(meta_platform.machine, obj_platform["machine"])
         self.assertEqual(meta_platform.distr_id, obj_platform["distr_id"])
         self.assertEqual(meta_platform.distr_ver, obj_platform["distr_ver"])
-        self.assertEqual(meta_platform.libc_id, obj_platform["libc_id"])
-        self.assertEqual(meta_platform.libc_ver, obj_platform["libc_ver"])
 
     def assert_dict_eq(self, obj1, obj2):
         for k, v in obj1.items():

@@ -4,6 +4,7 @@ import typing
 import xml.dom.minidom
 
 from hpb.data_type.constant_var import APP_NAME
+from hpb.utils.singleton import singleton
 from hpb.utils.utils import Utils
 
 
@@ -46,15 +47,30 @@ class RepoConfig:
         return ""
 
 
+@singleton
 class SettingsHandle:
     """
     settings file handle
     """
 
-    @classmethod
-    def load_settings(cls, user_settings=""):
+    def __init__(self):
         """
-        load settings
+        initialize settings handle
+        """
+        self.clean()
+
+    def clean(self):
+        self.log_console_level = ""
+        self.log_file_level = ""
+        self.db_path = ""
+        self.source_path = ""
+        self.pkg_search_repos: typing.List[RepoConfig] = []
+        self.pkg_upload_repos: typing.List[RepoConfig] = []
+        self.build_if_not_exists = False
+
+    def init(self, user_settings=""):
+        """
+        init settings handle
         """
         default_settings_paths = []
         default_settings_paths.extend([
@@ -80,23 +96,9 @@ class SettingsHandle:
                 settings_filepath = filepath
 
         if len(settings_filepath) == 0:
-            raise Exception("Can't find settings.xml")
+            Exception("Can't find settings.xml")
 
-        settings_handle = SettingsHandle()
-        settings_handle.load(Utils.expand_path(settings_filepath))
-        return settings_handle
-
-    def __init__(self):
-        """
-        initialize settings handle
-        """
-        self.log_console_level = ""
-        self.log_file_level = ""
-        self.db_path = ""
-        self.source_path = ""
-        self.pkg_search_repos: typing.List[RepoConfig] = []
-        self.pkg_upload_repos: typing.List[RepoConfig] = []
-        self.build_if_not_exists = False
+        self.load(Utils.expand_path(settings_filepath))
 
     def load(self, filepath):
         """
@@ -121,8 +123,8 @@ class SettingsHandle:
         nodes = root.getElementsByTagName("sources")
         self._load_sources(nodes)
 
-        nodes = root.getElementsByTagName("artifacts")
-        self._load_artifacts(nodes)
+        nodes = root.getElementsByTagName("packages")
+        self._load_packages(nodes)
 
     def _load_log(self, nodes):
         """
@@ -192,30 +194,30 @@ class SettingsHandle:
         val = node_source.firstChild.nodeValue
         self.source_path = Utils.expand_path(val)
 
-    def _load_artifacts(self, nodes):
+    def _load_packages(self, nodes):
         """
-        load artifacts search path
+        load packages search path
         """
         default_repo = RepoConfig()
         default_repo.kind = "local"
-        default_repo.path = "~/.{}/artifacts".format(APP_NAME)
+        default_repo.path = "~/.{}/packages".format(APP_NAME)
 
         if len(nodes) == 0:
-            print("WARNING! Can't find 'artifacts' in settings, use default")
+            print("WARNING! Can't find 'packages' in settings, use default")
             self.pkg_search_repos.append(default_repo)
             self.pkg_upload_repos.append(default_repo)
             return
 
         if len(nodes) > 1:
-            print("WARNING! Multiple 'artifacts' in settings, use first node")
+            print("WARNING! Multiple 'packages' in settings, use first node")
 
-        node_artifacts = nodes[0]
+        node_packages = nodes[0]
 
-        self.pkg_search_repos = self._get_repos(node_artifacts, "search")
+        self.pkg_search_repos = self._get_repos(node_packages, "search")
         if len(self.pkg_search_repos) == 0:
             self.pkg_search_repos.append(default_repo)
 
-        self.pkg_upload_repos = self._get_repos(node_artifacts, "upload")
+        self.pkg_upload_repos = self._get_repos(node_packages, "upload")
         if len(self.pkg_upload_repos) == 0:
             self.pkg_upload_repos.append(default_repo)
 

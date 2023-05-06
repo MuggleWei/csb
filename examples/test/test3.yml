@@ -4,11 +4,6 @@ variables:
   - art_ver: v1.0.0
   - art_name: ${repo_name}-${art_ver}
   - art_pkg: ${art_name}.tar.gz
-artifacts:
-  maintainer: mugglewei
-  repo: ${repo_name}
-  version: ${art_ver}
-  pkg: ${art_pkg}
 jobs:
   build:
     steps:

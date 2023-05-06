@@ -30,7 +30,7 @@ class GitInfo:
         if len(self.tag) > 0:
             self.ref = self.tag
         elif len(self.commit_id) > 0:
-            self.ref = self.commit_id
+            self.ref = "{}_{}".format(self.branch, self.commit_id)
         else:
             self.ref = ""
 

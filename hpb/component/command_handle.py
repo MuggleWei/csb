@@ -4,11 +4,19 @@ import selectors
 import subprocess
 
 from threading import Thread
+import typing
 
 
 class CommandHandle:
-    def __init__(self):
+    def __init__(self, cb_stdout=None, cb_stderr=None):
+        """
+        init command handle
+        :param cb_stdout: stdout callback function
+        :param cb_stderr: stderr callback function
+        """
         self._command_logger = logging.getLogger("command")
+        self._cb_stdout = cb_stdout
+        self._cb_stderr = cb_stderr
 
     def exec(self, command):
         """
@@ -50,6 +58,33 @@ class CommandHandle:
             return False
         return True
 
+    def exec_and_get_ret(
+            self, command, out_lines: typing.List, err_lines: typing.List):
+        """
+        exec command and return stdout, stderr
+        """
+        def cb_stdout(data):
+            out_lines.append(data.strip())
+
+        def cb_stderr(data):
+            err_lines.append(data.strip())
+
+        self._cb_stdout = cb_stdout
+        self._cb_stderr = cb_stderr
+        return self.exec(command)
+
+    def call(self, command):
+        """
+        exec command, return output lines and err lines
+        """
+        out_lines = []
+        err_lines = []
+
+        command_handle = CommandHandle()
+        command_handle.exec_and_get_ret(command, out_lines, err_lines)
+
+        return out_lines, err_lines
+
     def _exec_subporcess(self, p):
         """
         exec subprocess
@@ -89,9 +124,13 @@ class CommandHandle:
 
                 data = data.strip()
                 if filetype == "INFO":
-                    self._command_logger.info("STDOUT|{}".format(data))
+                    self._command_logger.info("{}".format(data))
+                    if self._cb_stdout is not None:
+                        self._cb_stdout(data)
                 else:
-                    self._command_logger.error("STDERR|{}".format(data))
+                    self._command_logger.error("{}".format(data))
+                    if self._cb_stderr is not None:
+                        self._cb_stderr(data)
 
         t = Thread(target=fanout, args=(infile, filetype))
         t.daemon = True

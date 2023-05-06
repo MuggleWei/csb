@@ -20,8 +20,6 @@ class PlatformInfo:
         self.machine = ""
         self.distr_id = ""
         self.distr_ver = ""
-        self.libc_id = ""
-        self.libc_ver = ""
 
     def __str__(self) -> str:
         return json.dumps(self.get_ordered_dict(), indent=2)
@@ -39,13 +37,6 @@ class PlatformInfo:
         else:
             return self.version
 
-    @property
-    def libc(self):
-        str_libc = self.libc_id
-        if len(self.libc_ver) > 0:
-            str_libc = str_libc + "-" + self.libc_ver
-        return str_libc
-
     def get_ordered_dict(self):
         """
         get field ordered dict
@@ -57,8 +48,6 @@ class PlatformInfo:
             ("machine", self.machine),
             ("distr_id", self.distr_id),
             ("distr_ver", self.distr_ver),
-            ("libc_id", self.libc_id),
-            ("libc_ver", self.libc_ver),
         ])
 
     def load(self, obj):
@@ -71,8 +60,6 @@ class PlatformInfo:
         self.machine = obj.get("machine", "")
         self.distr_id = obj.get("distr_id", "")
         self.distr_ver = obj.get("distr_ver", "")
-        self.libc_id = obj.get("libc_id", "")
-        self.libc_ver = obj.get("libc_ver", "")
 
     def load_local(self):
         """
@@ -86,18 +73,6 @@ class PlatformInfo:
         if self.system == "linux":
             self.distr_id = distro.id()
             self.distr_ver = distro.version()
-
-            v = platform.libc_ver()
-            if len(v) > 0:
-                self.libc_id = v[0]
-            else:
-                self.libc_id = ""
-            if len(v) > 1:
-                self.libc_ver = v[1]
-            else:
-                self.libc_ver = ""
         else:
             self.distr_id = ""
             self.distr_ver = ""
-            self.libc_id = ""
-            self.libc_ver = ""

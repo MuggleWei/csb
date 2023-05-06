@@ -18,10 +18,10 @@ doc/compile_commands.json
 # pycharm
 .idea
 
-######### build & artifacts #########
+######### build & generated packages #########
 _hpb/
 build/
-artifacts/
+_packages/
 _artifacts/
 
 ######### python #########

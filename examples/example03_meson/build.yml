@@ -1,0 +1,12 @@
+name: hello
+variables:
+  - build_type: release
+jobs:
+  build:
+    steps:
+      - run: >
+          meson setup ${HPB_BUILD_DIR} \
+            --prefix ${HPB_OUTPUT_DIR} \
+            --buildtype ${build_type};
+          meson compile -C ${HPB_BUILD_DIR};
+          meson install -C ${HPB_BUILD_DIR};

@@ -1,15 +1,15 @@
 <HPB>
-    <artifacts>
+    <packages>
     	<search>
     
     		<repo>
     			<kind>local</kind>
-    			<path>~/.hpb/artifacts</path>
+    			<path>~/.hpb/packages</path>
     		</repo>
     
     		<repo>
     			<kind>local</kind>
-    			<path>~/.local/share/hpb/artifacts</path>
+    			<path>~/.local/share/hpb/packages</path>
     		</repo>
     
     		<!--<repo>-->
@@ -25,14 +25,14 @@
 
     		<repo>
     			<kind>local</kind>
-                <path>/var/local/hpb/artifacts</path>
+                <path>/var/local/hpb/packages</path>
     		</repo>
     
     		<repo>
     			<kind>local</kind>
-    			<path>~/.hpb/artifacts</path>
+    			<path>~/.hpb/packages</path>
     		</repo>
 
         </upload>
-    </artifacts>
+    </packages>
 </HPB>

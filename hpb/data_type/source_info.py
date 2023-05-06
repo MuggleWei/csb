@@ -3,6 +3,8 @@ import logging
 
 from typing import OrderedDict
 
+from hpb.data_type.semver_item import SemverItem
+
 
 class SourceInfo:
     """
@@ -59,3 +61,16 @@ class SourceInfo:
             logging.warning(
                 "source.git_depth is invalid, set default value 1")
             self.git_depth = 1
+
+    def get_tag_id(self):
+        """
+        get real tag or branch
+        when tag is semver, return (tag, "")
+        when tag is branch+commit-id, return (branch, commit_id)
+        """
+        semver = SemverItem()
+        if semver.load(self.tag) is False:
+            v = self.tag.split("_")
+            if len(v) == 2:
+                return (v[0], v[1])
+        return (self.tag, "")
